@@ -58,16 +58,19 @@ cat <<'EOF'
  tomto disku budu NAVZDY VYMAZANE. Zalohujte si data vopred.
 
  Instalovany system bude rovnaky ako po spusteni Live media
- (bez zmien urobenych v Live rezime). Podporuje BIOS aj UEFI
- (Secure Boot musi byt vypnuty). Prihlasenie je automaticke bez
- hesla, rovnako ako v edicii Native.
+ (bez zmien urobenych v Live rezime). Podporuje BIOS aj UEFI,
+ vratane zapnuteho Secure Boot (kluc Linsoft zaregistrovany pri
+ prvom spusteni Live media plati aj pre nainstalovany system).
+ Prihlasenie je automaticke bez hesla, rovnako ako v edicii Native.
 EOF
 echo
 [[ $EUID == 0 ]] || die 'Instalator musi bezat ako root.'
 [[ -d $source_root/etc && -f $source_root/boot/linsoft-kernel ]] ||
     die 'Live system nie je dostupny (spustite instalator z Live media).'
-[[ -x $assets/mkfs.fat && -f $assets/BOOTX64.EFI && -d $assets/x86_64-efi ]] ||
-    die 'Chybaju instalacne subory na mediu.'
+efi_files='BOOTX64.EFI grubx64.efi mmx64.efi linsoft-secureboot.cer'
+for f in mkfs.fat $(printf 'efi/%s ' $efi_files); do
+    [[ -s $assets/$f ]] || die "Chybaju instalacne subory na mediu ($f)."
+done
 
 medium_disk=''
 if [[ -r $live/device ]]; then
@@ -166,11 +169,12 @@ echo '[5/5] Instalujem zavadzac GRUB (BIOS + UEFI)...'
 grub-install --target=i386-pc --boot-directory="$target/boot" --recheck "$disk" \
     >/dev/null 2>&1 || die 'Instalacia GRUB pre BIOS zlyhala.'
 rm -rf "$target/boot/grub/x86_64-efi"
-cp -a "$assets/x86_64-efi" "$target/boot/grub/x86_64-efi" || die 'Kopirovanie modulov GRUB EFI zlyhalo.'
 mkdir -p "$esp_mount"
 mount -t vfat "$esp" "$esp_mount" || die 'EFI oddiel sa neda pripojit.'
 mkdir -p "$esp_mount/EFI/BOOT"
-cp "$assets/BOOTX64.EFI" "$esp_mount/EFI/BOOT/BOOTX64.EFI" || die 'Kopirovanie EFI zavadzaca zlyhalo.'
+for f in $efi_files; do
+    cp "$assets/efi/$f" "$esp_mount/EFI/BOOT/$f" || die 'Kopirovanie EFI zavadzaca zlyhalo.'
+done
 cat > "$esp_mount/EFI/BOOT/grub.cfg" <<EOF
 search --no-floppy --fs-uuid --set=root $uuid
 set prefix=(\$root)/boot/grub

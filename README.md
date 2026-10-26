@@ -4,7 +4,7 @@
 from scratch on Linux From Scratch 12.4, with an original C/Xlib desktop
 (window manager, panel, Start menu and file manager).
 
-**Version:** Linsoft OS 1.0 (26 Oct 2026) · Linsoft Kernel 6.16.1 · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI
+**Version:** Linsoft OS 1.1 (26 Oct 2026) · Linsoft Kernel 6.16.1 · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI/Secure Boot
 
 **Author:** Martin Pastorek – Native desktop programmed in C (Xlib/Xft) and the
 customized **Linsoft Kernel** (Linux 6.16.1: audio, network, graphics, Live
@@ -34,7 +34,9 @@ published as a GitHub Release asset.
 
 Experimental and tested only in QEMU virtual machines. The installer erases the
 whole selected disk and does not support dual boot. Live and installed systems
-log in automatically without a password. Secure Boot must be disabled.
+log in automatically without a password. Secure Boot can stay enabled: the
+first start asks once to enroll the Linsoft key in MokManager (see
+[linsoft/iso](linsoft/iso/README.md#secure-boot)).
 
 ## Licenses
 

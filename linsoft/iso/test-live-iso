@@ -2,16 +2,20 @@
 # QEMU smoke test for the Linsoft live/installer ISO:
 #   1. live boot (BIOS) reaches runlevel 3,
 #   2. the installer GRUB entry installs to an empty virtual disk,
-#   3. the installed disk boots on BIOS and on UEFI (OVMF).
+#   3. the installed disk boots on BIOS and on UEFI (OVMF),
+#   plus USB-stick boots (BIOS, UEFI Secure Boot with one-time MokManager key
+#   enrollment, a Rufus-style FAT copy) and the installed disk with Secure Boot.
 set -euo pipefail
 [[ $EUID == 0 ]] || { echo 'Run as root.' >&2; exit 2; }
 iso=$(realpath "${1:?Usage: test-live-iso ISO [WORKDIR]}")
 work=${2:-/var/tmp/linsoft-iso-test}
 ovmf_code=/usr/share/OVMF/OVMF_CODE_4M.fd
 ovmf_vars=/usr/share/OVMF/OVMF_VARS_4M.fd
+ovmf_sb_code=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd
+ovmf_sb_vars=/usr/share/OVMF/OVMF_VARS_4M.ms.fd
 mkdir -p "$work"
 cd "$work"
-rm -f disk.qcow2 ./*.log ./*.png mon.sock
+rm -f disk.qcow2 fatcopy.img sb-vars.fd ./*.log ./*.png mon.sock
 qemu-img create -f qcow2 disk.qcow2 20G >/dev/null
 qemu_pid=''
 stop_qemu() {
@@ -45,6 +49,28 @@ wait_serial() {
 }
 pass() { echo "PASS: $*"; }
 fail() { echo "FAIL: $*" >&2; exit 1; }
+usb() { usb_args=(-drive "if=none,id=usbstick,format=raw,snapshot=on,file=$1"
+    -device usb-storage,drive=usbstick,removable=on,bootindex=0); }
+sb_args=(-machine q35,smm=on -global driver=cfi.pflash01,property=secure,value=on
+    -drive "if=pflash,format=raw,readonly=on,file=$ovmf_sb_code"
+    -drive if=pflash,format=raw,file=sb-vars.fd)
+# Shim starts MokManager because the Linsoft key is not enrolled yet:
+# Enroll key from disk -> LINSOFT_EFI -> linsoft-secureboot.cer -> Continue -> Yes -> Reboot.
+enroll_mok() {
+    local log=$1
+    wait_serial "$log" 'Verification failed' 90 || fail 'shim did not report the unenrolled key'
+    keys ret
+    wait_serial "$log" 'Press any key' 20 || fail 'MokManager did not start'
+    keys ret; sleep 2
+    keys down ret; sleep 2
+    keys ret; sleep 2
+    keys down ret; sleep 2
+    monitor "screendump $work/mok-enroll.png -f png"
+    keys down ret; sleep 1
+    keys down ret; sleep 2
+    : > "$log"
+    keys ret
+}
 
 echo '--- 1. Live boot (BIOS)'
 start_qemu live.log -cdrom "$iso" -boot d
@@ -63,6 +89,39 @@ start_qemu live-uefi.log -machine q35 -cdrom "$iso" \
 wait_serial live-uefi.log 'linsoft login:' 240 || fail 'live system did not boot on UEFI'
 pass 'live system booted on UEFI'
 stop_qemu
+
+echo '--- 1c. Live boot from USB stick (BIOS, hybrid MBR)'
+usb "$iso"
+start_qemu live-usb-bios.log "${usb_args[@]}"
+wait_serial live-usb-bios.log 'linsoft login:' 180 || fail 'live USB did not boot on BIOS'
+pass 'live USB boots on BIOS'
+stop_qemu
+
+echo '--- 1d. Live boot from USB stick (UEFI Secure Boot, first start)'
+cp "$ovmf_sb_vars" sb-vars.fd
+start_qemu live-usb-sb.log "${sb_args[@]}" "${usb_args[@]}"
+enroll_mok live-usb-sb.log
+wait_serial live-usb-sb.log 'linsoft login:' 240 ||
+    fail 'live USB did not boot with Secure Boot after key enrollment'
+pass 'Linsoft key enrolled, live USB boots with Secure Boot'
+stop_qemu
+
+echo '--- 1e. Rufus ISO-mode copy (FAT32 USB stick, UEFI Secure Boot)'
+truncate -s $(( $(stat -c %s "$iso") + 512 * 1024 * 1024 )) fatcopy.img
+/usr/sbin/mkfs.fat -F 32 -n LINSOFT fatcopy.img >/dev/null
+fat_src=$work/iso-mnt
+mkdir -p "$fat_src"
+mount -o ro,loop "$iso" "$fat_src"
+mcopy -s -i fatcopy.img "$fat_src"/* ::/ || { umount "$fat_src"; fail 'FAT copy failed'; }
+umount "$fat_src"
+usb "$work/fatcopy.img"
+start_qemu live-fat-sb.log "${sb_args[@]}" "${usb_args[@]}"
+wait_serial live-fat-sb.log 'linsoft login:' 240 ||
+    fail 'Rufus-style FAT copy did not boot with Secure Boot'
+grep -q 'Verification failed' live-fat-sb.log && fail 'enrolled key was not remembered'
+pass 'Rufus-style FAT copy boots with Secure Boot'
+stop_qemu
+rm -f fatcopy.img
 
 echo '--- 2. Installer entry'
 start_qemu install.log -cdrom "$iso" -boot d
@@ -113,5 +172,13 @@ wait_serial uefi.log 'linsoft login:' 240 || fail 'installed system did not boot
 sleep 25
 monitor "screendump $work/installed-uefi.png -f png"
 pass 'installed system boots on UEFI'
+stop_qemu
+
+echo '--- 5. Installed disk (UEFI Secure Boot, key enrolled from the live USB)'
+start_qemu uefi-sb.log "${sb_args[@]}"
+wait_serial uefi-sb.log 'linsoft login:' 240 ||
+    fail 'installed system did not boot with Secure Boot'
+grep -q 'Verification failed' uefi-sb.log && fail 'installed system asked for the key again'
+pass 'installed system boots with Secure Boot'
 stop_qemu
 echo 'All Linsoft ISO tests passed.'

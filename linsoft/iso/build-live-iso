@@ -15,7 +15,7 @@ kernel_out=${LINSOFT_ISO_KERNEL:-/mnt/lfs/sources/linsoft-iso-kernel-out}
 kver=6.16.1-linsoft-kernel
 build_id=linsoft-$(date +%Y%m%d%H%M%S)
 
-for tool in qemu-nbd rsync mksquashfs grub-mkrescue grub-mkimage xorriso mformat cpio gzip; do
+for tool in qemu-nbd rsync mksquashfs grub-mkimage xorriso mcopy sbsign sbverify python3 cpio gzip; do
     command -v "$tool" >/dev/null || { echo "Missing build tool: $tool" >&2; exit 1; }
 done
 [[ -x /bin/busybox ]] && file -L /bin/busybox | grep -q 'statically linked' ||
@@ -70,6 +70,16 @@ install -m 0644 "$kernel_out/boot/System.map-linsoft-kernel" "$rootfs/boot/Syste
 install -m 0644 "$kernel_out/boot/config-linsoft-kernel" "$rootfs/boot/config-linsoft-kernel"
 rm -rf "$rootfs/lib/modules/$kver"
 cp -a "$kernel_out/lib/modules/$kver" "$rootfs/lib/modules/$kver"
+
+echo '==> Building Secure Boot loaders and signing the kernel'
+efi=$work/efi
+rm -rf "$efi"
+bash "$here/build-signed-efi" "$efi" "$rootfs/boot/linsoft-kernel"
+if ! grep -q 'lockdown' "$rootfs/boot/grub/grub.cfg"; then
+    # Secure Boot: GRUB refuses to load fonts, use the text menu.
+    sed -i 's|^if loadfont |if [ "$lockdown" = y ]; then\n    terminal_output console serial\nelif loadfont |' \
+        "$rootfs/boot/grub/grub.cfg"
+fi
 
 echo '==> Removing private and runtime data'
 debian=$rootfs/opt/linsoft-debian
@@ -126,26 +136,55 @@ install -m 0644 "$rootfs/boot/linsoft-kernel" "$iso/linsoft/boot/linsoft-kernel"
 
 echo '==> Preparing installer assets'
 install -m 0755 /usr/sbin/mkfs.fat "$iso/linsoft/installer/mkfs.fat"
-mkdir -p "$iso/linsoft/installer/x86_64-efi"
-cp /usr/lib/grub/x86_64-efi/*.mod /usr/lib/grub/x86_64-efi/*.lst \
-    "$iso/linsoft/installer/x86_64-efi/"
-grub-mkimage -O x86_64-efi -p /EFI/BOOT -o "$iso/linsoft/installer/BOOTX64.EFI" \
-    part_gpt part_msdos fat ext2 normal configfile search search_fs_uuid \
-    search_fs_file search_label linux echo test ls cat sleep reboot halt \
-    all_video efi_gop efi_uga video_bochs video_cirrus gfxterm gfxmenu png \
-    font serial terminal gzio minicmd
+mkdir -p "$iso/linsoft/installer/efi"
+cp "$efi"/* "$iso/linsoft/installer/efi/"
 if [[ -d $rootfs/boot/grub/themes/linsoft ]]; then
     mkdir -p "$iso/boot/grub/themes"
     cp -a "$rootfs/boot/grub/themes/linsoft" "$iso/boot/grub/themes/linsoft"
 fi
 sed "s|@ID@|$build_id|g" "$here/grub-iso.cfg" > "$iso/boot/grub/grub.cfg"
 
+echo '==> Preparing BIOS and UEFI boot'
+# BIOS: GRUB core for El Torito and the hybrid MBR, modules beside it.
+mkdir -p "$iso/boot/grub/i386-pc"
+cp /usr/lib/grub/i386-pc/*.mod /usr/lib/grub/i386-pc/*.lst "$iso/boot/grub/i386-pc/"
+cat > "$work/bios-early.cfg" <<EOF
+search --no-floppy --set=root --file /linsoft/live/$build_id.id
+set prefix=(\$root)/boot/grub
+EOF
+grub-mkimage -O i386-pc-eltorito -p /boot/grub -c "$work/bios-early.cfg" \
+    -o "$iso/boot/grub/i386-pc/eltorito.img" \
+    biosdisk iso9660 part_msdos part_gpt search search_fs_file configfile normal
+# UEFI: shim -> signed GRUB (-> MokManager on first Secure Boot start).
+# The same files are in the ISO tree for tools that copy the ISO to FAT (Rufus).
+mkdir -p "$iso/EFI/BOOT"
+cp "$efi/BOOTX64.EFI" "$efi/grubx64.efi" "$efi/mmx64.efi" "$iso/EFI/BOOT/"
+cp "$efi/linsoft-secureboot.cer" "$iso/linsoft-secureboot.cer"
+cat > "$iso/EFI/BOOT/grub.cfg" <<EOF
+search --no-floppy --set=root --file /linsoft/live/$build_id.id
+set prefix=(\$root)/boot/grub
+configfile \$prefix/grub.cfg
+EOF
+esp_img=$work/efi.img
+rm -f "$esp_img"
+/usr/sbin/mkfs.fat -C -n LINSOFT_EFI "$esp_img" 8192 >/dev/null
+mmd -i "$esp_img" ::/EFI ::/EFI/BOOT
+mcopy -i "$esp_img" "$iso/EFI/BOOT/"* ::/EFI/BOOT/
+mcopy -i "$esp_img" "$iso/linsoft-secureboot.cer" ::/
+
 echo '==> Writing ISO'
 tmp_iso=$work/Linsoft-OS-Live.iso
 rm -f "$tmp_iso"
-grub-mkrescue -o "$tmp_iso" "$iso" -- -volid LINSOFT_OS -compliance iso_9660_level=3 2>&1 |
-    grep -v '^xorriso : UPDATE' || true
-[[ -s $tmp_iso ]] || { echo 'grub-mkrescue failed.' >&2; exit 1; }
+xorriso -as mkisofs -iso-level 3 -R -J -joliet-long -V LINSOFT_OS \
+    --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
+    -partition_offset 16 --mbr-force-bootable \
+    -append_partition 2 0xef "$esp_img" -appended_part_as_gpt \
+    -c boot/boot.cat \
+    -b boot/grub/i386-pc/eltorito.img -no-emul-boot -boot-load-size 4 \
+    -boot-info-table --grub2-boot-info \
+    -eltorito-alt-boot -e --interval:appended_partition_2:all:: -no-emul-boot \
+    -o "$tmp_iso" "$iso" 2>&1 | grep -v '^xorriso : UPDATE' || true
+[[ -s $tmp_iso ]] || { echo 'xorriso failed.' >&2; exit 1; }
 cp "$tmp_iso" "$output.tmp"
 mv -f "$output.tmp" "$output"
 (cd "$(dirname "$output")" && sha256sum "$(basename "$output")" > "$(basename "$output").sha256")

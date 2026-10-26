@@ -13,7 +13,7 @@
 <meta property="og:image" content="https://linsoft1.github.io/linsoft-os/img/desktop.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=1.0.1">
+<link rel="stylesheet" href="style.css?v=1.1.0">
 </head>
 <body>
 <a class="skip-link" href="#obsah">Preskočiť na obsah</a>
@@ -27,7 +27,7 @@
   </nav>
   <div class="hero-text">
     <h1>Linsoft OS</h1>
-    <p class="version">Verzia 1.0 · vydané 26. 10. 2026</p>
+    <p class="version">Verzia 1.1 · vydané 26. 10. 2026</p>
     <p class="tag">Váš priestor. Váš systém.</p>
     <p>Vlastný operačný systém postavený od základu na Linux From Scratch&nbsp;12.4 – s originálnou pracovnou plochou, správcom súborov a panelom napísanými v C.</p>
     <a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso">⬇ Stiahnuť Live ISO</a>
@@ -42,7 +42,7 @@
   <h2>Funkcie</h2>
   <div class="grid">
     <div><h3>Live režim</h3><p>Spustite systém priamo z USB alebo DVD. Nič sa nezapisuje na disk – zmeny sú iba v pamäti.</p></div>
-    <div><h3>Inštalátor</h3><p>Jedným krokom nainštalujete Linsoft OS na disk. Funguje na počítačoch s BIOS aj UEFI.</p></div>
+    <div><h3>Inštalátor</h3><p>Jedným krokom nainštalujete Linsoft OS na disk. Funguje na počítačoch s BIOS aj UEFI, aj so zapnutým Secure Boot.</p></div>
     <div><h3>Vlastná plocha</h3><p>Originálny správca okien, panel, Štart s vyhľadávaním, 4 pracovné plochy a správca súborov s kartami.</p></div>
     <div><h3>Aplikácie</h3><p>Firefox, LibreOffice Writer a Calc, terminál, nastavenia a inštalácia dôveryhodných .deb balíkov.</p></div>
   </div>
@@ -70,13 +70,13 @@
   <div class="table-wrap">
     <table class="ver">
       <tbody>
-        <tr><th scope="row">Linsoft OS</th><td>1.0 (Live + inštalátor)</td></tr>
+        <tr><th scope="row">Linsoft OS</th><td>1.1 (Live + inštalátor)</td></tr>
         <tr><th scope="row">Dátum vydania</th><td>26. 10. 2026</td></tr>
         <tr><th scope="row">Jadro</th><td>Linsoft Kernel 6.16.1 (<code>6.16.1-linsoft-kernel</code>)</td></tr>
         <tr><th scope="row">Základ systému</th><td>Linux From Scratch 12.4</td></tr>
         <tr><th scope="row">Aplikačné prostredie</th><td>Debian 13</td></tr>
         <tr><th scope="row">Pracovná plocha</th><td>Linsoft Native (C, Xlib, Xft)</td></tr>
-        <tr><th scope="row">Architektúra</th><td>x86-64 · BIOS aj UEFI</td></tr>
+        <tr><th scope="row">Architektúra</th><td>x86-64 · BIOS aj UEFI · Secure Boot</td></tr>
         <tr><th scope="row">ISO súbor</th><td>Linsoft-OS-Live.iso · 1,57 GB (1,46 GiB)</td></tr>
       </tbody>
     </table>
@@ -84,9 +84,17 @@
 </section>
 
 <section id="novinky">
-  <h2>Čo prináša verzia 1.0</h2>
+  <h2>Čo prináša verzia 1.1</h2>
   <div class="release-note">
-    <p class="version">26. 10. 2026 · prvé vydanie</p>
+    <p class="version">26. 10. 2026</p>
+    <ul>
+      <li>Podpora Secure Boot: zavádzač podpísaný Microsoftom (shim), podpísaný GRUB aj jadro. Už netreba vypínať Secure Boot – stačí raz zaregistrovať kľúč Linsoft.</li>
+      <li>Spoľahlivejší štart z USB na rôznych počítačoch; USB vytvorené v Rufuse funguje v režime DD aj ISO.</li>
+      <li>Nainštalovaný systém používa rovnaký podpísaný zavádzač.</li>
+    </ul>
+  </div>
+  <div class="release-note">
+    <p class="version">Verzia 1.0 · 26. 10. 2026 · prvé vydanie</p>
     <ul>
       <li>Live systém, ktorý možno spustiť z USB bez inštalácie.</li>
       <li>Inštalátor na disk pre počítače s BIOS aj UEFI.</li>
@@ -103,7 +111,7 @@
   <details class="verify">
     <summary>Ako overiť stiahnutý súbor</summary>
     <p>Porovnajte vypočítaný SHA-256 súčet ISO s touto hodnotou:</p>
-    <p><code class="hash">29fb555c7692d071320a6b19ed10470939367159fab81e7eb2c6dbd42c82accc</code></p>
+    <p><code class="hash">de30e8e880b3c98d5a88c670299b7cd4e806c57d3b8c42793732d76165597f97</code></p>
     <p>Windows PowerShell: <code>Get-FileHash .\Linsoft-OS-Live.iso -Algorithm SHA256</code></p>
     <p>Linux: <code>sha256sum Linsoft-OS-Live.iso</code></p>
     <p>Kontrolný súčet sa dá stiahnuť aj zo <a href="https://github.com/Linsoft1/linsoft-os/releases/latest">stránky vydania</a>.</p>
@@ -116,8 +124,8 @@
     <article class="step-card" id="vyskusat">
       <h3>Vyskúšať bez inštalácie</h3>
       <ol>
-        <li>Zapíšte ISO na USB pomocou <a href="https://rufus.ie">Rufus</a> v režime DD alebo <a href="https://etcher.balena.io">balenaEtcher</a>. Obsah USB sa vymaže.</li>
-        <li>Reštartujte počítač, otvorte boot menu (často F12, F11 alebo Esc) a vyberte USB. Vypnite Secure Boot.</li>
+        <li>Zapíšte ISO na USB pomocou <a href="https://rufus.ie">Rufus</a> (odporúčaný režim DD) alebo <a href="https://etcher.balena.io">balenaEtcher</a>. Obsah USB sa vymaže.</li>
+        <li>Reštartujte počítač, otvorte boot menu (často F12, F11, F9 alebo Esc) a vyberte USB. Secure Boot môže zostať zapnutý.</li>
         <li>V menu zvoľte „Linsoft OS Live – vyskúšať bez inštalácie“. Zmeny počas Live relácie sa po vypnutí stratia.</li>
       </ol>
       <p>ISO možno spustiť aj vo VirtualBoxe, VMware alebo QEMU ako 64-bitový Linux s pridelenými aspoň 3 GB RAM.</p>
@@ -131,14 +139,24 @@
       </ol>
       <div class="warn"><b>Pozor:</b> Inštalátor vymaže celý vybraný disk. Nepodporuje dual boot ani vlastné rozdelenie disku. Pred pokračovaním zálohujte všetky dôležité súbory.</div>
     </article>
+    <article class="step-card wide" id="secure-boot">
+      <h3>Prvý štart so zapnutým Secure Boot</h3>
+      <p>Pri prvom štarte sa zobrazí modrá obrazovka „Verification failed“. Kľúč Linsoft treba zaregistrovať iba raz:</p>
+      <ol>
+        <li>Stlačte <b>Enter</b> (OK) a hneď potom ľubovoľnú klávesu – na „Press any key to perform MOK management“ je len 10 sekúnd.</li>
+        <li>Vyberte <b>Enroll key from disk</b> → <b>LINSOFT_EFI</b> (pri USB z Rufusu v režime ISO <b>LINSOFT_OS</b>) → <b>linsoft-secureboot.cer</b>.</li>
+        <li>Zvoľte <b>Continue</b> → <b>Yes</b> → <b>Reboot</b> a znova spustite USB.</li>
+      </ol>
+      <p class="small">Kľúč zostane uložený vo firmvéri, takže Live USB aj nainštalovaný systém sa potom spúšťajú bez otázok. Ak počítač zavádzač stále odmietne (niektoré Secured-core PC), povoľte vo firmvéri „Microsoft third-party UEFI CA“ alebo vypnite Secure Boot.</p>
+    </article>
   </div>
   <section class="compatibility" aria-labelledby="kompatibilita">
     <h3 id="kompatibilita">Požiadavky a testovanie</h3>
     <ul>
       <li>64-bitový procesor (x86-64), BIOS alebo UEFI.</li>
       <li>Odporúčaná pamäť: aspoň 3 GB RAM; režim „načítať do RAM“ potrebuje aspoň 8 GB.</li>
-      <li>Na inštaláciu treba disk s kapacitou aspoň 12 GiB; Secure Boot musí byť vypnutý.</li>
-      <li>Live štart, inštalácia a štart nainštalovaného systému boli otestované v QEMU v režimoch BIOS aj UEFI.</li>
+      <li>Na inštaláciu treba disk s kapacitou aspoň 12 GiB. Secure Boot môže zostať zapnutý.</li>
+      <li>Live štart z DVD aj USB, inštalácia a štart nainštalovaného systému boli otestované v QEMU v režimoch BIOS, UEFI aj UEFI so Secure Boot.</li>
       <li>Fyzický hardvér vrátane grafiky, Wi-Fi a špecifických nastavení firmvéru nebol testovaný.</li>
     </ul>
     <p class="small">Systém je experimentálny a prihlasuje sa automaticky bez hesla. Neinštalujte ho na zdieľaný počítač.</p>
@@ -147,7 +165,7 @@
 </main>
 
 <footer>
-  <p>Linsoft OS 1.0 · autor <b>Martin Pastorek</b> · postavené na <a href="https://www.linuxfromscratch.org/">Linux From Scratch</a>, Linuxe, Debiane a ďalšom open-source softvéri, ktorý patrí ich autorom.</p>
+  <p>Linsoft OS 1.1 · autor <b>Martin Pastorek</b> · postavené na <a href="https://www.linuxfromscratch.org/">Linux From Scratch</a>, Linuxe, Debiane a ďalšom open-source softvéri, ktorý patrí ich autorom.</p>
   <p><a href="https://github.com/Linsoft1/linsoft-os">Zdrojový kód</a> · <a href="https://github.com/Linsoft1/linsoft-os/issues">Nahlásiť problém</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases">Vydania</a></p>
 </footer>
 </body>

@@ -1,0 +1,65 @@
+#!/bin/bash
+# Builds the Secure Boot capable UEFI loader set for Linsoft OS:
+#   BOOTX64.EFI  Microsoft-signed shim (Ubuntu shim-signed)
+#   grubx64.efi  GRUB with all modules built in, signed with the Linsoft key
+#   mmx64.efi    MokManager, used once to enroll the Linsoft key
+#   linsoft-secureboot.cer  public Linsoft key for MokManager
+# Usage: build-signed-efi OUT_DIR [UNSIGNED_KERNEL...]
+# Each kernel given is signed in place with the Linsoft key.
+# The private key stays in $LINSOFT_SB_KEYDIR (default /root/linsoft-secureboot).
+set -euo pipefail
+out=${1:?Usage: build-signed-efi OUT_DIR [UNSIGNED_KERNEL...]}
+shift
+keydir=${LINSOFT_SB_KEYDIR:-/root/linsoft-secureboot}
+shim=/usr/lib/shim/shimx64.efi.signed.latest
+mokmanager=/usr/lib/shim/mmx64.efi
+for f in "$keydir/linsoft-sb.key" "$keydir/linsoft-sb.crt" "$keydir/linsoft-sb.cer" \
+         "$shim" "$mokmanager"; do
+    [[ -f $f ]] || { echo "Missing $f (shim-signed package or Linsoft key)." >&2; exit 1; }
+done
+command -v sbsign >/dev/null || { echo 'sbsigntool is required.' >&2; exit 1; }
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+cat > "$tmp/sbat.csv" <<'EOF'
+sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md
+grub,5,Free Software Foundation,grub,2.12,https://www.gnu.org/software/grub/
+grub.linsoft,1,Linsoft OS,grub2,2.12,https://github.com/Linsoft1/linsoft-os
+EOF
+# Under Secure Boot GRUB refuses to load modules from disk, so everything
+# the ISO and installed configurations use is built into the image.
+grub-mkimage -O x86_64-efi -p /EFI/BOOT --sbat "$tmp/sbat.csv" -o "$tmp/grubx64.efi" \
+    part_gpt part_msdos fat iso9660 ext2 normal configfile search search_fs_uuid \
+    search_fs_file search_label linux echo test true ls cat sleep reboot halt \
+    all_video efi_gop efi_uga video_bochs video_cirrus gfxterm gfxterm_background \
+    gfxmenu png font serial terminal gzio minicmd regexp loadenv efifwsetup chain
+mkdir -p "$out"
+sbsign --key "$keydir/linsoft-sb.key" --cert "$keydir/linsoft-sb.crt" \
+    --output "$out/grubx64.efi" "$tmp/grubx64.efi" 2>/dev/null
+install -m 0644 "$shim" "$out/BOOTX64.EFI"
+install -m 0644 "$mokmanager" "$out/mmx64.efi"
+install -m 0644 "$keydir/linsoft-sb.cer" "$out/linsoft-secureboot.cer"
+
+for kernel in "$@"; do
+    sbverify --list "$kernel" 2>&1 | grep -q 'No signature table' ||
+        { echo "$kernel is already signed; pass the unsigned kernel." >&2; exit 1; }
+    # GRUB 2.12 starts kernels whose PE MajorImageVersion is >= 1 through the
+    # firmware LoadImage(), which only trusts db and not the enrolled MOK key.
+    # Version 0 makes GRUB use its EFI handover loader, verified through shim.
+    python3 - "$kernel" <<'EOF'
+import struct, sys
+path = sys.argv[1]
+data = bytearray(open(path, 'rb').read())
+if data[:2] != b'MZ':
+    sys.exit(f'{path}: not an EFI stub kernel')
+pe = struct.unpack_from('<I', data, 0x3c)[0]
+if data[pe:pe + 4] != b'PE\0\0' or struct.unpack_from('<H', data, pe + 24)[0] != 0x20b:
+    sys.exit(f'{path}: unexpected PE header')
+struct.pack_into('<HH', data, pe + 24 + 44, 0, 0)
+open(path, 'wb').write(data)
+EOF
+    sbsign --key "$keydir/linsoft-sb.key" --cert "$keydir/linsoft-sb.crt" \
+        --output "$tmp/kernel.signed" "$kernel" 2>/dev/null
+    sbverify --cert "$keydir/linsoft-sb.crt" "$tmp/kernel.signed" >/dev/null
+    cat "$tmp/kernel.signed" > "$kernel"
+done

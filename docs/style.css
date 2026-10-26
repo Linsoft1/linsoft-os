@@ -50,6 +50,8 @@ code { background:var(--panel); padding:.1rem .4rem; border-radius:.3rem; overfl
 .verify summary { color:var(--cyan); cursor:pointer; font-weight:600; }
 .hash { display:block; max-width:100%; white-space:normal; overflow-wrap:anywhere; word-break:break-all; padding:.7rem; }
 .steps { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.step-card.wide { grid-column:1 / -1; }
+.release-note + .release-note { margin-top:1rem; }
 .step-card h3, .compatibility h3 { color:var(--cyan); margin-top:.2rem; }
 .warn { background:#3a2a10; border-left:4px solid #f0b43c; padding:1rem; border-radius:.4rem; }
 .author { display:flex; gap:1.5rem; align-items:center; background:var(--panel); border-radius:.6rem; padding:1.2rem 1.5rem; }
