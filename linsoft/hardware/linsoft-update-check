@@ -1,0 +1,60 @@
+#!/bin/bash
+# Linsoft OS update check: compares the installed version with the newest
+# GitHub release. Applications and firmware are updated through APT
+# (Aplikacie a aktualizacie); a new Linsoft release brings a new kernel.
+#   linsoft-update-check            interactive window
+#   linsoft-update-check --notify   quiet daily check with a notification
+set -uo pipefail
+title='Linsoft OS - aktualizacie'
+releases=https://github.com/Linsoft1/linsoft-os/releases
+api=https://api.github.com/repos/Linsoft1/linsoft-os/releases/latest
+installed=''
+for file in /run/linsoft-host/os-release /etc/linsoft-release; do
+    [[ -r $file ]] || continue
+    installed=$(sed -n 's/^LINSOFT_VERSION="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' "$file" | head -n 1)
+    [[ -n $installed ]] && break
+done
+installed=${installed:-1.0}
+latest_tag() {
+    local json
+    if command -v curl >/dev/null; then
+        json=$(curl -fsSL --max-time 15 -H 'Accept: application/vnd.github+json' "$api") || return 1
+    else
+        json=$(wget -qO- --timeout=15 "$api") || return 1
+    fi
+    sed -n 's/^ *"tag_name": *"v\{0,1\}\([0-9][0-9.]*\)".*/\1/p' <<< "$json" | head -n 1
+}
+newer() { [[ $1 != "$2" && $(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n 1) == "$1" ]]; }
+
+if [[ ${1:-} == --notify ]]; then
+    stamp=$HOME/.cache/linsoft-update-check
+    mkdir -p "${stamp%/*}"
+    if [[ -f $stamp && $(find "$stamp" -mmin -1440 2>/dev/null) ]]; then exit 0; fi
+    sleep 60
+    latest=$(latest_tag) || exit 0
+    touch "$stamp"
+    [[ -n $latest ]] && newer "$latest" "$installed" || exit 0
+    choice=$(notify-send --app-name='Linsoft OS' --expire-time=20000 --wait \
+        --action=open='Zobrazit' "Linsoft OS $latest je dostupny" \
+        "Mate verziu $installed. Nova verzia prinasa novsie jadro, ovladace a opravy.")
+    [[ $choice == open ]] && exec linsoft-browser "$releases"
+    exit 0
+fi
+
+latest=$(latest_tag | head -n 1)
+if [[ -z $latest ]]; then
+    zenity --error --title="$title" --width=480 \
+        --text="Nepodarilo sa zistit najnovsiu verziu (ste pripojeni na internet?).\n\nNainstalovana verzia: Linsoft OS $installed"
+    exit 1
+fi
+if newer "$latest" "$installed"; then
+    if zenity --question --title="$title" --width=560 --ok-label='Otvorit stranku' --cancel-label='Neskor' \
+        --text="Je dostupny Linsoft OS $latest (mate $installed).\n\nNova verzia obsahuje novsie jadro, ovladace a opravy. Stiahnite ISO, vytvorte USB a nainstalujte.\n\nAplikacie a firmware aktualizujete v okne Aplikacie a aktualizacie."; then
+        exec linsoft-browser "$releases"
+    fi
+else
+    if zenity --question --title="$title" --width=520 --ok-label='Aktualizovat aplikacie' --cancel-label='Zavriet' \
+        --text="Linsoft OS $installed je najnovsia verzia.\n\nAplikacie, ovladace grafiky (Mesa) a firmware sa aktualizuju cez APT."; then
+        exec linsoft-app-center
+    fi
+fi

@@ -4,11 +4,13 @@
 from scratch on Linux From Scratch 12.4, with an original C/Xlib desktop
 (window manager, panel, Start menu and file manager).
 
-**Version:** Linsoft OS 1.1 (26 Oct 2026) · Linsoft Kernel 6.16.1 · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI/Secure Boot
+**Version:** Linsoft OS 1.2 (26 Oct 2026) · Linsoft Kernel 6.18 LTS · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI/Secure Boot
 
 **Author:** Martin Pastorek – Native desktop programmed in C (Xlib/Xft) and the
-customized **Linsoft Kernel** (Linux 6.16.1: audio, network, graphics, Live
-USB/DVD boot, NVMe and SD card support).
+customized **Linsoft Kernel** (Linux 6.18 LTS: Wi-Fi, AMD/NVIDIA/Intel graphics,
+laptop touchpads and audio, Live USB/DVD boot, NVMe and SD card support).
+
+What is new: [CHANGELOG.md](CHANGELOG.md).
 
 * Website: https://linsoft1.github.io/linsoft-os/
 * Download: [Linsoft-OS-Live.iso](https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso)
@@ -32,11 +34,18 @@ published as a GitHub Release asset.
 
 ## Status and warnings
 
-Experimental and tested only in QEMU virtual machines. The installer erases the
-whole selected disk and does not support dual boot. Live and installed systems
-log in automatically without a password. Secure Boot can stay enabled: the
+Experimental. Automated tests run in QEMU (BIOS, UEFI, Secure Boot); use the
+built-in **Diagnostika hardveru** tool and report problems on real computers in
+[Issues](https://github.com/Linsoft1/linsoft-os/issues). The installer either
+erases the whole selected disk or (UEFI + GPT) installs into free space created
+in Windows, keeping Windows bootable. The installer can set a user password;
+without it the system logs in automatically. Secure Boot can stay enabled: the
 first start asks once to enroll the Linsoft key in MokManager (see
 [linsoft/iso](linsoft/iso/README.md#secure-boot)).
+
+Known limits: Bluetooth has kernel drivers but no pairing UI yet, enterprise
+(802.1X) Wi-Fi is not supported, NVIDIA uses the open nouveau driver, and new
+kernels arrive as a new release ISO.
 
 ### Supported computers
 

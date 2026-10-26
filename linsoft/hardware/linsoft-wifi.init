@@ -1,0 +1,27 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: linsoft-wifi
+# Required-Start: $local_fs udev
+# Required-Stop: $local_fs
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Linsoft Wi-Fi (saved networks connect automatically)
+### END INIT INFO
+case "$1" in
+    start)
+        echo "Linsoft: starting Wi-Fi"
+        # In the background: adapters may need a moment for firmware.
+        /usr/sbin/linsoft-wifi start >/dev/null 2>&1 &
+        ;;
+    stop)
+        /usr/sbin/linsoft-wifi stop >/dev/null 2>&1
+        ;;
+    restart)
+        "$0" stop
+        "$0" start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}" >&2
+        exit 2
+        ;;
+esac

@@ -1,28 +1,45 @@
 #!/bin/bash
-# Builds the Linsoft live/installer kernel in a copy of the LFS kernel tree.
-# The original /sources/ch10-linux-build tree is never modified.
+# Builds the Linsoft live/installer kernel (Linux LTS) with broad real-PC
+# hardware support. The original /sources/ch10-linux-build tree is never
+# modified; its configuration is the starting point.
 set -euo pipefail
 if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
     echo "Run as root with LINSOFT_LFS_BUILD=1." >&2
     exit 2
 fi
+here=$(cd "$(dirname "$0")" && pwd)
 LFS=/mnt/lfs
+VERSION=${LINSOFT_KERNEL_VERSION:-6.18.58}
 grep -qx 'ID=linsoft' "$LFS/etc/os-release"
 if findmnt -rn -o TARGET | grep -qE "^$LFS/(dev|proc|sys|run)(/|$)"; then
     echo "Finish other chroot work before building the ISO kernel." >&2
     exit 1
 fi
-SRC=$LFS/sources/ch10-linux-build
-DST=$LFS/sources/linsoft-iso-kernel
+tarball=linux-$VERSION.tar.xz
+if [[ ! -f $LFS/sources/$tarball ]]; then
+    base=https://cdn.kernel.org/pub/linux/kernel/v${VERSION%%.*}.x
+    curl -fL --retry 3 -o "$LFS/sources/$tarball.part" "$base/$tarball"
+    sums=$(curl -fsSL --retry 3 "$base/sha256sums.asc")
+    expected=$(awk -v f="$tarball" '$2 == f {print $1}' <<< "$sums")
+    [[ $expected =~ ^[0-9a-f]{64}$ ]] || { echo "No checksum for $tarball." >&2; exit 1; }
+    echo "$expected  $LFS/sources/$tarball.part" | sha256sum -c -
+    mv "$LFS/sources/$tarball.part" "$LFS/sources/$tarball"
+fi
+DST=$LFS/sources/linsoft-iso-kernel-$VERSION
 if [[ ! -d $DST ]]; then
-    cp -a "$SRC" "$DST.tmp"
+    rm -rf "$DST.tmp"
+    mkdir "$DST.tmp"
+    tar -xf "$LFS/sources/$tarball" -C "$DST.tmp" --strip-components=1
+    cp "$LFS/sources/ch10-linux-build/.config" "$DST.tmp/.config"
     mv "$DST.tmp" "$DST"
 fi
-JOBS=${JOBS:-$(nproc)}
+list=$DST/linsoft-hardware.list
+tr -d '\r' < "$here/kernel-hardware.list" > "$list"
+JOBS=${JOBS:-4}
 bash "$LFS/sources/.chroot-wrapper.sh" -c "
 set -euo pipefail
-cd /sources/linsoft-iso-kernel
-scripts/config \
+cd /sources/linsoft-iso-kernel-$VERSION
+scripts/config --set-str LOCALVERSION -linsoft-kernel --disable LOCALVERSION_AUTO \
     --enable SQUASHFS --enable SQUASHFS_ZLIB --enable SQUASHFS_XZ \
     --enable SQUASHFS_ZSTD --enable SQUASHFS_FILE_DIRECT --enable SQUASHFS_XATTR \
     --enable OVERLAY_FS \
@@ -31,17 +48,44 @@ scripts/config \
     --enable MMC --enable MMC_BLOCK --enable MMC_SDHCI \
     --enable MMC_SDHCI_PCI --enable MMC_SDHCI_ACPI \
     --enable SYSFB_SIMPLEFB --enable DRM_SIMPLEDRM \
-    --enable EFIVAR_FS --enable ATA_GENERIC
-make olddefconfig
+    --enable EFIVAR_FS --enable ATA_GENERIC \
+    --enable NTFS3_FS --enable EXFAT_FS --enable VFAT_FS \
+    --disable DEBUG_INFO_BTF --disable MODULE_SIG_FORCE
+apply() {
+    while read -r value option; do
+        case \$value in
+            y) scripts/config --enable \"\$option\" ;;
+            m) scripts/config --module \"\$option\" ;;
+            n) scripts/config --disable \"\$option\" ;;
+        esac
+    done < <(grep -E '^[ymn] [A-Z0-9_]+\$' linsoft-hardware.list)
+}
+# Two passes: options whose parents are enabled in the first pass appear
+# after olddefconfig and are set in the second.
+apply; make olddefconfig >/dev/null
+apply; make olddefconfig >/dev/null
+missing=0
+while read -r value option; do
+    value=\${value#!}
+    if [[ \$value == n ]]; then
+        grep -qE \"^CONFIG_\$option=[ym]\" .config && { echo \"unexpected CONFIG_\$option\" >&2; missing=1; }
+    else
+        grep -qx \"CONFIG_\$option=\$value\" .config || { echo \"missing CONFIG_\$option=\$value\" >&2; missing=1; }
+    fi
+done < <(grep -E '^![ymn] [A-Z0-9_]+\$' linsoft-hardware.list)
+(( missing == 0 ))
 make -j$JOBS
+kver=\$(make -s kernelrelease)
 rm -rf /sources/linsoft-iso-kernel-out
 mkdir -p /sources/linsoft-iso-kernel-out/boot
 make INSTALL_MOD_PATH=/sources/linsoft-iso-kernel-out INSTALL_MOD_STRIP=1 modules_install
+rm -f /sources/linsoft-iso-kernel-out/lib/modules/\$kver/build /sources/linsoft-iso-kernel-out/lib/modules/\$kver/source
 install -m 0644 arch/x86/boot/bzImage /sources/linsoft-iso-kernel-out/boot/linsoft-kernel
 install -m 0644 System.map /sources/linsoft-iso-kernel-out/boot/System.map-linsoft-kernel
 install -m 0644 .config /sources/linsoft-iso-kernel-out/boot/config-linsoft-kernel
+printf '%s\n' \"\$kver\" > /sources/linsoft-iso-kernel-out/boot/kernel-release
 for opt in SQUASHFS SQUASHFS_XZ SQUASHFS_XATTR OVERLAY_FS BLK_DEV_NVME USB_UAS MMC_BLOCK DRM_SIMPLEDRM; do
     grep -qx \"CONFIG_\$opt=y\" .config || { echo \"missing CONFIG_\$opt\" >&2; exit 1; }
 done
-echo 'Linsoft ISO kernel ready.'
+echo \"Linsoft ISO kernel \$kver ready (\$(find /sources/linsoft-iso-kernel-out/lib/modules -name '*.ko*' | wc -l) modules).\"
 "

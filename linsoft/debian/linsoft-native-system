@@ -19,7 +19,12 @@ status() {
     network=OFF
     for interface in /sys/class/net/*; do
         [[ ${interface##*/} != lo ]] || continue
-        if [[ -r $interface/operstate && $(cat "$interface/operstate") == up ]]; then network=LAN; fi
+        [[ -r $interface/operstate && $(cat "$interface/operstate") == up ]] || continue
+        if [[ -d $interface/wireless || -e $interface/phy80211 ]]; then
+            [[ $network == LAN ]] || network=WIFI
+        else
+            network=LAN
+        fi
     done
     battery=AC
     for device in /sys/class/power_supply/*; do
@@ -91,19 +96,19 @@ if [[ ${1:-} == --watch ]]; then
 fi
 summary=$(status)
 if action=$(zenity --list --title='Linsoft - systemovy panel' --width=640 --height=490 \
-    --text="Hlasitost / siet / bateria / USB zariadenia:\n$summary\nAC = bez zistenej baterie; LAN = aktivne rozhranie, nie test internetu." \
+    --text="Hlasitost / siet / bateria / USB zariadenia:\n$summary\nAC = bez zistenej baterie; LAN/WIFI = aktivne rozhranie, nie test internetu." \
     --column=ID --column=Ovladanie --hide-column=1 --print-column=1 \
     sound 'Zvukove zariadenia a hlasitost' mute 'Stlmit / obnovit zvuk' \
-    network 'Podrobnosti siete' renew 'Obnovit DHCP' devices 'USB a disky' \
+    wifi 'Wi-Fi siete - pripojit' network 'Podrobnosti siete' renew 'Obnovit DHCP' devices 'USB a disky' \
     mount 'Pripojit USB disk' unmount 'Bezpecne odpojit USB disk' \
-    notifications 'Oznamenia a historia' battery 'Podrobnosti baterie'); then :
+    notifications 'Oznamenia a historia' battery 'Podrobnosti baterie' diag 'Diagnostika hardveru'); then :
 else
     result=$?
     [[ $result == 1 ]] && exit 0
     fail "Systemovy dialog zlyhal: $result"
 fi
 case "$action" in
-    sound|network|renew|devices|mount|unmount) exec linsoft-settings "$action" ;;
+    sound|network|renew|devices|mount|unmount|wifi|diag) exec linsoft-settings "$action" ;;
     notifications) exec linsoft-native-center ;;
     mute) pactl set-sink-mute @DEFAULT_SINK@ toggle || fail 'Stlmenie zvuku zlyhalo.' ;;
     battery)

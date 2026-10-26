@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Diagnostika hardveru
+GenericName=Linsoft diagnostika
+Comment=Zistit ovladace, firmware, Wi-Fi, grafiku a zvuk
+Exec=/usr/local/bin/linsoft-diag
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Settings;
+Keywords=diagnostika;hardver;ovladac;firmware;

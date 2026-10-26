@@ -45,6 +45,27 @@ operate() {
             [[ -z $argument ]]
             lsblk -p -o NAME,TYPE,TRAN,RM,SIZE,FSTYPE,LABEL,MOUNTPOINTS
             ;;
+        wifi-status|wifi-scan)
+            [[ -z $argument ]]
+            /usr/sbin/linsoft-wifi "${action#wifi-}"
+            ;;
+        wifi-connect)
+            [[ $argument =~ ^([0-9a-f]{2}){1,32}\ (-|([0-9a-f]{2}){8,63})$ ]] ||
+                { echo 'Invalid Wi-Fi request' >&2; return 2; }
+            /usr/sbin/linsoft-wifi connect "${argument%% *}" "${argument#* }"
+            ;;
+        wifi-forget)
+            [[ $argument =~ ^([0-9a-f]{2}){1,32}$ ]] || { echo 'Invalid Wi-Fi network' >&2; return 2; }
+            /usr/sbin/linsoft-wifi forget "$argument"
+            ;;
+        diag)
+            [[ -z $argument || $argument == live ]] || return 2
+            if [[ $argument == live ]]; then
+                /usr/sbin/linsoft-hwreport --live
+            else
+                /usr/sbin/linsoft-hwreport
+            fi
+            ;;
         mount)
             device=$argument
             usb_device "$device" || { echo 'Only removable/USB block devices are accepted.' >&2; return 2; }

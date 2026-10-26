@@ -1,0 +1,104 @@
+#!/bin/bash
+# Linsoft hardware diagnostics (LFS host, root). Prints a report that helps
+# find missing drivers or firmware on a real computer.
+#   linsoft-hwreport            report to stdout
+#   linsoft-hwreport --live     also save it to the Live USB (FAT32 media)
+set -uo pipefail
+export PATH=/usr/bin:/usr/sbin:/bin:/sbin LC_ALL=C
+root=/opt/linsoft-debian
+[[ $EUID == 0 ]] || { echo 'Linsoft diagnostika: vyzaduje root.' >&2; exit 1; }
+debian() {
+    [[ -x $root$1 ]] || { echo "(nastroj ${1##*/} nie je nainstalovany)"; return 0; }
+    unshare --mount --propagation private /bin/bash -c '
+        r=$1; shift
+        mountpoint -q "$r/dev" || mount --rbind /dev "$r/dev"
+        mountpoint -q "$r/proc" || mount -t proc proc "$r/proc"
+        mountpoint -q "$r/sys" || mount --rbind /sys "$r/sys"
+        # lspci -k reads the host kernel modules.
+        [[ -d $r/usr/lib/modules ]] && mount --bind /lib/modules "$r/usr/lib/modules"
+        exec chroot "$r" "$@"' linsoft-hwreport "$root" "$@" 2>&1
+}
+section() { printf '\n===== %s =====\n' "$1"; }
+report() {
+    echo 'Linsoft OS - diagnostika hardveru'
+    echo "Vytvorene: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+    section 'System'
+    grep -E '^(PRETTY_NAME|LINSOFT_VERSION)=' /etc/os-release
+    echo "Jadro: $(uname -r)"
+    echo "Parametre: $(cat /proc/cmdline)"
+    if [[ -d /sys/firmware/efi ]]; then
+        sb=$(od -An -tu1 -j4 -N1 /sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c 2>/dev/null | tr -d ' ')
+        echo "Rezim: UEFI, Secure Boot: $([[ $sb == 1 ]] && echo zapnuty || echo vypnuty)"
+    else
+        echo 'Rezim: BIOS (Legacy/CSM)'
+    fi
+    [[ -d /run/linsoft-live ]] && echo 'Spustene z Live media'
+    for f in sys_vendor product_name product_version bios_vendor bios_version bios_date; do
+        [[ -r /sys/class/dmi/id/$f ]] && printf '%-16s %s\n' "$f:" "$(cat /sys/class/dmi/id/$f)"
+    done
+    section 'Procesor a pamat'
+    grep -m1 'model name' /proc/cpuinfo
+    echo "Jadra CPU: $(grep -c '^processor' /proc/cpuinfo)"
+    grep -E '^(MemTotal|MemAvailable):' /proc/meminfo
+    section 'PCI zariadenia a ovladace (lspci -nnk)'
+    debian /usr/bin/lspci -nnk
+    section 'PCI zariadenia BEZ ovladaca'
+    found=0
+    for dev in /sys/bus/pci/devices/*; do
+        [[ -e $dev/driver ]] && continue
+        class=$(cat "$dev/class")
+        case $class in 0x0600*|0x0604*|0x0601*|0x0680*|0x0b40*) continue ;; esac
+        printf '%s class=%s vendor=%s device=%s\n' "${dev##*/}" "$class" \
+            "$(cat "$dev/vendor")" "$(cat "$dev/device")"
+        found=1
+    done
+    (( found )) || echo 'Ziadne - vsetky dolezite zariadenia maju ovladac.'
+    section 'USB zariadenia'
+    debian /usr/bin/lsusb
+    section 'Graficka karta'
+    for card in /sys/class/drm/card[0-9]; do
+        [[ -e $card/device/driver ]] && echo "${card##*/}: $(basename "$(readlink -f "$card/device/driver")")"
+    done
+    grep -E 'LoadModule|Loading /usr/lib/xorg/modules/drivers|\(EE\)|modeset\(0\): Output .* connected' \
+        "$root/var/log/Xorg.linsoft.log" 2>/dev/null | head -n 30
+    section 'Siet'
+    ip -brief link
+    ip -brief address
+    ip route
+    rfkill list 2>/dev/null
+    /usr/sbin/linsoft-wifi status 2>&1
+    section 'Zvuk'
+    cat /proc/asound/cards 2>/dev/null || echo 'Ziadna zvukova karta.'
+    section 'Disky'
+    lsblk -o NAME,TYPE,TRAN,SIZE,FSTYPE,LABEL,MODEL
+    section 'Baterie a napajanie'
+    for d in /sys/class/power_supply/*; do
+        [[ -r $d/type ]] && echo "${d##*/}: $(cat "$d/type") $(cat "$d/capacity" 2>/dev/null)"
+    done
+    section 'Chybajuci firmware'
+    missing=$(dmesg | grep -iE 'firmware.*(fail|missing|not found|error)|direct firmware load' | tail -n 40)
+    echo "${missing:-Ziadne hlasenia o chybajucom firmvari.}"
+    section 'Chyby a varovania jadra'
+    dmesg --level=err,warn 2>/dev/null | tail -n 80
+    section 'Nacitane moduly'
+    cut -d' ' -f1 /proc/modules | sort | tr '\n' ' '
+    echo
+}
+
+output=$(mktemp)
+trap 'rm -f -- "$output"' EXIT
+report > "$output" 2>&1
+cat "$output"
+if [[ ${1:-} == --live && -r /run/linsoft-live/device ]]; then
+    medium=/run/linsoft-live/medium
+    name=linsoft-diagnostika-$(date +%Y%m%d-%H%M%S).txt
+    if [[ $(findmnt -no FSTYPE "$medium") == vfat ]] && mount -o remount,rw "$medium" 2>/dev/null; then
+        if sed 's/$/\r/' "$output" > "$medium/$name"; then
+            echo
+            echo "Sprava je ulozena aj na Live USB: $name"
+        fi
+        sync
+        mount -o remount,ro "$medium" 2>/dev/null
+    fi
+fi
+exit 0

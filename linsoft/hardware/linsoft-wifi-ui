@@ -1,0 +1,114 @@
+#!/bin/bash
+# Linsoft Wi-Fi: choose a network, enter its password and connect.
+set -uo pipefail
+title='Linsoft Wi-Fi'
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+error() { zenity --error --title="$title" --width=520 --text="$*"; }
+# Runs a quiet host action behind a progress window; output in $work/out.
+host() {
+    local text=$1
+    shift
+    (
+        LINSOFT_HOST_QUIET=1 linsoft-host-control "$@" > "$work/out" 2>&1
+        echo $? > "$work/rc"
+    ) | zenity --progress --pulsate --auto-close --no-cancel --title="$title" \
+        --width=420 --text="$text"
+    [[ $(cat "$work/rc" 2>/dev/null) == 0 ]]
+}
+hex() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n'; }
+text() { printf '%b' "$(sed 's/../\\x&/g' <<< "$1")"; }
+markup() { sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' <<< "$1"; }
+security_name() {
+    case $1 in
+        open) echo 'otvorena' ;;
+        wpa) echo 'WPA' ;;
+        wpa2) echo 'WPA2' ;;
+        wpa3) echo 'WPA3' ;;
+        enterprise) echo 'firemna (802.1X)' ;;
+        *) echo "$1" ;;
+    esac
+}
+connect() {
+    local ssid_hex=$1 security=$2 name pass pass_hex
+    name=$(text "$ssid_hex")
+    if [[ $security == enterprise ]]; then
+        error "Siet $(markup "$name") pouziva firemne overenie 802.1X, ktore Linsoft Wi-Fi zatial nepodporuje."
+        return 1
+    fi
+    pass_hex=-
+    if [[ $security != open ]]; then
+        while :; do
+            pass=$(zenity --entry --hide-text --title="$title" --width=460 \
+                --text="Heslo pre siet: $(markup "$name")") || return 1
+            if LC_ALL=C bash -c '[[ $1 =~ ^[[:print:]]{8,63}$ ]]' linsoft-wifi "$pass"; then
+                break
+            fi
+            error 'Heslo Wi-Fi musi mat 8 az 63 znakov (bez diakritiky).'
+        done
+        pass_hex=$(hex "$pass")
+        unset pass
+    fi
+    if host "Pripajam k sieti $(markup "$name")..." wifi-connect "$ssid_hex $pass_hex"; then
+        zenity --info --title="$title" --width=480 --text="$(markup "$(cat "$work/out")")"
+        return 0
+    fi
+    error "$(markup "$(cat "$work/out")")"
+    return 1
+}
+action=${1:-}
+case $action in
+    status)
+        host 'Zistujem stav Wi-Fi...' wifi-status
+        zenity --text-info --title="$title - stav" --width=620 --height=420 --filename="$work/out"
+        exit 0
+        ;;
+esac
+while :; do
+    if ! host 'Hladam Wi-Fi siete v okoli...' wifi-scan; then
+        error "$(markup "$(cat "$work/out")")"
+        exit 1
+    fi
+    rows=()
+    while IFS=$'\t' read -r signal security ssid_hex; do
+        [[ $ssid_hex =~ ^[0-9a-f]+$ ]] || continue
+        quality=$(( (signal + 100) * 2 ))
+        (( quality > 100 )) && quality=100
+        (( quality < 0 )) && quality=0
+        rows+=("$ssid_hex|$security" "$(text "$ssid_hex")" "$quality %" "$(security_name "$security")")
+    done < "$work/out"
+    rows+=(rescan '> Hladat znova' '' '' hidden '> Skryta siet...' '' ''
+           status '> Stav Wi-Fi a ulozene siete' '' '' forget '> Zabudnut ulozenu siet...' '' '')
+    choice=$(zenity --list --title="$title" --width=640 --height=520 \
+        --text='Vyberte siet a stlacte OK. Ulozene siete sa po restarte pripoja automaticky.' \
+        --column=ID --column=Siet --column=Signal --column=Zabezpecenie \
+        --hide-column=1 --print-column=1 "${rows[@]}") || exit 0
+    case $choice in
+        rescan|'') continue ;;
+        status)
+            host 'Zistujem stav Wi-Fi...' wifi-status
+            zenity --text-info --title="$title - stav" --width=620 --height=420 --filename="$work/out"
+            ;;
+        hidden)
+            name=$(zenity --entry --title="$title" --text='Nazov skrytej siete (SSID):') || continue
+            [[ -n $name && $(printf '%s' "$name" | wc -c) -le 32 ]] || { error 'Nazov siete musi mat 1 az 32 bajtov.'; continue; }
+            if zenity --question --title="$title" --text='Je siet chranena heslom?'; then
+                connect "$(hex "$name")" wpa2 && exit 0
+            else
+                connect "$(hex "$name")" open && exit 0
+            fi
+            ;;
+        forget)
+            name=$(zenity --entry --title="$title" --text='Nazov siete, ktoru chcete zabudnut:') || continue
+            [[ -n $name ]] || continue
+            if host 'Mazem ulozenu siet...' wifi-forget "$(hex "$name")"; then
+                zenity --info --title="$title" --text="$(markup "$(cat "$work/out")")"
+            else
+                error "$(markup "$(cat "$work/out")")"
+            fi
+            ;;
+        *'|'*)
+            connect "${choice%%|*}" "${choice#*|}" && exit 0
+            ;;
+    esac
+done

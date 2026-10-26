@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Aktualizacie Linsoft OS
+Comment=Skontrolovat novu verziu Linsoft OS
+Exec=/usr/local/bin/linsoft-update-check
+Icon=system-software-update
+Terminal=false
+Categories=System;Settings;
+Keywords=aktualizacia;update;verzia;

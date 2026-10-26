@@ -1,0 +1,226 @@
+#!/bin/bash
+# Linsoft Wi-Fi (LFS host, root). Uses wpa_supplicant/wpa_cli/iw from the
+# Debian application environment; dhcpcd on the host configures addresses.
+#   linsoft-wifi start                 start for all wireless adapters (boot)
+#   linsoft-wifi stop
+#   linsoft-wifi status
+#   linsoft-wifi scan                  SIGNAL<TAB>SECURITY<TAB>SSID-HEX lines
+#   linsoft-wifi connect SSIDHEX PASSHEX|-
+#   linsoft-wifi forget SSIDHEX
+set -uo pipefail
+export PATH=/usr/bin:/usr/sbin:/bin:/sbin LC_ALL=C
+root=/opt/linsoft-debian
+state=/var/lib/linsoft-wifi
+conf=$state/wpa_supplicant.conf
+ctrl=$state/run
+fail() { echo "Linsoft Wi-Fi: $*" >&2; exit 1; }
+[[ $EUID == 0 ]] || fail 'vyzaduje root.'
+[[ -x $root/usr/sbin/wpa_supplicant && -x $root/usr/sbin/wpa_cli ]] ||
+    fail 'wpa_supplicant nie je nainstalovany v prostredi Debian.'
+
+interfaces() {
+    local d
+    for d in /sys/class/net/*; do
+        [[ -d $d/wireless || -e $d/phy80211 ]] && echo "${d##*/}"
+    done
+}
+first_interface() {
+    local dev
+    dev=$(interfaces | head -n 1)
+    [[ -n $dev ]] || fail 'Nenasiel sa ziadny Wi-Fi adapter (chyba ovladac alebo firmware, pripadne je Wi-Fi vypnuta klavesom).'
+    echo "$dev"
+}
+cli() {
+    local dev=$1
+    shift
+    chroot "$root" /usr/sbin/wpa_cli -p "$ctrl" -i "$dev" "$@"
+}
+in_debian() {
+    # Private mount namespace: /dev, /proc and /sys only for the chrooted tool.
+    unshare --mount --propagation private /bin/bash -c '
+        r=$1; shift
+        mountpoint -q "$r/dev" || mount --rbind /dev "$r/dev"
+        mountpoint -q "$r/proc" || mount -t proc proc "$r/proc"
+        mountpoint -q "$r/sys" || mount --rbind /sys "$r/sys"
+        exec chroot "$r" "$@"' linsoft-wifi "$root" "$@"
+}
+ensure() {
+    local dev=$1 attempt
+    install -d -m 0700 "$root$state" "$root$ctrl"
+    if [[ ! -s $root$conf ]]; then
+        printf 'ctrl_interface=%s\nupdate_config=1\nap_scan=1\n' "$ctrl" > "$root$conf"
+        chmod 0600 "$root$conf"
+    fi
+    rfkill unblock wifi 2>/dev/null
+    ip link set "$dev" up 2>/dev/null
+    cli "$dev" ping 2>/dev/null | grep -q PONG && return 0
+    rm -f "$root$ctrl/$dev"
+    in_debian /usr/sbin/wpa_supplicant -B -s -i "$dev" -c "$conf" \
+        -P "$state/wpa-$dev.pid" -D nl80211,wext >/dev/null 2>&1 ||
+        fail "wpa_supplicant sa nepodarilo spustit pre $dev."
+    for attempt in $(seq 1 25); do
+        cli "$dev" ping 2>/dev/null | grep -q PONG && return 0
+        sleep .2
+    done
+    fail "wpa_supplicant pre $dev neodpoveda."
+}
+hex_to_text() {
+    printf '%b' "$(sed 's/../\\x&/g' <<< "$1")"
+}
+# iw prints SSIDs with \xNN escapes; convert them to lowercase hex bytes.
+iw_ssid_to_hex() {
+    local s=$1 out='' c i=0
+    while (( i < ${#s} )); do
+        c=${s:i:1}
+        if [[ $c == '\' && ${s:i+1:1} == x ]]; then
+            out+=${s:i+2:2}
+            i=$((i + 4))
+        else
+            out+=$(printf '%02x' "'$c")
+            i=$((i + 1))
+        fi
+    done
+    tr 'A-F' 'a-f' <<< "$out"
+}
+# wpa_supplicant prints a stored SSID either as "text" or as plain hex.
+config_ssid_to_hex() {
+    local value=$1
+    if [[ $value == \"*\" ]]; then
+        value=${value:1:${#value}-2}
+        printf '%s' "$value" | od -An -tx1 | tr -d ' \n'
+    else
+        tr 'A-F' 'a-f' <<< "$value"
+    fi
+}
+network_ids_for() {
+    local dev=$1 want=$2 id ssid
+    while IFS=$'\t' read -r id _; do
+        [[ $id =~ ^[0-9]+$ ]] || continue
+        ssid=$(cli "$dev" get_network "$id" ssid 2>/dev/null)
+        [[ $(config_ssid_to_hex "$ssid") == "$want" ]] && echo "$id"
+    done < <(cli "$dev" list_networks 2>/dev/null)
+}
+ok() {
+    local dev=$1 reply
+    shift
+    reply=$(cli "$dev" "$@" | tail -n 1)
+    [[ $reply == OK ]] || fail "wpa_supplicant odmietol nastavenie ${3:-$1}."
+}
+
+action=${1:-}
+case "$action" in
+    start)
+        # Adapters appear after udev has loaded drivers and firmware.
+        for attempt in $(seq 1 20); do
+            [[ -n $(interfaces) ]] && break
+            sleep .5
+        done
+        for dev in $(interfaces); do ensure "$dev"; done
+        exit 0
+        ;;
+    stop)
+        for dev in $(interfaces); do cli "$dev" terminate >/dev/null 2>&1; done
+        exit 0
+        ;;
+    status)
+        devs=$(interfaces)
+        if [[ -z $devs ]]; then
+            echo 'Wi-Fi adapter: nenajdeny'
+            echo 'Skontrolujte prepinac alebo klaves Wi-Fi, pripadne spustite Diagnostiku hardveru.'
+            exit 0
+        fi
+        for dev in $devs; do
+            ensure "$dev"
+            echo "Wi-Fi adapter: $dev"
+            cli "$dev" status | grep -E '^(wpa_state|ssid|ip_address|key_mgmt|freq)=' |
+                sed 's/^wpa_state=/stav=/'
+            echo 'Ulozene siete:'
+            cli "$dev" list_networks | tail -n +2 | cut -f2 | sed 's/^/  /'
+            if rfkill list wifi 2>/dev/null | grep -qi 'blocked: yes'; then
+                echo 'Wi-Fi je zablokovana (rfkill / klaves lietadlo).'
+            fi
+        done
+        ;;
+    scan)
+        dev=$(first_interface)
+        ensure "$dev"
+        cli "$dev" scan >/dev/null
+        sleep 5
+        chroot "$root" /usr/sbin/iw dev "$dev" scan dump 2>/dev/null | awk '
+            /^BSS / { if (ssid != "") print signal "\t" sec "\t" ssid; ssid=""; sec="open"; signal=-100 }
+            /^\tsignal:/ { signal=int($2) }
+            /^\tSSID: / { ssid=substr($0, index($0, "SSID: ") + 6) }
+            /^\tRSN:/ { sec="wpa2" }
+            /^\tWPA:/ { if (sec == "open") sec="wpa" }
+            /Authentication suites:.*SAE/ { if (sec != "enterprise") sec="wpa3" }
+            /Authentication suites:.*802\.1X/ { sec="enterprise" }
+            END { if (ssid != "") print signal "\t" sec "\t" ssid }' |
+        while IFS=$'\t' read -r signal sec ssid; do
+            printf '%s\t%s\t%s\n' "$signal" "$sec" "$(iw_ssid_to_hex "$ssid")"
+        done | sort -t $'\t' -k1,1nr | awk -F '\t' '!seen[$3]++'
+        ;;
+    connect)
+        ssid_hex=${2:-}
+        pass_hex=${3:-}
+        [[ $ssid_hex =~ ^([0-9a-f]{2}){1,32}$ ]] || fail 'Neplatny nazov siete.'
+        [[ $pass_hex == - || $pass_hex =~ ^([0-9a-f]{2}){8,63}$ ]] || fail 'Heslo musi mat 8 az 63 znakov.'
+        dev=$(first_interface)
+        ensure "$dev"
+        for id in $(network_ids_for "$dev" "$ssid_hex"); do cli "$dev" remove_network "$id" >/dev/null; done
+        id=$(cli "$dev" add_network | tail -n 1)
+        [[ $id =~ ^[0-9]+$ ]] || fail 'Sietovy profil sa nepodarilo vytvorit.'
+        ok "$dev" set_network "$id" ssid "$ssid_hex"
+        ok "$dev" set_network "$id" scan_ssid 1
+        if [[ $pass_hex == - ]]; then
+            ok "$dev" set_network "$id" key_mgmt NONE
+        else
+            pass=$(hex_to_text "$pass_hex")
+            [[ $pass =~ ^[[:print:]]{8,63}$ ]] || fail 'Heslo smie obsahovat iba tlacitelne znaky ASCII (8 az 63).'
+            ok "$dev" set_network "$id" key_mgmt 'WPA-PSK WPA-PSK-SHA256 SAE'
+            ok "$dev" set_network "$id" ieee80211w 1
+            ok "$dev" set_network "$id" psk "\"$pass\""
+        fi
+        ok "$dev" select_network "$id"
+        state=''
+        for attempt in $(seq 1 40); do
+            state=$(cli "$dev" status | sed -n 's/^wpa_state=//p')
+            [[ $state == COMPLETED ]] && break
+            sleep .5
+        done
+        if [[ $state != COMPLETED ]]; then
+            cli "$dev" remove_network "$id" >/dev/null
+            cli "$dev" enable_network all >/dev/null
+            cli "$dev" save_config >/dev/null
+            fail "Pripojenie zlyhalo (stav: ${state:-nezname}). Skontrolujte heslo a signal."
+        fi
+        cli "$dev" enable_network all >/dev/null
+        cli "$dev" save_config >/dev/null
+        /usr/sbin/dhcpcd -n "$dev" >/dev/null 2>&1 || /usr/sbin/dhcpcd -b "$dev" >/dev/null 2>&1
+        address=''
+        for attempt in $(seq 1 30); do
+            address=$(ip -4 -brief address show dev "$dev" | awk '{print $3}')
+            [[ -n $address ]] && break
+            sleep .5
+        done
+        echo "Pripojene k sieti: $(hex_to_text "$ssid_hex")"
+        echo "Adapter: $dev"
+        echo "IP adresa: ${address:-zatial nepridelena (DHCP pokracuje na pozadi)}"
+        echo 'Siet je ulozena a po restarte sa pripoji automaticky.'
+        ;;
+    forget)
+        ssid_hex=${2:-}
+        [[ $ssid_hex =~ ^([0-9a-f]{2}){1,32}$ ]] || fail 'Neplatny nazov siete.'
+        dev=$(first_interface)
+        ensure "$dev"
+        removed=0
+        for id in $(network_ids_for "$dev" "$ssid_hex"); do
+            cli "$dev" remove_network "$id" >/dev/null && removed=$((removed + 1))
+        done
+        cli "$dev" save_config >/dev/null
+        echo "Zabudnute profily siete $(hex_to_text "$ssid_hex"): $removed"
+        ;;
+    *)
+        echo 'Pouzitie: linsoft-wifi start|stop|status|scan|connect SSIDHEX PASSHEX|-|forget SSIDHEX' >&2
+        exit 2
+        ;;
+esac

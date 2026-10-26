@@ -20,8 +20,22 @@ on its own full-screen console and returns to the desktop when finished.
 
 ## Installer
 
-`linsoft-install` erases the whole selected disk (minimum 12 GiB; the Live
-medium itself is never offered) after the user types `ANO`, then creates:
+`linsoft-install` offers two modes (the Live medium itself is never offered):
+
+* **Whole disk** (minimum 12 GiB) – after the user types `ANO` the disk is
+  erased and gets the layout below.
+* **Next to Windows** – only when started through UEFI on a GPT disk that
+  already has an EFI System Partition and at least 12 GiB of unpartitioned
+  space (create it in Windows: Disk Management → Shrink Volume). Existing
+  partitions are never resized or formatted: a new ext4 partition is appended
+  into the largest free area, the loaders go to `\EFI\linsoft\` (shim as
+  `shimx64.efi`), the signed GRUB's `\EFI\BOOT\grub.cfg` stub is written (an
+  existing one is kept as `grub.cfg.pred-linsoft`), `efibootmgr` adds a
+  "Linsoft OS" NVRAM entry, GRUB gets a `Windows` entry chainloading
+  `bootmgfw.efi`, BIOS GRUB is skipped and the hardware clock is set to local
+  time (`UTC=0`) like Windows.
+
+Whole-disk layout:
 
 1. 1 MiB BIOS boot partition (GRUB for BIOS),
 2. 512 MiB EFI System Partition (FAT32, `EFI/BOOT/` with shim, signed GRUB,
@@ -32,8 +46,14 @@ It copies the pristine system from the squashfs (changes made in the Live
 session are not copied), writes `fstab` by UUID, points GRUB at the new
 `PARTUUID`, generates new machine IDs and installs GRUB for BIOS and UEFI. The
 EFI loader uses the removable fallback path, so no NVRAM entry is needed.
-Secure Boot may stay enabled (see below). Dual boot and custom partitioning
-are not supported.
+Secure Boot may stay enabled (see below). Custom partitioning is not supported.
+
+The installer also asks for a password for the user `linsoft`. When one is
+set, it is stored with `chpasswd`, the `autologin`/`passwordless` markers are
+removed and `/etc/linsoft-apps/sudoers-password` becomes the sudoers policy:
+the Native desktop starts behind the XScreenSaver lock and administrative
+actions ask for the password (Wi-Fi, diagnostics and device actions do not).
+An empty password keeps the automatic login of the Live system.
 
 ## Secure Boot
 
@@ -65,19 +85,32 @@ keep it outside the repository and reuse it for every release, otherwise
 users have to enroll a new key. A kernel rebuilt on an installed system is
 unsigned and only boots with Secure Boot off.
 
-The installed system is the same Native edition as the source image, including
-its autologin/passwordless fixed-action opt-ins (Native requires autologin).
-Anyone with physical access can use the desktop and the fixed system helpers,
-so do not install it on a shared computer without reviewing
+Without an installer password the installed system keeps the autologin and
+passwordless fixed-action opt-ins of the Live system. Anyone with physical
+access can then use the desktop and the fixed system helpers, so set a
+password on a shared computer and review
 [Passwords and recovery](../../README.md#passwords-and-recovery).
 
 ## How it works
 
-* `build-iso-kernel` copies the LFS kernel tree to
-  `/mnt/lfs/sources/linsoft-iso-kernel` and enables squashfs (with xattrs),
-  overlayfs, NVMe, USB UAS, SD/MMC and simpledrm as built-ins. The original
-  tree is left untouched. The ISO kernel replaces `/boot/linsoft-kernel` in the
-  ISO system only.
+* `build-iso-kernel` downloads the long-term Linux release (default 6.18.58,
+  `LINSOFT_KERNEL_VERSION`), verifies its SHA-256, reuses the LFS kernel
+  configuration and applies `kernel-hardware.list` (`y|m|n OPTION`; `!` lines
+  must hold afterwards): squashfs, overlayfs, NVMe/VMD, USB UAS, SD/MMC,
+  simpledrm, Wi-Fi (Intel, Realtek, MediaTek, Atheros, Broadcom), amdgpu,
+  nouveau, i915/xe, I2C HID touchpads, SOF/ACP audio and Bluetooth. The result
+  goes to `/mnt/lfs/sources/linsoft-iso-kernel-out`; `boot/kernel-release`
+  tells `build-live-iso` the module directory.
+* `install-hardware-support ROOTFS KVER` runs inside `build-live-iso`: it adds
+  Debian `non-free-firmware`, installs firmware packages, `wpasupplicant`,
+  `iw`, `pciutils`, `usbutils`, `alsa-ucm-conf` and `efibootmgr` into the
+  Debian layer (APT cache `/var/tmp/linsoft-apt-cache`), turns host
+  `/lib/firmware` into a link to the Debian firmware, installs the host tools
+  `linsoft-wifi` (wpa_supplicant service, init script `S24linsoft-wifi`) and
+  `linsoft-hwreport`, the desktop tools `linsoft-wifi-ui`, `linsoft-diag` and
+  `linsoft-update-check`, and writes the version from `VERSION` into
+  `os-release` (`LINSOFT_VERSION`). The ISO must stay below 2 GiB (GitHub
+  Releases limit); `build-live-iso` checks it.
 * `initramfs-init` (static BusyBox) finds the medium by the build-specific
   `/linsoft/live/<id>.id` marker, mounts `rootfs.squashfs` under a RAM
   overlayfs and adds the Live-only files from `live-overlay/` to the RAM layer.

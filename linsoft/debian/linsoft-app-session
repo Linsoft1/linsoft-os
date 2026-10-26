@@ -1,6 +1,13 @@
 #!/bin/bash
 set -euo pipefail
-if [[ -f /etc/linsoft-apps/native-virgl ]]; then
+gpu_driver=''
+for card in /sys/class/drm/card[0-9]*/device/driver; do
+    [[ -e $card ]] || continue
+    gpu_driver=$(basename "$(readlink -f "$card")")
+    break
+done
+if [[ -f /etc/linsoft-apps/native-virgl || $gpu_driver =~ ^(i915|xe|amdgpu|radeon|nouveau)$ ]]; then
+    # Real GPU (or virgl): use hardware OpenGL through Mesa.
     unset LIBGL_ALWAYS_SOFTWARE
 else
     export LIBGL_ALWAYS_SOFTWARE=1
@@ -101,6 +108,28 @@ if [[ ${LINSOFT_PRIMARY:-0} == 1 && -f /etc/linsoft-apps/desktop-extras ]]; then
         fi
         linsoft-update-notice &
         extras+=("$!")
+        if command -v linsoft-update-check >/dev/null; then
+            linsoft-update-check --notify &
+            extras+=("$!")
+        fi
+    fi
+fi
+if $native && [[ -f /etc/linsoft-apps/professional && ! -f /etc/linsoft-apps/autologin ]]; then
+    # Password login for Native: the PAM-authenticated XScreenSaver unlock
+    # dialog guards the session before the desktop and applications start.
+    for ((attempt=0; attempt<150; ++attempt)); do
+        if xscreensaver-command -time >/dev/null 2>&1; then break; fi
+        sleep .1
+    done
+    if xscreensaver-command -lock >/dev/null 2>&1; then
+        sleep .5
+        xscreensaver-command -deactivate >/dev/null 2>&1 || true
+        while read -r event _; do
+            [[ $event == UNBLANK ]] && break
+        done < <(xscreensaver-command -watch)
+    else
+        echo 'Linsoft: XScreenSaver lock unavailable; refusing to open the desktop.' >&2
+        exit 1
     fi
 fi
 if $native; then

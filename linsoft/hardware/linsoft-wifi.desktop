@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Wi-Fi siete
+GenericName=Linsoft Wi-Fi
+Comment=Vyhladat Wi-Fi siete a pripojit sa heslom
+Exec=/usr/local/bin/linsoft-wifi-ui
+Icon=network-wireless
+Terminal=false
+Categories=Settings;Network;
+Keywords=wifi;wlan;siet;internet;

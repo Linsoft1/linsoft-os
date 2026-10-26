@@ -54,14 +54,18 @@ cat <<'EOF'
  ==============================================================
                      Instalator Linsoft OS
  ==============================================================
- Linsoft OS sa nainstaluje na cely vybrany disk. VSETKY DATA na
- tomto disku budu NAVZDY VYMAZANE. Zalohujte si data vopred.
+ Sposoby instalacie:
+  1) Cely disk - VSETKY DATA na disku budu NAVZDY VYMAZANE.
+  2) Vedla Windows (UEFI) - do nepouziteho miesta na disku, ktore
+     ste vopred uvolnili vo Windows (Sprava diskov -> Zmensit
+     zvazok). Windows a jeho data ostanu nedotknute a pri starte
+     sa da vybrat Linsoft OS alebo Windows.
 
  Instalovany system bude rovnaky ako po spusteni Live media
  (bez zmien urobenych v Live rezime). Podporuje BIOS aj UEFI,
  vratane zapnuteho Secure Boot (kluc Linsoft zaregistrovany pri
  prvom spusteni Live media plati aj pre nainstalovany system).
- Prihlasenie je automaticke bez hesla, rovnako ako v edicii Native.
+ Zalohujte si dolezite data vopred.
 EOF
 echo
 [[ $EUID == 0 ]] || die 'Instalator musi bezat ako root.'
@@ -78,6 +82,29 @@ if [[ -r $live/device ]]; then
     medium_disk=$(lsblk -ndo PKNAME "$medium" 2>/dev/null)
     [[ -n $medium_disk ]] && medium_disk=/dev/$medium_disk || medium_disk=$medium
 fi
+
+esp_type=c12a7328-f81f-11d2-ba4b-00a0c93ec93b
+linux_type=0FC63DAF-8483-4772-8E79-3D69C47D8E4D
+# Prints "START SECTORS" of the largest unpartitioned GPT area (1 MiB aligned).
+largest_free() {
+    local best_start=0 best_size=0 start end size
+    while read -r start end _; do
+        [[ $start =~ ^[0-9]+$ && $end =~ ^[0-9]+$ ]] || continue
+        start=$(( (start + 2047) / 2048 * 2048 ))
+        size=$(( (end + 1 - start) / 2048 * 2048 ))
+        (( size > best_size )) && { best_start=$start; best_size=$size; }
+    done < <(sfdisk -F "$1" 2>/dev/null)
+    echo "$best_start $best_size"
+}
+find_esp() {
+    local part
+    for part in $(lsblk -nrpo NAME,TYPE "$1" | awk '$2 == "part" {print $1}'); do
+        [[ $(blkid -p -s PART_ENTRY_TYPE -o value "$part" 2>/dev/null) == "$esp_type" ]] &&
+            { echo "$part"; return 0; }
+    done
+    return 1
+}
+partitions() { lsblk -nrpo NAME,TYPE "$1" | awk '$2 == "part" {print $1}' | sort; }
 
 disks=()
 while read -r name type size ro; do
@@ -103,13 +130,89 @@ disk=${disks[$((choice - 1))]}
 echo
 lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS "$disk"
 echo
-echo " POZOR: disk $disk bude uplne vymazany."
+
+# Side-by-side install: UEFI start, GPT disk with an EFI partition and
+# enough unpartitioned space. Existing partitions are never modified.
+mode=whole
+free_start=0 free_sectors=0 existing_esp=''
+sector_size=$(blockdev --getss "$disk" 2>/dev/null || echo 512)
+if [[ -d /sys/firmware/efi ]] && [[ $(blkid -p -s PTTYPE -o value "$disk" 2>/dev/null) == gpt ]] &&
+    existing_esp=$(find_esp "$disk"); then
+    read -r free_start free_sectors < <(largest_free "$disk")
+    free_gib=$(( free_sectors * sector_size / 1024 / 1024 / 1024 ))
+    echo " Na disku je EFI oddiel $existing_esp a $free_gib GiB nepouziteho miesta."
+    echo '   1) Cely disk (vsetko na disku sa vymaze)'
+    if (( free_sectors * sector_size >= min_bytes )); then
+        echo "   2) Vedla Windows / ineho systemu do volneho miesta ($free_gib GiB)"
+    else
+        echo '   2) Vedla Windows - NEDOSTUPNE: treba aspon 12 GiB volneho miesta.'
+        echo '      Vo Windows: Sprava diskov -> pravy klik na C: -> Zmensit zvazok.'
+    fi
+    read -r -p ' Sposob instalacie (1/2, q = koniec): ' answer || finish 0
+    case "$answer" in
+        1) mode=whole ;;
+        2) (( free_sectors * sector_size >= min_bytes )) ||
+               { echo ' Instalacia zrusena.'; finish 0; }
+           mode=side ;;
+        *) echo ' Instalacia zrusena.'; finish 0 ;;
+    esac
+elif [[ -d /sys/firmware/efi ]]; then
+    echo ' (Instalacia vedla Windows vyzaduje GPT disk s EFI oddielom.)'
+else
+    echo ' (Instalacia vedla Windows je dostupna len pri starte cez UEFI.)'
+fi
+
+echo
+echo ' Heslo pouzivatela "linsoft" (chrani prihlasenie, uzamknutie obrazovky'
+echo ' a spravu systemu). Prazdne heslo = automaticke prihlasenie bez hesla.'
+password=''
+while :; do
+    read -r -s -p ' Nove heslo: ' password || finish 0; echo
+    [[ -z $password ]] && break
+    if (( ${#password} < 4 )) || [[ $password == *:* || $password =~ [[:cntrl:]] ]]; then
+        echo ' Heslo musi mat aspon 4 znaky a nesmie obsahovat dvojbodku.'
+        continue
+    fi
+    read -r -s -p ' Zopakujte heslo: ' again || finish 0; echo
+    [[ $again == "$password" ]] && break
+    echo ' Hesla sa nezhoduju, skuste znova.'
+done
+unset again
+
+echo
+if [[ $mode == whole ]]; then
+    echo " POZOR: disk $disk bude uplne vymazany."
+else
+    echo " Linsoft OS sa vytvori v nepouzitom mieste disku $disk."
+    echo " Existujuce oddiely ostanu nezmenene; EFI oddiel $existing_esp ziska"
+    echo ' novy zaznam "Linsoft OS" a ponuka GRUB bude obsahovat aj Windows.'
+fi
 read -r -p ' Pre pokracovanie napiste ANO: ' confirm || finish 0
 [[ $confirm == ANO ]] || { echo ' Instalacia zrusena.'; finish 0; }
-[[ -z $(lsblk -nro MOUNTPOINTS "$disk" | tr -d '[:space:]') ]] ||
-    die "Disk $disk je pripojeny; odpojte ho a skuste znova."
+if [[ $mode == whole ]]; then
+    [[ -z $(lsblk -nro MOUNTPOINTS "$disk" | tr -d '[:space:]') ]] ||
+        die "Disk $disk je pripojeny; odpojte ho a skuste znova."
+else
+    [[ -z $(lsblk -nro MOUNTPOINTS "$existing_esp" | tr -d '[:space:]') ]] ||
+        die "EFI oddiel $existing_esp je pripojeny; odpojte ho a skuste znova."
+fi
 
 echo; echo '[1/5] Vytvaram oddiely...'
+if [[ $mode == side ]]; then
+    before=$(partitions "$disk")
+    echo "start=$free_start, size=$free_sectors, type=$linux_type, name=\"Linsoft OS\"" |
+        sfdisk -q --append --no-reread "$disk" || die 'Vytvorenie oddielu zlyhalo.'
+    partx -a "$disk" 2>/dev/null; partx -u "$disk" 2>/dev/null
+    udevadm settle 2>/dev/null
+    root=''
+    for attempt in $(seq 1 50); do
+        root=$(comm -13 <(echo "$before") <(partitions "$disk") | head -1)
+        [[ -b $root ]] && break
+        sleep .2
+    done
+    [[ -b $root ]] || die 'Novy oddiel sa nezobrazil (restartujte a skuste znova).'
+    esp=$existing_esp
+else
 wipefs -a -q "$disk" || die 'Vymazanie podpisov disku zlyhalo.'
 sfdisk -q --wipe always --wipe-partitions always "$disk" <<'EOF' || die 'Rozdelenie disku zlyhalo.'
 label: gpt
@@ -125,9 +228,12 @@ for attempt in $(seq 1 50); do
     sleep .2
 done
 [[ -b ${esp:-} && -b ${root:-} ]] || die 'Nove oddiely sa nezobrazili.'
+fi
 
 echo '[2/5] Formatujem...'
-"$assets/mkfs.fat" -F 32 -n LINSOFT-EFI "$esp" >/dev/null || die 'Formatovanie EFI oddielu zlyhalo.'
+if [[ $mode == whole ]]; then
+    "$assets/mkfs.fat" -F 32 -n LINSOFT-EFI "$esp" >/dev/null || die 'Formatovanie EFI oddielu zlyhalo.'
+fi
 mkfs.ext4 -F -q -L Linsoft "$root" || die 'Formatovanie systemoveho oddielu zlyhalo.'
 
 echo '[3/5] Kopirujem system (niekolko minut)...'
@@ -164,22 +270,86 @@ for id_file in "$target/etc/machine-id" "$target/opt/linsoft-debian/etc/machine-
         tr -d '-' < /proc/sys/kernel/random/uuid > "$id_file"
     fi
 done
+debian_target=$target/opt/linsoft-debian
+if [[ -n $password ]]; then
+    echo '      nastavujem heslo a prihlasenie heslom...'
+    [[ -f $debian_target/etc/linsoft-apps/sudoers-password ]] ||
+        die 'Na mediu chyba sudoers-password (pouzite ISO 1.2 alebo novsie).'
+    printf 'linsoft:%s\n' "$password" | unshare -m /bin/bash -c '
+        mount --rbind /dev "$1/dev" && mount -t proc proc "$1/proc" &&
+        chroot "$1" /usr/sbin/chpasswd' _ "$debian_target" ||
+        die 'Nastavenie hesla zlyhalo.'
+    rm -f "$debian_target/etc/linsoft-apps/autologin" \
+        "$debian_target/etc/linsoft-apps/passwordless" \
+        "$debian_target/etc/linsoft-apps/first-login"
+    install -m 0440 "$debian_target/etc/linsoft-apps/sudoers-password" \
+        "$debian_target/etc/sudoers.d/linsoft" || die 'Zapis sudoers zlyhal.'
+fi
+unset password
+if [[ $mode == side ]]; then
+    # Windows keeps the hardware clock in local time.
+    sed -i 's/^UTC=.*/UTC=0/' "$target/etc/sysconfig/clock"
+    esp_uuid=$(blkid -s UUID -o value "$esp")
+    [[ -n $esp_uuid ]] || die 'UUID EFI oddielu sa nepodarilo zistit.'
+fi
 
-echo '[5/5] Instalujem zavadzac GRUB (BIOS + UEFI)...'
-grub-install --target=i386-pc --boot-directory="$target/boot" --recheck "$disk" \
-    >/dev/null 2>&1 || die 'Instalacia GRUB pre BIOS zlyhala.'
+echo '[5/5] Instalujem zavadzac GRUB...'
 rm -rf "$target/boot/grub/x86_64-efi"
 mkdir -p "$esp_mount"
 mount -t vfat "$esp" "$esp_mount" || die 'EFI oddiel sa neda pripojit.'
-mkdir -p "$esp_mount/EFI/BOOT"
-for f in $efi_files; do
-    cp "$assets/efi/$f" "$esp_mount/EFI/BOOT/$f" || die 'Kopirovanie EFI zavadzaca zlyhalo.'
-done
-cat > "$esp_mount/EFI/BOOT/grub.cfg" <<EOF
-search --no-floppy --fs-uuid --set=root $uuid
+grub_stub="search --no-floppy --fs-uuid --set=root $uuid
 set prefix=(\$root)/boot/grub
-configfile \$prefix/grub.cfg
+configfile \$prefix/grub.cfg"
+if [[ $mode == whole ]]; then
+    grub-install --target=i386-pc --boot-directory="$target/boot" --recheck "$disk" \
+        >/dev/null 2>&1 || die 'Instalacia GRUB pre BIOS zlyhala.'
+    mkdir -p "$esp_mount/EFI/BOOT"
+    for f in $efi_files; do
+        cp "$assets/efi/$f" "$esp_mount/EFI/BOOT/$f" || die 'Kopirovanie EFI zavadzaca zlyhalo.'
+    done
+    printf '%s\n' "$grub_stub" > "$esp_mount/EFI/BOOT/grub.cfg"
+else
+    dir=$esp_mount/EFI/linsoft
+    mkdir -p "$dir" || die 'EFI oddiel je plny alebo len na citanie.'
+    cp "$assets/efi/BOOTX64.EFI" "$dir/shimx64.efi" &&
+        cp "$assets/efi/grubx64.efi" "$assets/efi/mmx64.efi" \
+           "$assets/efi/linsoft-secureboot.cer" "$dir/" ||
+        die 'Kopirovanie EFI zavadzaca zlyhalo.'
+    # The signed GRUB reads its configuration from \EFI\BOOT on the ESP.
+    mkdir -p "$esp_mount/EFI/BOOT"
+    [[ -f $esp_mount/EFI/BOOT/grub.cfg ]] &&
+        cp "$esp_mount/EFI/BOOT/grub.cfg" "$esp_mount/EFI/BOOT/grub.cfg.pred-linsoft"
+    printf '%s\n' "$grub_stub" > "$esp_mount/EFI/BOOT/grub.cfg"
+    # Firmware without a fallback loader still finds Linsoft.
+    if [[ ! -e $esp_mount/EFI/BOOT/BOOTX64.EFI ]]; then
+        cp "$assets/efi/BOOTX64.EFI" "$esp_mount/EFI/BOOT/BOOTX64.EFI"
+        cp --update=none "$assets/efi/grubx64.efi" "$assets/efi/mmx64.efi" "$esp_mount/EFI/BOOT/"
+    fi
+    if [[ -f $esp_mount/EFI/Microsoft/Boot/bootmgfw.efi ]]; then
+        cat >> "$target/boot/grub/grub.cfg" <<EOF
+
+menuentry 'Windows' --id windows {
+    search --no-floppy --fs-uuid --set=root $esp_uuid
+    chainloader /EFI/Microsoft/Boot/bootmgfw.efi
+}
 EOF
+    fi
+    part_number=$(<"/sys/class/block/${root##*/}/partition")
+    esp_number=$(<"/sys/class/block/${esp##*/}/partition")
+    debian=/opt/linsoft-debian
+    if unshare -m /bin/bash -c '
+        mount --rbind /dev "$1/dev" && mount -t proc proc "$1/proc" &&
+        mount -t sysfs sysfs "$1/sys" &&
+        mount -t efivarfs efivarfs "$1/sys/firmware/efi/efivars" &&
+        chroot "$1" efibootmgr -q -c -d "$2" -p "$3" -L "Linsoft OS" \
+            -l "\\EFI\\linsoft\\shimx64.efi"' _ "$debian" "$disk" "$esp_number"; then
+        echo '      zaznam "Linsoft OS" pridany do UEFI (prva volba pri starte).'
+    else
+        echo '      UEFI zaznam sa nepodarilo pridat; Linsoft OS vyberte v boot menu'
+        echo "      pocitaca (F12/F11/Esc) alebo v BIOS nastaveniach: \\EFI\\linsoft\\shimx64.efi"
+    fi
+    echo "      Linsoft OS je na oddiele $part_number disku $disk."
+fi
 sync
 cleanup
 

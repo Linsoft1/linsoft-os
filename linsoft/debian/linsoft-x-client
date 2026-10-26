@@ -3,7 +3,7 @@ if [ "${LINSOFT_PRIMARY:-0}" = 1 ] && [ -f /etc/linsoft-apps/desktop-extras ]; t
     export LANG=sk_SK.UTF-8 LANGUAGE=sk:en
 fi
 if [ "${LINSOFT_PRIMARY:-0}" = 1 ] && [ -f /etc/linsoft-apps/professional ] &&
-    [ ! -f /etc/linsoft-apps/autologin ]; then
+    [ ! -f /etc/linsoft-apps/autologin ] && [ ! -f /etc/linsoft-apps/native ]; then
     export LANG=sk_SK.UTF-8 LANGUAGE=sk:en GSK_RENDERER=cairo
     xsetroot -solid '#0b1020'
     openbox --config-file /etc/linsoft-apps/login-rc.xml &

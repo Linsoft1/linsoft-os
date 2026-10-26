@@ -1,19 +1,22 @@
 #!/bin/bash
 set -euo pipefail
+# LINSOFT_HOST_QUIET=1: no confirmation or result window; the result is
+# printed to stdout for the calling Linsoft tool (Wi-Fi, diagnostics).
 control=/run/linsoft-host
+quiet=${LINSOFT_HOST_QUIET:-0}
 fail() {
     echo "Linsoft host control: $*" >&2
-    zenity --error --title='Linsoft OS' --text="$*"
+    [[ $quiet == 1 ]] || zenity --error --title='Linsoft OS' --text="$*"
     exit 1
 }
 action=${1:-}
 argument=${2:-}
-[[ $# -le 2 && $action =~ ^(clock|timezone|renew|devices|mount|unmount)$ &&
+[[ $# -le 2 && $action =~ ^(clock|timezone|renew|devices|mount|unmount|wifi-status|wifi-scan|wifi-connect|wifi-forget|diag)$ &&
    $argument != *$'\n'* ]] || fail 'Invalid host request.'
 [[ -d $control/inbox ]] || fail 'Host control is unavailable in this session.'
 exec 9>"$XDG_RUNTIME_DIR/linsoft-host-control.lock"
-flock -n 9 || fail 'Another host action is in progress.'
-if [[ $action != devices ]]; then
+flock -w 130 9 || fail 'Another host action is in progress.'
+if [[ $quiet != 1 && ! $action =~ ^(devices|diag|wifi-.*)$ ]]; then
     if zenity --question --title='Linsoft OS' --text="Potvrdit systemovu operaciu: $action $argument?" --width=520; then
         :
     else
@@ -37,6 +40,11 @@ fi
 for attempt in $(seq 1 600); do
     if [[ -f $control/result && $(stat -c '%i:%y' "$control/result") != "$previous" ]]; then
         { IFS= read -r status; message=$(cat); } < "$control/result"
+        if [[ $quiet == 1 ]]; then
+            printf '%s\n' "$message" | grep -v '^HOST_ACTION_PASS:'
+            [[ $status == 0 ]]
+            exit
+        fi
         [[ $status == 0 ]] || fail "Operacia $action zlyhala (stav $status). $message"
         if zenity --text-info --title='Linsoft OS' --filename="$control/result" --width=760 --height=480; then
             exit 0

@@ -12,7 +12,7 @@ image=${1:-$project/Linsoft-Desktop-Native.qcow2}
 output=${2:-$project/Linsoft-OS-Live.iso}
 work=${LINSOFT_ISO_WORK:-/var/tmp/linsoft-iso}
 kernel_out=${LINSOFT_ISO_KERNEL:-/mnt/lfs/sources/linsoft-iso-kernel-out}
-kver=6.16.1-linsoft-kernel
+kver=$(tr -d '\r\n' < "$kernel_out/boot/kernel-release" 2>/dev/null || true)
 build_id=linsoft-$(date +%Y%m%d%H%M%S)
 
 for tool in qemu-nbd rsync mksquashfs grub-mkimage xorriso mcopy sbsign sbverify python3 cpio gzip; do
@@ -22,7 +22,7 @@ done
     { echo 'Static /bin/busybox is required (busybox-static).' >&2; exit 1; }
 [[ -x /usr/sbin/mkfs.fat && -d /usr/lib/grub/x86_64-efi && -d /usr/lib/grub/i386-pc ]] ||
     { echo 'dosfstools, grub-efi-amd64-bin and grub-pc-bin are required.' >&2; exit 1; }
-[[ -f $kernel_out/boot/linsoft-kernel && -d $kernel_out/lib/modules/$kver ]] ||
+[[ -n $kver && -f $kernel_out/boot/linsoft-kernel && -d $kernel_out/lib/modules/$kver ]] ||
     { echo "ISO kernel missing; run linsoft/iso/build-iso-kernel first." >&2; exit 1; }
 [[ -f $image ]] || { echo "Image not found: $image" >&2; exit 1; }
 if pgrep -f "qemu-system.*$(basename "$image")" >/dev/null; then
@@ -70,6 +70,9 @@ install -m 0644 "$kernel_out/boot/System.map-linsoft-kernel" "$rootfs/boot/Syste
 install -m 0644 "$kernel_out/boot/config-linsoft-kernel" "$rootfs/boot/config-linsoft-kernel"
 rm -rf "$rootfs/lib/modules/$kver"
 cp -a "$kernel_out/lib/modules/$kver" "$rootfs/lib/modules/$kver"
+
+echo '==> Installing hardware support (firmware, Wi-Fi, diagnostics)'
+bash "$here/install-hardware-support" "$rootfs" "$kver"
 
 echo '==> Building Secure Boot loaders and signing the kernel'
 efi=$work/efi
@@ -121,6 +124,8 @@ install -d -o 1000 -g 1000 -m 0755 "$lo/opt/linsoft-debian/home/linsoft/Desktop"
 install -o 1000 -g 1000 -m 0755 \
     "$lo/opt/linsoft-debian/usr/share/applications/linsoft-install.desktop" \
     "$lo/opt/linsoft-debian/home/linsoft/Desktop/linsoft-install.desktop"
+install -o 1000 -g 1000 -m 0755 "$here/../hardware/linsoft-diag.desktop" \
+    "$lo/opt/linsoft-debian/home/linsoft/Desktop/linsoft-diag.desktop"
 # Directories that already exist in the squashfs keep their own metadata.
 for dir in etc etc/rc.d etc/rc.d/init.d usr usr/sbin opt opt/linsoft-debian \
            opt/linsoft-debian/usr opt/linsoft-debian/usr/local \
@@ -185,6 +190,8 @@ xorriso -as mkisofs -iso-level 3 -R -J -joliet-long -V LINSOFT_OS \
     -eltorito-alt-boot -e --interval:appended_partition_2:all:: -no-emul-boot \
     -o "$tmp_iso" "$iso" 2>&1 | grep -v '^xorriso : UPDATE' || true
 [[ -s $tmp_iso ]] || { echo 'xorriso failed.' >&2; exit 1; }
+(( $(stat -c %s "$tmp_iso") < 2147483648 )) ||
+    { echo 'ISO is larger than 2 GiB (GitHub Releases limit).' >&2; exit 1; }
 cp "$tmp_iso" "$output.tmp"
 mv -f "$output.tmp" "$output"
 (cd "$(dirname "$output")" && sha256sum "$(basename "$output")" > "$(basename "$output").sha256")

@@ -1,2 +1,3 @@
 Defaults:linsoft timestamp_timeout=0, passwd_tries=3, use_pty
 linsoft ALL=(root) /usr/bin/true, /usr/local/sbin/linsoft-authorize *, /usr/local/sbin/linsoft-package-admin *
+linsoft ALL=(root) NOPASSWD: /usr/local/sbin/linsoft-authorize host devices *, /usr/local/sbin/linsoft-authorize host diag *, /usr/local/sbin/linsoft-authorize host wifi-status *, /usr/local/sbin/linsoft-authorize host wifi-scan *, /usr/local/sbin/linsoft-authorize host wifi-connect *, /usr/local/sbin/linsoft-authorize host wifi-forget *

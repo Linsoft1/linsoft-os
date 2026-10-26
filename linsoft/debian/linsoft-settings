@@ -29,11 +29,12 @@ if [[ -z $action ]]; then
         display 'Displej a rozlisenie' appearance 'Vzhlad a pismo' \
         mouse 'Mys a kurzor' keyboard 'Klavesnica' wallpaper 'Pozadie a ikony plochy' \
         files 'Subory, kos a predvolene aplikacie' sound 'Zvukove zariadenia a hlasitost' \
-        network 'Stav siete LAN / Wi-Fi' tasks 'Spravca uloh' \
+        network 'Stav siete LAN / Wi-Fi' wifi 'Wi-Fi siete - pripojit' tasks 'Spravca uloh' \
         renew 'Obnovit LAN (DHCP)' clock 'Nastavit datum a cas' timezone 'Casove pasmo' \
         devices 'USB a disky - prehlad' mount 'Pripojit USB disk' unmount 'Bezpecne odpojit USB disk' \
         applications 'Vyhladavanie aplikacii' notifications 'Oznamenia' \
         "${professional_options[@]}" \
+        diag 'Diagnostika hardveru' update 'Aktualizacie Linsoft OS' \
         system 'Systemove nastroje: datum, cas, siet a disky' about 'O Linsoft OS'); then
         :
     else
@@ -68,6 +69,9 @@ case "$action" in
     center) run linsoft-app-center ;;
     quick) run linsoft-quick-settings ;;
     system) run linsoft-session-action drm ;;
+    wifi) run linsoft-wifi-ui ;;
+    diag) run linsoft-diag ;;
+    update) run linsoft-update-check ;;
     devices|renew) run linsoft-host-control "$action" ;;
     clock|timezone|mount|unmount)
         case "$action" in
@@ -94,8 +98,12 @@ case "$action" in
             printf '\nDNS:\n'
             cat /etc/resolv.conf
             printf '\nPripojenie spravuje hostitelsky LFS, nie Debian.\n'
-            printf 'Obnovu DHCP najdes v Nastaveniach. Wi-Fi vyzaduje realny adapter;\n'
-            printf 'virtualny QEMU pocitac poskytuje kabelove pripojenie, nie Wi-Fi.\n'
+            printf 'Wi-Fi siete pripojite v Nastaveniach > Wi-Fi siete. Obnovu DHCP\n'
+            printf 'najdete tamtiez. QEMU poskytuje iba kabelove pripojenie.\n'
+            if command -v linsoft-host-control >/dev/null; then
+                printf '\nWi-Fi:\n'
+                LINSOFT_HOST_QUIET=1 linsoft-host-control wifi-status 2>&1 || true
+            fi
         } > "$report"
         show_report 'Siet Linsoft OS'
         ;;
@@ -108,6 +116,8 @@ case "$action" in
             cat /run/linsoft-host/os-release
             printf '\nJadro: '
             uname -r
+            grep -h '^LINSOFT_VERSION=' /run/linsoft-host/os-release /etc/linsoft-release 2>/dev/null |
+                head -n 1 | sed 's/^LINSOFT_VERSION=/Verzia Linsoft OS: /; s/"//g'
             if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
                 printf '\nGraficka plocha: Xorg / Linsoft Native (vlastne okna, panel a subory)\n'
             else

@@ -1,0 +1,113 @@
+#!/bin/bash
+# Linsoft OS 1.2 real-hardware layer, applied to the ISO root filesystem by
+# build-live-iso: firmware, Wi-Fi, diagnostics, updates and new helpers.
+# Usage: install-hardware-support ROOTFS KERNEL_RELEASE
+set -euo pipefail
+rootfs=${1:?Usage: install-hardware-support ROOTFS KERNEL_RELEASE}
+kver=${2:?Usage: install-hardware-support ROOTFS KERNEL_RELEASE}
+here=$(cd "$(dirname "$0")" && pwd)
+linsoft=$(cd "$here/.." && pwd)
+version=$(tr -d '\r\n' < "$here/VERSION")
+debian=$rootfs/opt/linsoft-debian
+cache=${LINSOFT_APT_CACHE:-/var/tmp/linsoft-apt-cache}
+[[ -x $debian/usr/bin/apt-get && -f $rootfs/etc/rc.d/init.d/rc ]] ||
+    { echo "Not a Linsoft root filesystem: $rootfs" >&2; exit 1; }
+
+packages=(
+    wpasupplicant iw rfkill pciutils usbutils curl efibootmgr
+    alsa-ucm-conf alsa-topology-conf
+    firmware-iwlwifi firmware-realtek firmware-atheros firmware-mediatek
+    firmware-brcm80211 firmware-libertas firmware-amd-graphics
+    firmware-intel-graphics firmware-intel-misc firmware-nvidia-graphics
+    firmware-intel-sound firmware-sof-signed firmware-cirrus firmware-misc-nonfree
+)
+
+echo '==> Debian: firmware, Wi-Fi and diagnostic packages'
+sed -i -E '/^deb .*debian(-security)? trixie/ { / non-free-firmware/! s/$/ non-free-firmware/ }' \
+    "$debian/etc/apt/sources.list"
+mkdir -p "$cache/partial"
+mounts=()
+bind() { mount "$@"; mounts+=("${*: -1}"); }
+cleanup() {
+    local i
+    for (( i=${#mounts[@]}-1; i>=0; i-- )); do umount -l "${mounts[i]}" 2>/dev/null || true; done
+}
+trap cleanup EXIT
+bind --rbind /dev "$debian/dev"
+bind -t proc proc "$debian/proc"
+bind --rbind /sys "$debian/sys"
+bind -t tmpfs tmpfs "$debian/run"
+bind --bind "$cache" "$debian/var/cache/apt/archives"
+resolv_backup=$(mktemp)
+cp -a "$debian/etc/resolv.conf" "$resolv_backup" 2>/dev/null || : > "$resolv_backup"
+cp --remove-destination -L /etc/resolv.conf "$debian/etc/resolv.conf"
+export DEBIAN_FRONTEND=noninteractive
+chroot "$debian" apt-get update -q
+chroot "$debian" apt-get install -y -q --no-install-recommends "${packages[@]}"
+chroot "$debian" dpkg --audit
+chroot "$debian" dpkg-query -W -f='${binary:Package}\t${Version}\n' > "$debian/linsoft-debian-packages.txt"
+cleanup
+mounts=()
+trap - EXIT
+cp --remove-destination -a "$resolv_backup" "$debian/etc/resolv.conf"
+rm -f "$resolv_backup"
+rm -f "$debian"/var/cache/apt/*.bin
+
+echo '==> Host: firmware path and kernel modules'
+fw=$debian/usr/lib/firmware
+[[ -d $fw/iwlwifi || -n $(find "$fw" -maxdepth 1 -name 'iwlwifi-*' -print -quit) ]] ||
+    { echo 'Debian firmware is missing.' >&2; exit 1; }
+# The host kernel loads firmware from /lib/firmware: point it at the Debian
+# firmware so APT firmware updates reach the kernel too.
+host_fw=$rootfs/usr/lib/firmware
+if [[ -d $host_fw && ! -L $host_fw ]]; then
+    cp -a --update=none "$host_fw/." "$fw/"
+    rm -rf "$host_fw"
+fi
+ln -sfn /opt/linsoft-debian/usr/lib/firmware "$host_fw"
+for dir in "$rootfs"/lib/modules/*-linsoft-kernel; do
+    [[ -d $dir && ${dir##*/} != "$kver" ]] && rm -rf "$dir"
+done
+chroot "$rootfs" /sbin/depmod -a "$kver"
+mkdir -p "$debian/usr/lib/modules"
+
+echo '==> Host: Wi-Fi, diagnostics and system service'
+install -m 0755 "$linsoft/hardware/linsoft-wifi" "$rootfs/usr/sbin/linsoft-wifi"
+install -m 0755 "$linsoft/hardware/linsoft-hwreport" "$rootfs/usr/sbin/linsoft-hwreport"
+install -m 0755 "$linsoft/hardware/linsoft-wifi.init" "$rootfs/etc/rc.d/init.d/linsoft-wifi"
+install -m 0755 "$linsoft/debian/linsoft-host-service" "$rootfs/usr/bin/linsoft-host-service"
+for level in 2 3 4 5; do
+    ln -sfn ../init.d/linsoft-wifi "$rootfs/etc/rc.d/rc$level.d/S24linsoft-wifi"
+done
+for level in 0 6; do
+    ln -sfn ../init.d/linsoft-wifi "$rootfs/etc/rc.d/rc$level.d/K74linsoft-wifi"
+done
+
+echo '==> Debian: Linsoft desktop helpers'
+for program in linsoft-host-control linsoft-settings linsoft-quick-settings \
+    linsoft-native-system linsoft-app-session linsoft-x-client; do
+    install -m 0755 "$linsoft/debian/$program" "$debian/usr/local/bin/$program"
+done
+for program in linsoft-wifi-ui linsoft-diag linsoft-update-check; do
+    install -m 0755 "$linsoft/hardware/$program" "$debian/usr/local/bin/$program"
+done
+install -m 0755 "$linsoft/debian/linsoft-authorize" "$debian/usr/local/sbin/linsoft-authorize"
+for entry in linsoft-wifi linsoft-diag linsoft-update; do
+    install -m 0644 "$linsoft/hardware/$entry.desktop" "$debian/usr/share/applications/$entry.desktop"
+done
+chroot "$debian" update-desktop-database /usr/share/applications
+# Password policy used by the installer when the owner sets a password.
+install -m 0440 "$linsoft/debian/professional-sudoers" "$debian/etc/linsoft-apps/sudoers-password"
+chroot "$debian" visudo -c -f /etc/linsoft-apps/sudoers-password >/dev/null
+chroot "$debian" visudo -c >/dev/null
+printf '%s\n' "${packages[@]}" >> "$debian/etc/linsoft-apps/protected-packages"
+sort -u -o "$debian/etc/linsoft-apps/protected-packages" "$debian/etc/linsoft-apps/protected-packages"
+
+echo "==> Version $version"
+sed -i -e '/^LINSOFT_VERSION=/d' -e "s|^PRETTY_NAME=.*|PRETTY_NAME=\"Linsoft OS $version\"|" \
+    "$rootfs/etc/os-release"
+printf 'LINSOFT_VERSION="%s"\nLINSOFT_KERNEL="%s"\n' "$version" "$kver" >> "$rootfs/etc/os-release"
+printf 'LINSOFT_VERSION="%s"\n' "$version" > "$debian/etc/linsoft-release"
+install -D -m 0644 "$debian/linsoft-debian-packages.txt" "$rootfs/usr/share/doc/linsoft-debian/installed-packages"
+rm -f "$debian/linsoft-debian-packages.txt"
+echo "Linsoft hardware support installed (firmware $(du -sh "$fw" | cut -f1))."

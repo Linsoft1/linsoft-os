@@ -1,0 +1,30 @@
+#!/bin/bash
+# Linsoft hardware diagnostics: collects a report (drivers, firmware, Wi-Fi,
+# graphics, sound) and saves it to Documents and, in Live mode, to the USB.
+set -uo pipefail
+title='Linsoft - diagnostika hardveru'
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+argument=''
+text='Diagnostika zisti ovladace, chybajuci firmware, Wi-Fi, grafiku a zvuk.\nTrva niekolko sekund.'
+if [[ -d /var/lib/linsoft-live ]]; then
+    argument=live
+    text+='\n\nSprava sa ulozi aj na Live USB, aby ste ju mohli poslat z ineho pocitaca.'
+fi
+zenity --question --title="$title" --width=520 --text="$text" --ok-label='Spustit' --cancel-label='Zrusit' || exit 0
+(
+    LINSOFT_HOST_QUIET=1 linsoft-host-control diag "$argument" > "$work/report.txt" 2>&1
+    echo $? > "$work/rc"
+) | zenity --progress --pulsate --auto-close --no-cancel --title="$title" --width=420 \
+    --text='Zbieram informacie o hardveri...'
+mkdir -p "$HOME/Documents"
+saved=$HOME/Documents/linsoft-diagnostika-$(date +%Y%m%d-%H%M%S).txt
+cp "$work/report.txt" "$saved"
+if [[ $(cat "$work/rc" 2>/dev/null) != 0 ]]; then
+    zenity --error --title="$title" --width=520 --text="Diagnostika zlyhala. Ciastocna sprava: $saved"
+    exit 1
+fi
+zenity --text-info --title="$title" --width=820 --height=600 --filename="$saved" \
+    --ok-label='Zavriet' || true
+zenity --info --title="$title" --width=560 \
+    --text="Sprava je ulozena v: $saved\n\nAk nieco nefunguje, prilozte ju k hlaseniu na\nhttps://github.com/Linsoft1/linsoft-os/issues"

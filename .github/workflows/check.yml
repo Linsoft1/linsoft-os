@@ -1,0 +1,40 @@
+name: Kontrola Linsoft OS
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    name: Skripty (bash -n, ShellCheck)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kontrola skriptov
+        run: |
+          sudo apt-get install -y -q shellcheck >/dev/null
+          python3 tools/check-scripts.py
+
+  native:
+    name: Plocha Linsoft Native (C)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zavislosti
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends build-essential pkg-config \
+            libx11-dev libxft-dev libpng-dev libglib2.0-dev libgdk-pixbuf-2.0-dev
+      - name: Kompilacia (-Wall -Wextra -Werror)
+        run: make -C linsoft/native
+
+  site:
+    name: Web stranka
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kontrola HTML a odkazov
+        run: python3 tools/check-site.py docs/index.html
