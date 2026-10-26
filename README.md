@@ -4,6 +4,10 @@
 from scratch on Linux From Scratch 12.4, with an original C/Xlib desktop
 (window manager, panel, Start menu and file manager).
 
+**Author:** Martin Pastorek – Native desktop programmed in C (Xlib/Xft) and the
+customized **Linsoft Kernel** (Linux 6.16.1: audio, network, graphics, Live
+USB/DVD boot, NVMe and SD card support).
+
 * Website: https://linsoft1.github.io/linsoft-os/
 * Download: [Linsoft-OS-Live.iso](https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso)
   (BIOS + UEFI, Live system and disk installer)
