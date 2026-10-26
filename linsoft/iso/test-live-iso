@@ -16,14 +16,24 @@ ovmf_sb_vars=/usr/share/OVMF/OVMF_VARS_4M.ms.fd
 mkdir -p "$work"
 cd "$work"
 # LINSOFT_TEST_DUAL_ONLY=1 repeats only step 6 with the key enrolled earlier.
+# LINSOFT_TEST_KERNEL_PACKAGE=linsoft-kernel-KVER.tar.zst (with .sig) adds
+# step 7, the in-system kernel update; LINSOFT_TEST_KERNEL_ONLY=1 runs only
+# step 7 on the disk installed by an earlier run.
 dual_only=${LINSOFT_TEST_DUAL_ONLY:-0}
-if [[ $dual_only == 1 ]]; then
+kernel_package=${LINSOFT_TEST_KERNEL_PACKAGE:-}
+[[ -z $kernel_package ]] || kernel_package=$(realpath "$kernel_package")
+kernel_only=${LINSOFT_TEST_KERNEL_ONLY:-0}
+if [[ $kernel_only == 1 ]]; then
+    [[ -f disk.qcow2 && -f sb-vars.fd && -n $kernel_package ]] ||
+        { echo 'Needs an earlier full run and LINSOFT_TEST_KERNEL_PACKAGE.' >&2; exit 2; }
+    rm -f kupdate*.log* kupdate*.png mon.sock
+elif [[ $dual_only == 1 ]]; then
     [[ -f sb-vars.fd ]] || { echo 'Run the full test first (needs sb-vars.fd).' >&2; exit 2; }
     rm -f dual*.log* dual*.png mon.sock
 else
     rm -f disk.qcow2 fatcopy.img sb-vars.fd ./*.log ./*.png mon.sock
 fi
-qemu-img create -f qcow2 disk.qcow2 20G >/dev/null
+[[ $kernel_only == 1 ]] || qemu-img create -f qcow2 disk.qcow2 20G >/dev/null
 qemu_pid=''
 stop_qemu() {
     [[ -n $qemu_pid ]] && kill "$qemu_pid" 2>/dev/null && wait "$qemu_pid" 2>/dev/null
@@ -48,7 +58,7 @@ start_qemu() {
 wait_serial() {
     local log=$1 pattern=$2 timeout=$3
     for attempt in $(seq 1 "$timeout"); do
-        tr -d '\r' < "$log" 2>/dev/null | grep -qE "$pattern" && return 0
+        tr -d '\r' 2>/dev/null < "$log" | grep -qE "$pattern" && return 0
         kill -0 "$qemu_pid" 2>/dev/null || return 1
         sleep 1
     done
@@ -79,7 +89,7 @@ enroll_mok() {
     keys ret
 }
 
-if [[ $dual_only != 1 ]]; then
+if [[ $dual_only != 1 && $kernel_only != 1 ]]; then
 echo '--- 1. Live boot (BIOS)'
 start_qemu live.log -cdrom "$iso" -boot d
 wait_serial live.log 'linsoft login:' 180 || fail 'live system did not reach login prompt'
@@ -193,17 +203,22 @@ pass 'installed system boots with Secure Boot'
 stop_qemu
 fi
 
-echo '--- 6. Dual boot next to Windows (UEFI Secure Boot, user password)'
-# A GPT disk like a Windows PC after "Shrink Volume": ESP with the Windows
-# boot manager, a data partition and 16 GiB of unpartitioned space.
-rm -f disk.qcow2
-qemu-img create -f qcow2 disk.qcow2 28G >/dev/null
 modprobe nbd max_part=16 2>/dev/null || true
 nbd=''
 for dev in /dev/nbd{0..15}; do
     [[ -b $dev && $(cat "/sys/block/${dev#/dev/}/size") == 0 ]] && { nbd=$dev; break; }
 done
 [[ -n $nbd ]] || fail 'no free NBD device'
+esp_dir=$work/esp-mnt
+root_dir=$work/root-mnt
+mkdir -p "$esp_dir" "$root_dir"
+
+if [[ $kernel_only != 1 ]]; then
+echo '--- 6. Dual boot next to Windows (UEFI Secure Boot, user password)'
+# A GPT disk like a Windows PC after "Shrink Volume": ESP with the Windows
+# boot manager, a data partition and 16 GiB of unpartitioned space.
+rm -f disk.qcow2
+qemu-img create -f qcow2 disk.qcow2 28G >/dev/null
 qemu-nbd -c "$nbd" disk.qcow2
 sfdisk -q "$nbd" <<'EOF'
 label: gpt
@@ -213,8 +228,6 @@ size=11GiB, type=EBD0A0A2-B9E5-4433-87C0-68B6B72699C7, name="Basic data partitio
 EOF
 for attempt in $(seq 1 50); do [[ -b ${nbd}p3 ]] && break; sleep .2; done
 /usr/sbin/mkfs.fat -F 32 -n SYSTEM "${nbd}p1" >/dev/null
-esp_dir=$work/esp-mnt
-mkdir -p "$esp_dir"
 mount "${nbd}p1" "$esp_dir"
 mkdir -p "$esp_dir/EFI/Microsoft/Boot"
 echo 'fake Windows boot manager' > "$esp_dir/EFI/Microsoft/Boot/bootmgfw.efi"
@@ -260,8 +273,6 @@ for attempt in $(seq 1 50); do [[ -b ${nbd}p4 ]] && break; sleep .2; done
 [[ -b ${nbd}p4 ]] || { qemu-nbd -d "$nbd" >/dev/null; fail 'dual boot partition was not created'; }
 [[ $(head -c 64M "${nbd}p3" | sha256sum) == "$windows_sum" ]] ||
     { qemu-nbd -d "$nbd" >/dev/null; fail 'Windows partition was modified'; }
-root_dir=$work/root-mnt
-mkdir -p "$root_dir"
 mount -o ro "${nbd}p4" "$root_dir"
 mount -o ro "${nbd}p1" "$esp_dir"
 checks=''
@@ -290,4 +301,84 @@ sleep 40
 monitor "screendump $work/dual-locked.png -f png"
 pass 'dual boot system starts with Secure Boot and offers Windows'
 stop_qemu
+fi
+
+if [[ -n $kernel_package ]]; then
+echo '--- 7. In-system kernel update (signed package, fallback kernel, Secure Boot)'
+name=${kernel_package##*/}
+new_kver=${name#linsoft-kernel-}
+new_kver=${new_kver%.tar.zst}
+qemu-nbd -c "$nbd" disk.qcow2
+for attempt in $(seq 1 50); do [[ -b ${nbd}p4 ]] && break; sleep .2; done
+mount "${nbd}p4" "$root_dir"
+mount -t proc proc "$root_dir/proc"
+mount --bind /dev "$root_dir/dev"
+release() { umount "$root_dir/dev" "$root_dir/proc" "$root_dir"; qemu-nbd -d "$nbd" >/dev/null; }
+host_operate() {
+    chroot "$root_dir" /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin \
+        /bin/bash /usr/bin/linsoft-host-service --operate "$@"
+}
+old_kver=$(head -n 1 "$root_dir/boot/linsoft-kernel.release")
+old_sum=$(sha256sum < "$root_dir/boot/linsoft-kernel")
+stage=$root_dir/opt/linsoft-debian/var/tmp/linsoft-kernel-update
+mkdir -p "$stage"
+cp "$kernel_package.sig" "$stage/$name.sig"
+cp "$kernel_package" "$stage/$name"
+printf 'X' | dd of="$stage/$name" bs=1 seek=4096 conv=notrunc status=none
+if host_operate kernel-update "$new_kver" > kupdate-tampered.log 2>&1; then
+    release; fail 'a tampered kernel package was installed'
+fi
+grep -q 'podpis balika je neplatny' kupdate-tampered.log &&
+    [[ $(sha256sum < "$root_dir/boot/linsoft-kernel") == "$old_sum" && ! -e $root_dir/lib/modules/$new_kver ]] ||
+    { release; fail 'tampered package was not rejected cleanly'; }
+pass 'tampered kernel package rejected, system unchanged'
+cp "$kernel_package" "$stage/$name"
+host_operate kernel-update "$new_kver" > kupdate.log 2>&1 || { cat kupdate.log; release; fail 'kernel update failed'; }
+host_operate kernel-status '' >> kupdate.log 2>&1
+cat kupdate.log
+checks=''
+[[ $(sha256sum < "$root_dir/boot/linsoft-kernel.old") == "$old_sum" ]] || checks+=' backup'
+[[ $(head -n 1 "$root_dir/boot/linsoft-kernel.release") == "$new_kver" ]] || checks+=' release'
+[[ -s $root_dir/lib/modules/$new_kver/modules.dep.bin && -d $root_dir/lib/modules/$old_kver ]] || checks+=' modules'
+grep -q "^LINSOFT_KERNEL=\"$new_kver\"" "$root_dir/etc/os-release" || checks+=' os-release'
+grep -q 'linux /boot/linsoft-kernel.old root=PARTUUID=' "$root_dir/boot/grub/grub.cfg" || checks+=' grub'
+fallback_index=$(grep '^menuentry ' "$root_dir/boot/grub/grub.cfg" | grep -n -- '--id linsoft-previous' | cut -d: -f1)
+release
+[[ -z $checks && -n $fallback_index ]] || fail "kernel update incomplete:$checks"
+pass "kernel $new_kver installed, $old_kver kept as fallback"
+
+start_qemu kupdate-new.log "${sb_args[@]}"
+wait_serial kupdate-new.log 'executed automatically' 120 || fail 'GRUB menu not shown (kernel update)'
+sleep 2; keys down; sleep 2; keys ret
+wait_serial kupdate-new.log 'linsoft login:' 240 || fail 'updated kernel did not boot'
+grep -q "Linux version $new_kver " kupdate-new.log || fail 'the new kernel was not started'
+grep -q 'Verification failed' kupdate-new.log && fail 'updated kernel was rejected by Secure Boot'
+pass "new kernel $new_kver boots with Secure Boot"
+stop_qemu
+
+start_qemu kupdate-old.log "${sb_args[@]}"
+wait_serial kupdate-old.log 'executed automatically' 120 || fail 'GRUB menu not shown (fallback kernel)'
+sleep 2
+for (( i = 1; i < fallback_index; i++ )); do keys down; sleep 1; done
+sleep 2; keys ret
+wait_serial kupdate-old.log 'linsoft login:' 240 || fail 'fallback kernel did not boot'
+grep -q "Linux version $old_kver " kupdate-old.log || fail 'the fallback kernel was not started'
+pass "fallback kernel $old_kver boots from the GRUB menu"
+stop_qemu
+
+start_qemu kupdate-desktop.log "${sb_args[@]}"
+wait_serial kupdate-desktop.log 'linsoft login:' 240 || fail 'desktop with the updated kernel did not start'
+sleep 40
+# The dual-boot install set a password: the session starts locked and blanked.
+keys shift
+sleep 3
+monitor "screendump $work/kupdate-lock.png -f png"
+keys t e s t 1 2 3 4 ret
+sleep 10
+monitor "screendump $work/kupdate-desktop.png -f png"
+(( $(stat -c %s kupdate-lock.png) > 15000 && $(stat -c %s kupdate-desktop.png) > 30000 )) ||
+    fail 'desktop with the updated kernel is not drawn'
+pass 'desktop unlocks and runs with the updated kernel'
+stop_qemu
+fi
 echo 'All Linsoft ISO tests passed.'

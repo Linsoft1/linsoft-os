@@ -1,38 +1,93 @@
 #!/bin/bash
-# Linsoft OS update check: compares the installed version with the newest
-# GitHub release. Applications and firmware are updated through APT
-# (Aplikacie a aktualizacie); a new Linsoft release brings a new kernel.
+# Linsoft OS updates: compares the installed system with the newest GitHub
+# release. A signed kernel package attached to the release is downloaded and
+# installed in the system (the previous kernel stays as a GRUB fallback).
+# Applications and firmware are updated through APT (Aplikacie a aktualizacie).
 #   linsoft-update-check            interactive window
 #   linsoft-update-check --notify   quiet daily check with a notification
 set -uo pipefail
 title='Linsoft OS - aktualizacie'
 releases=https://github.com/Linsoft1/linsoft-os/releases
-api=https://api.github.com/repos/Linsoft1/linsoft-os/releases/latest
-installed=''
-for file in /run/linsoft-host/os-release /etc/linsoft-release; do
-    [[ -r $file ]] || continue
-    installed=$(sed -n 's/^LINSOFT_VERSION="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' "$file" | head -n 1)
-    [[ -n $installed ]] && break
-done
-installed=${installed:-1.0}
-latest_tag() {
-    local json
+api=${LINSOFT_UPDATE_API:-https://api.github.com/repos/Linsoft1/linsoft-os/releases/latest}
+staging=/var/tmp/linsoft-kernel-update
+host_release=/run/linsoft-host/os-release
+value() {
+    local file
+    for file in "${@:2}"; do
+        [[ -r $file ]] || continue
+        sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}\$/\1/p" "$file" | head -n 1 | grep . && return 0
+    done
+    return 1
+}
+installed=$(value LINSOFT_VERSION "$host_release" /etc/linsoft-release) || installed=1.0
+kernel=$(value LINSOFT_KERNEL "$host_release") || kernel=$(uname -r)
+live=0
+[[ -d /var/lib/linsoft-live ]] && live=1
+json=''
+fetch() {
     if command -v curl >/dev/null; then
-        json=$(curl -fsSL --max-time 15 -H 'Accept: application/vnd.github+json' "$api") || return 1
+        json=$(curl -fsSL --max-time 15 -H 'Accept: application/vnd.github+json' "$api")
     else
-        json=$(wget -qO- --timeout=15 "$api") || return 1
+        json=$(wget -qO- --timeout=15 "$api")
     fi
-    sed -n 's/^ *"tag_name": *"v\{0,1\}\([0-9][0-9.]*\)".*/\1/p' <<< "$json" | head -n 1
+}
+latest_tag() { sed -n 's/^ *"tag_name": *"v\{0,1\}\([0-9][0-9.]*\)".*/\1/p' <<< "$json" | head -n 1; }
+# Newest signed kernel package of the release: "KVER URL".
+kernel_asset() {
+    local url version best='' best_url=''
+    while IFS= read -r url; do
+        version=${url##*/linsoft-kernel-}
+        version=${version%.tar.zst}
+        [[ $version =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9_+]+)*$ ]] || continue
+        grep -qF "\"browser_download_url\": \"$url.sig\"" <<< "$json" || continue
+        if [[ -z $best ]] || newer "$version" "$best"; then best=$version; best_url=$url; fi
+    done < <(sed -n 's/^ *"browser_download_url": *"\([a-z]*:\/\/[^"]*\/linsoft-kernel-[^"/]*\.tar\.zst\)".*/\1/p' <<< "$json")
+    [[ -n $best ]] && printf '%s %s\n' "$best" "$best_url"
 }
 newer() { [[ $1 != "$2" && $(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n 1) == "$1" ]]; }
+
+update_kernel() {
+    local kver=$1 url=$2 package
+    package=$staging/linsoft-kernel-$kver.tar.zst
+    install -d -m 0755 "$staging" || return 1
+    rm -f -- "$staging"/linsoft-kernel-*
+    if ! (
+        set -o pipefail
+        curl -fsSL --retry 3 --max-time 300 -o "$package.sig" "$url.sig" &&
+        curl -fL --retry 3 --max-time 1800 -o "$package" "$url" 2>&1 |
+            stdbuf -oL tr '\r' '\n' | sed -un 's/^ *\([0-9]\{1,3\}\) .*/\1/p'
+    ) | zenity --progress --title="$title" --width=520 --auto-close --no-cancel \
+            --text="Stahujem jadro Linux $kver..."; then
+        rm -f -- "$staging"/linsoft-kernel-*
+        zenity --error --title="$title" --width=480 --text='Stiahnutie jadra zlyhalo. Skontrolujte pripojenie na internet.'
+        return 1
+    fi
+    [[ -s $package && -s $package.sig ]] || {
+        zenity --error --title="$title" --width=480 --text='Stiahnutie jadra zlyhalo.'
+        return 1
+    }
+    linsoft-host-control kernel-update "$kver"
+    local status=$?
+    rm -f -- "$staging"/linsoft-kernel-*
+    return "$status"
+}
 
 if [[ ${1:-} == --notify ]]; then
     stamp=$HOME/.cache/linsoft-update-check
     mkdir -p "${stamp%/*}"
     if [[ -f $stamp && $(find "$stamp" -mmin -1440 2>/dev/null) ]]; then exit 0; fi
     sleep 60
-    latest=$(latest_tag) || exit 0
+    fetch || exit 0
     touch "$stamp"
+    latest=$(latest_tag)
+    read -r new_kernel _ < <(kernel_asset)
+    if [[ $live == 0 && -n ${new_kernel:-} ]] && newer "$new_kernel" "$kernel"; then
+        choice=$(notify-send --app-name='Linsoft OS' --expire-time=20000 --wait \
+            --action=open='Aktualizovat' "Nove jadro Linux ${new_kernel%%-*} je dostupne" \
+            "Aktualizacia jadra prinasa opravy a podporu noveho hardveru.")
+        [[ $choice == open ]] && exec "$0"
+        exit 0
+    fi
     [[ -n $latest ]] && newer "$latest" "$installed" || exit 0
     choice=$(notify-send --app-name='Linsoft OS' --expire-time=20000 --wait \
         --action=open='Zobrazit' "Linsoft OS $latest je dostupny" \
@@ -41,20 +96,36 @@ if [[ ${1:-} == --notify ]]; then
     exit 0
 fi
 
-latest=$(latest_tag | head -n 1)
+fetch
+latest=$(latest_tag)
 if [[ -z $latest ]]; then
     zenity --error --title="$title" --width=480 \
         --text="Nepodarilo sa zistit najnovsiu verziu (ste pripojeni na internet?).\n\nNainstalovana verzia: Linsoft OS $installed"
     exit 1
 fi
+new_kernel=''
+kernel_url=''
+read -r new_kernel kernel_url < <(kernel_asset)
+if [[ -n $new_kernel ]] && newer "$new_kernel" "$kernel"; then
+    if [[ $live == 1 ]]; then
+        zenity --info --title="$title" --width=520 \
+            --text="Je dostupne jadro Linux $new_kernel (mate $kernel).\n\nV Live rezime sa jadro neaktualizuje. Po instalacii na disk ho nainstalujete tu."
+    elif zenity --question --title="$title" --width=560 --ok-label='Aktualizovat jadro' --cancel-label='Neskor' \
+        --text="Je dostupne nove jadro Linux $new_kernel (mate $kernel).\n\nBalik je podpisany klucom Linsoft OS a overi sa pred instalaciou. Sucasne jadro zostane ako zaloha v ponuke GRUB.\n\nPo instalacii restartujte pocitac."; then
+        update_kernel "$new_kernel" "$kernel_url"
+        exit
+    else
+        exit 0
+    fi
+fi
 if newer "$latest" "$installed"; then
     if zenity --question --title="$title" --width=560 --ok-label='Otvorit stranku' --cancel-label='Neskor' \
-        --text="Je dostupny Linsoft OS $latest (mate $installed).\n\nNova verzia obsahuje novsie jadro, ovladace a opravy. Stiahnite ISO, vytvorte USB a nainstalujte.\n\nAplikacie a firmware aktualizujete v okne Aplikacie a aktualizacie."; then
+        --text="Je dostupny Linsoft OS $latest (mate $installed).\n\nNova verzia obsahuje novsie ovladace, aplikacie a opravy. Stiahnite ISO, vytvorte USB a nainstalujte.\n\nJadro sa aktualizuje priamo v systeme; aplikacie a firmware v okne Aplikacie a aktualizacie."; then
         exec linsoft-browser "$releases"
     fi
 else
     if zenity --question --title="$title" --width=520 --ok-label='Aktualizovat aplikacie' --cancel-label='Zavriet' \
-        --text="Linsoft OS $installed je najnovsia verzia.\n\nAplikacie, ovladace grafiky (Mesa) a firmware sa aktualizuju cez APT."; then
+        --text="Linsoft OS $installed a jadro $kernel su aktualne.\n\nAplikacie, ovladace grafiky (Mesa) a firmware sa aktualizuju cez APT."; then
         exec linsoft-app-center
     fi
 fi

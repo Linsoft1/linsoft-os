@@ -40,26 +40,4 @@ install -m 0644 "$shim" "$out/BOOTX64.EFI"
 install -m 0644 "$mokmanager" "$out/mmx64.efi"
 install -m 0644 "$keydir/linsoft-sb.cer" "$out/linsoft-secureboot.cer"
 
-for kernel in "$@"; do
-    sbverify --list "$kernel" 2>&1 | grep -q 'No signature table' ||
-        { echo "$kernel is already signed; pass the unsigned kernel." >&2; exit 1; }
-    # GRUB 2.12 starts kernels whose PE MajorImageVersion is >= 1 through the
-    # firmware LoadImage(), which only trusts db and not the enrolled MOK key.
-    # Version 0 makes GRUB use its EFI handover loader, verified through shim.
-    python3 - "$kernel" <<'EOF'
-import struct, sys
-path = sys.argv[1]
-data = bytearray(open(path, 'rb').read())
-if data[:2] != b'MZ':
-    sys.exit(f'{path}: not an EFI stub kernel')
-pe = struct.unpack_from('<I', data, 0x3c)[0]
-if data[pe:pe + 4] != b'PE\0\0' or struct.unpack_from('<H', data, pe + 24)[0] != 0x20b:
-    sys.exit(f'{path}: unexpected PE header')
-struct.pack_into('<HH', data, pe + 24 + 44, 0, 0)
-open(path, 'wb').write(data)
-EOF
-    sbsign --key "$keydir/linsoft-sb.key" --cert "$keydir/linsoft-sb.crt" \
-        --output "$tmp/kernel.signed" "$kernel" 2>/dev/null
-    sbverify --cert "$keydir/linsoft-sb.crt" "$tmp/kernel.signed" >/dev/null
-    cat "$tmp/kernel.signed" > "$kernel"
-done
+bash "$(dirname "$0")/sign-kernel" "$@"

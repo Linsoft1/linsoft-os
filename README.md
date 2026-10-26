@@ -4,7 +4,7 @@
 from scratch on Linux From Scratch 12.4, with an original C/Xlib desktop
 (window manager, panel, Start menu and file manager).
 
-**Version:** Linsoft OS 1.2 (26 Oct 2026) · Linsoft Kernel 6.18 LTS · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI/Secure Boot
+**Version:** Linsoft OS 1.3 (26 Oct 2026) · Linsoft Kernel 6.18 LTS · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI/Secure Boot
 
 **Author:** Martin Pastorek – Native desktop programmed in C (Xlib/Xft) and the
 customized **Linsoft Kernel** (Linux 6.18 LTS: Wi-Fi, AMD/NVIDIA/Intel graphics,
@@ -44,8 +44,19 @@ first start asks once to enroll the Linsoft key in MokManager (see
 [linsoft/iso](linsoft/iso/README.md#secure-boot)).
 
 Known limits: Bluetooth has kernel drivers but no pairing UI yet, enterprise
-(802.1X) Wi-Fi is not supported, NVIDIA uses the open nouveau driver, and new
-kernels arrive as a new release ISO.
+(802.1X) Wi-Fi is not supported, and NVIDIA uses the open nouveau driver.
+
+### Kernel updates
+
+Since 1.3 an installed system updates its kernel itself: **Aktualizacie**
+finds a signed kernel package attached to the latest release, downloads it,
+and the system service checks its Linsoft signature before installing it.
+The previous kernel and its modules stay on disk and GRUB gets the entry
+"Linsoft OS - predchadzajuce jadro" to start it if the new kernel does not
+work on that PC. Live mode never changes the kernel. Systems installed from
+1.0–1.2 need a one-time reinstall from the 1.3 ISO to get the updater.
+Publishing an update is described in
+[linsoft/iso](linsoft/iso/README.md#kernel-updates).
 
 ### Supported computers
 

@@ -11,7 +11,7 @@ argument=${3:-}
 }
 case "$kind" in
     host)
-        [[ $action =~ ^(clock|timezone|renew|devices|mount|unmount|wifi-status|wifi-scan|wifi-connect|wifi-forget|diag)$ ]] || exit 2
+        [[ $action =~ ^(clock|timezone|renew|devices|mount|unmount|wifi-status|wifi-scan|wifi-connect|wifi-forget|diag|kernel-status|kernel-update)$ ]] || exit 2
         directory=/run/linsoft-host/inbox
         ;;
     session)

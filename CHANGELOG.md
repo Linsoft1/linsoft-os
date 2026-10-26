@@ -3,6 +3,20 @@
 All notable changes to Linsoft OS. Versions follow the GitHub releases
 (https://github.com/Linsoft1/linsoft-os/releases).
 
+## 1.3 – Kernel updates in the system
+
+* **In-system kernel updates**: Aktualizacie downloads a newer Linsoft Kernel
+  from the latest GitHub release and installs it without a new ISO.
+  * Packages are signed with the Linsoft key; a tampered or foreign package is
+    rejected before anything changes, and kernels not prepared for Secure Boot
+    are refused.
+  * The previous kernel and its modules are kept, with a GRUB entry
+    "Linsoft OS - predchadzajuce jadro" to start it.
+  * Daily notification when a new kernel is available; Live mode is never
+    changed.
+* Tests: tampered package rejection, update, new kernel and fallback kernel
+  boot with Secure Boot, desktop unlock with the new kernel.
+
 ## 1.2 – Real hardware
 
 * **Linsoft Kernel 6.18 LTS** (long-term support kernel, replaces 6.16.1) with

@@ -66,6 +66,16 @@ operate() {
                 /usr/sbin/linsoft-hwreport
             fi
             ;;
+        kernel-status)
+            [[ -z $argument ]] || return 2
+            /usr/sbin/linsoft-kernel-update status
+            ;;
+        kernel-update)
+            [[ $argument =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9_+]+)*$ ]] ||
+                { echo 'Invalid kernel version' >&2; return 2; }
+            /usr/sbin/linsoft-kernel-update install \
+                "$root/var/tmp/linsoft-kernel-update/linsoft-kernel-$argument.tar.zst"
+            ;;
         mount)
             device=$argument
             usb_device "$device" || { echo 'Only removable/USB block devices are accepted.' >&2; return 2; }

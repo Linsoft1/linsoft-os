@@ -13,7 +13,7 @@
 <meta property="og:image" content="https://linsoft1.github.io/linsoft-os/img/desktop.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=1.2.0">
+<link rel="stylesheet" href="style.css?v=1.3.0">
 </head>
 <body>
 <a class="skip-link" href="#obsah">Preskočiť na obsah</a>
@@ -27,7 +27,7 @@
   </nav>
   <div class="hero-text">
     <h1>Linsoft OS</h1>
-    <p class="version">Verzia 1.2 · vydané 26. 10. 2026</p>
+    <p class="version">Verzia 1.3 · vydané 26. 10. 2026</p>
     <p class="tag">Váš priestor. Váš systém.</p>
     <p>Vlastný operačný systém postavený od základu na Linux From Scratch&nbsp;12.4 – s originálnou pracovnou plochou, správcom súborov a panelom napísanými v C.</p>
     <a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso">⬇ Stiahnuť Live ISO</a>
@@ -72,7 +72,7 @@
   <div class="table-wrap">
     <table class="ver">
       <tbody>
-        <tr><th scope="row">Linsoft OS</th><td>1.2 (Live + inštalátor)</td></tr>
+        <tr><th scope="row">Linsoft OS</th><td>1.3 (Live + inštalátor)</td></tr>
         <tr><th scope="row">Dátum vydania</th><td>26. 10. 2026</td></tr>
         <tr><th scope="row">Jadro</th><td>Linsoft Kernel 6.18.58 LTS (<code>6.18.58-linsoft-kernel</code>)</td></tr>
         <tr><th scope="row">Základ systému</th><td>Linux From Scratch 12.4</td></tr>
@@ -87,9 +87,18 @@
 </section>
 
 <section id="novinky">
-  <h2>Čo prináša verzia 1.2</h2>
+  <h2>Čo prináša verzia 1.3</h2>
   <div class="release-note">
-    <p class="version">26. 10. 2026 · skutočný hardvér</p>
+    <p class="version">26. 10. 2026 · aktualizácie jadra</p>
+    <ul>
+      <li><b>Aktualizácia jadra priamo v systéme</b> – okno Aktualizácie stiahne novšie jadro Linsoft Kernel z GitHubu a nainštaluje ho bez nového ISO.</li>
+      <li>Balík jadra je podpísaný kľúčom Linsoft; podvrhnutý alebo poškodený balík sa odmietne skôr, než sa čokoľvek zmení.</li>
+      <li>Predchádzajúce jadro zostáva ako záloha – v ponuke GRUB položka <b>Linsoft OS - predchadzajuce jadro</b>.</li>
+      <li>Upozornenie na nové jadro raz denne. Live režim jadro nemení. Systémy 1.0–1.2 treba raz preinštalovať z ISO 1.3.</li>
+    </ul>
+  </div>
+  <div class="release-note">
+    <p class="version">Verzia 1.2 · 26. 10. 2026 · skutočný hardvér</p>
     <ul>
       <li>Nové jadro <b>Linsoft Kernel 6.18 LTS</b> s dlhodobou podporou a ovládačmi pre súčasné notebooky a počítače.</li>
       <li>Wi-Fi s heslom: zoznam sietí, WPA2/WPA3, skryté siete, automatické pripojenie po reštarte a ukazovateľ WIFI na paneli.</li>
@@ -125,7 +134,7 @@
   <details class="verify">
     <summary>Ako overiť stiahnutý súbor</summary>
     <p>Porovnajte vypočítaný SHA-256 súčet ISO s touto hodnotou:</p>
-    <p><code class="hash">e7f969451821ecf32e1fa593f079a9476460f045a1d4f5b8539613250ae41e8e</code></p>
+    <p><code class="hash">0cc98f4a4e7332fcb27a3e511b8ff31d720d61e32d118e70952461a64a3fd0ae</code></p>
     <p>Windows PowerShell: <code>Get-FileHash .\Linsoft-OS-Live.iso -Algorithm SHA256</code></p>
     <p>Linux: <code>sha256sum Linsoft-OS-Live.iso</code></p>
     <p>Kontrolný súčet sa dá stiahnuť aj zo <a href="https://github.com/Linsoft1/linsoft-os/releases/latest">stránky vydania</a>.</p>
@@ -209,7 +218,7 @@
 </main>
 
 <footer>
-  <p>Linsoft OS 1.2 · autor <b>Martin Pastorek</b> · postavené na <a href="https://www.linuxfromscratch.org/">Linux From Scratch</a>, Linuxe, Debiane a ďalšom open-source softvéri, ktorý patrí ich autorom.</p>
+  <p>Linsoft OS 1.3 · autor <b>Martin Pastorek</b> · postavené na <a href="https://www.linuxfromscratch.org/">Linux From Scratch</a>, Linuxe, Debiane a ďalšom open-source softvéri, ktorý patrí ich autorom.</p>
   <p><a href="https://github.com/Linsoft1/linsoft-os">Zdrojový kód</a> · <a href="https://github.com/Linsoft1/linsoft-os/issues">Nahlásiť problém</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases">Vydania</a></p>
 </footer>
 </body>

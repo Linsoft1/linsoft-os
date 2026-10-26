@@ -1,0 +1,166 @@
+#!/bin/bash
+# Linsoft OS kernel update (runs as root on the LFS host).
+#   linsoft-kernel-update status
+#   linsoft-kernel-update install PACKAGE.tar.zst [SIGNATURE]
+# The package (built by linsoft/iso/build-kernel-package) must carry a valid
+# signature of the Linsoft key. The current kernel and its modules are kept
+# as /boot/linsoft-kernel.old with a GRUB entry "predchadzajuce jadro", so a
+# kernel that does not work on this PC can always be bypassed at boot.
+set -euo pipefail
+key=${LINSOFT_UPDATE_KEY:-/usr/share/linsoft/linsoft-update-key.pem}
+boot=/boot
+modules=/lib/modules
+grub_cfg=$boot/grub/grub.cfg
+state=/var/lib/linsoft-kernel-update
+max_bytes=$((400 * 1024 * 1024))
+kver_re='^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9._+]+)*$'
+die() { echo "Aktualizacia jadra: $*" >&2; exit 1; }
+[[ $EUID == 0 ]] || die 'vyzaduje root.'
+
+current_kernel() {
+    local value=''
+    if [[ -r $boot/linsoft-kernel.release ]]; then
+        value=$(head -n 1 "$boot/linsoft-kernel.release")
+    else
+        value=$(sed -n 's/^LINSOFT_KERNEL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' /etc/os-release | head -n 1)
+    fi
+    printf '%s\n' "${value:-$(uname -r)}"
+}
+newer() { [[ $1 != "$2" && $(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n 1) == "$1" ]]; }
+
+case ${1:-} in
+    status)
+        echo "Nainstalovane jadro: $(current_kernel)"
+        echo "Spustene jadro:      $(uname -r)"
+        if [[ -r $boot/linsoft-kernel.old.release ]]; then
+            echo "Zalozne jadro:       $(head -n 1 "$boot/linsoft-kernel.old.release")"
+        fi
+        exit 0
+        ;;
+    install) [[ $# == 2 || $# == 3 ]] || die 'pouzitie: install BALIK.tar.zst [PODPIS]' ;;
+    *) die 'pouzitie: linsoft-kernel-update {status|install BALIK.tar.zst [PODPIS]}' ;;
+esac
+package=$2
+signature=${3:-$2.sig}
+name=${package##*/}
+[[ $name =~ ^linsoft-kernel-(.+)\.tar\.zst$ ]] || die "neplatny nazov balika: $name"
+kver=${BASH_REMATCH[1]}
+[[ $kver =~ $kver_re ]] || die "neplatna verzia jadra: $kver"
+[[ -d /run/linsoft-live ]] && die 'v Live rezime sa jadro neaktualizuje. Najprv nainstalujte Linsoft OS na disk.'
+[[ -f $boot/linsoft-kernel && -f $grub_cfg ]] || die "chyba $boot/linsoft-kernel alebo $grub_cfg."
+[[ -r $key ]] || die "chyba verejny kluc $key."
+installed=$(current_kernel)
+newer "$kver" "$installed" || die "jadro $kver nie je novsie ako nainstalovane $installed."
+
+install -d -m 0700 "$state"
+exec 8>"$state/lock"
+flock -n 8 || die 'ina aktualizacia jadra prave prebieha.'
+work=$(mktemp -d "$state/work.XXXXXX")
+new_modules=''
+cleanup() {
+    [[ -n $new_modules ]] && rm -rf -- "$new_modules"
+    rm -rf -- "$work" "$boot/linsoft-kernel.new"
+}
+trap cleanup EXIT
+
+# Copy first, then verify the private copy: the source may be user-writable.
+copy_limited() {
+    [[ -f $1 && ! -L $1 ]] || die "subor $1 neexistuje."
+    timeout 120 head -c "$((max_bytes + 1))" -- "$1" > "$2"
+    (( $(stat -c %s "$2") <= max_bytes )) || die "subor $1 je prilis velky."
+}
+copy_limited "$package" "$work/package.tar.zst"
+copy_limited "$signature" "$work/package.sig"
+openssl dgst -sha256 -verify "$key" -signature "$work/package.sig" "$work/package.tar.zst" >/dev/null 2>&1 ||
+    die 'podpis balika je neplatny. Balik nepochadza od Linsoft OS alebo je poskodeny.'
+echo "Podpis Linsoft OS overeny: $name"
+
+tar --zstd -tf "$work/package.tar.zst" > "$work/list"
+while IFS= read -r entry; do
+    entry=${entry#./}
+    [[ $entry != *..* ]] || die "nebezpecna cesta v baliku: $entry"
+    case $entry in
+        ''|boot/|lib/|lib/modules/|"lib/modules/$kver/"*) ;;
+        boot/linsoft-kernel|boot/System.map-linsoft-kernel|boot/config-linsoft-kernel|boot/kernel-release) ;;
+        *) die "neocakavany subor v baliku: $entry" ;;
+    esac
+done < "$work/list"
+mkdir "$work/new"
+tar --zstd -xf "$work/package.tar.zst" -C "$work/new" --no-same-owner --no-same-permissions --no-overwrite-dir
+rm -f -- "$work/package.tar.zst"
+new=$work/new
+[[ -s $new/boot/linsoft-kernel && -d $new/lib/modules/$kver/kernel ]] || die 'balik je neuplny.'
+[[ $(head -n 1 "$new/boot/kernel-release") == "$kver" ]] || die 'verzia v baliku nesedi s nazvom.'
+# Secure Boot readiness: PE MajorImageVersion 0 and an Authenticode signature.
+image=$new/boot/linsoft-kernel
+pe=$(od -An -tu4 -j 60 -N 4 "$image" | tr -d ' ')
+[[ $(head -c 2 "$image") == MZ && $pe =~ ^[0-9]+$ ]] || die 'jadro v baliku nie je EFI obraz.'
+[[ $(od -An -tu2 -j $((pe + 68)) -N 2 "$image" | tr -d ' ') == 0 &&
+   $(od -An -tu4 -j $((pe + 172)) -N 4 "$image" | tr -d ' ') != 0 ]] ||
+    die 'jadro v baliku nie je pripravene pre Secure Boot.'
+grep -q "^linux /boot/linsoft-kernel " < <(sed -n 's/^ *\(linux .*\)/\1/p' "$grub_cfg") ||
+    die "v $grub_cfg chyba polozka Linsoft OS."
+
+need=$(( $(du -sk "$new" | cut -f1) * 2 + 65536 ))
+free=$(df -Pk "$boot" | awk 'NR == 2 {print $4}')
+(( free > need )) || die "malo miesta na disku (treba $((need / 1024)) MiB)."
+
+echo "Instalujem moduly $kver..."
+new_modules=$modules/$kver.linsoft-new
+rm -rf -- "$new_modules"
+cp -a -- "$new/lib/modules/$kver" "$new_modules"
+rm -rf -- "${modules:?}/$kver"
+mv -T -- "$new_modules" "$modules/$kver"
+new_modules="$modules/$kver"
+/sbin/depmod -a "$kver"
+
+echo 'Zalohujem sucasne jadro...'
+old_kver=''
+[[ -r $boot/linsoft-kernel.old.release ]] && old_kver=$(head -n 1 "$boot/linsoft-kernel.old.release")
+for file in linsoft-kernel System.map-linsoft-kernel config-linsoft-kernel; do
+    if [[ -f $boot/$file ]]; then
+        cp -a -- "$boot/$file" "$boot/$file.old.tmp"
+        mv -fT -- "$boot/$file.old.tmp" "${boot}/${file/linsoft-kernel/linsoft-kernel.old}"
+    fi
+done
+printf '%s\n' "$installed" > "$boot/linsoft-kernel.old.release"
+# The kernel before the backup is no longer bootable: drop its modules.
+if [[ -n $old_kver && $old_kver != "$installed" && $old_kver != "$kver" && $old_kver =~ $kver_re &&
+      -d $modules/$old_kver ]]; then
+    rm -rf -- "${modules:?}/$old_kver"
+fi
+
+echo "Instalujem jadro $kver..."
+install -m 0644 "$new/boot/linsoft-kernel" "$boot/linsoft-kernel.new"
+sync
+mv -fT -- "$boot/linsoft-kernel.new" "$boot/linsoft-kernel"
+new_modules=''
+for file in System.map-linsoft-kernel config-linsoft-kernel; do
+    [[ -f $new/boot/$file ]] && install -m 0644 "$new/boot/$file" "$boot/$file"
+done
+printf '%s\n' "$kver" > "$boot/linsoft-kernel.release"
+sed -i '/^LINSOFT_KERNEL=/d' /etc/os-release
+printf 'LINSOFT_KERNEL="%s"\n' "$kver" >> /etc/os-release
+
+echo 'Pridavam do ponuky GRUB polozku s predchadzajucim jadrom...'
+desktop=$(awk '/^menuentry .*--id linsoft-desktop/ {found=1} found && /^ *linux / {sub(/^ */, ""); print; exit}' "$grub_cfg")
+[[ -n $desktop ]] || desktop=$(sed -n 's/^ *\(linux \/boot\/linsoft-kernel .*\)/\1/p' "$grub_cfg" | head -n 1)
+fallback=${desktop/\/boot\/linsoft-kernel /\/boot\/linsoft-kernel.old }
+fallback=${fallback/ quiet loglevel=0/}
+awk '/^### BEGIN linsoft-previous-kernel/ {skip=1} !skip {print} /^### END linsoft-previous-kernel/ {skip=0}' \
+    "$grub_cfg" > "$work/grub.cfg"
+{
+    echo '### BEGIN linsoft-previous-kernel'
+    echo "menuentry 'Linsoft OS - predchadzajuce jadro ($installed)' --id linsoft-previous {"
+    echo "    $fallback"
+    echo '}'
+    echo '### END linsoft-previous-kernel'
+} >> "$work/grub.cfg"
+cp -a -- "$grub_cfg" "$grub_cfg.linsoft-backup"
+install -m 0644 "$work/grub.cfg" "$grub_cfg.new"
+mv -fT -- "$grub_cfg.new" "$grub_cfg"
+sync
+echo
+echo "Hotovo: jadro $kver je nainstalovane (predtym $installed)."
+echo 'Restartujte pocitac. Ak by sa nove jadro nespustilo, v ponuke GRUB zvolte'
+echo "\"Linsoft OS - predchadzajuce jadro ($installed)\"."

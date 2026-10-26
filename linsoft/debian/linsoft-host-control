@@ -11,13 +11,16 @@ fail() {
 }
 action=${1:-}
 argument=${2:-}
-[[ $# -le 2 && $action =~ ^(clock|timezone|renew|devices|mount|unmount|wifi-status|wifi-scan|wifi-connect|wifi-forget|diag)$ &&
+[[ $# -le 2 && $action =~ ^(clock|timezone|renew|devices|mount|unmount|wifi-status|wifi-scan|wifi-connect|wifi-forget|diag|kernel-status|kernel-update)$ &&
    $argument != *$'\n'* ]] || fail 'Invalid host request.'
 [[ -d $control/inbox ]] || fail 'Host control is unavailable in this session.'
 exec 9>"$XDG_RUNTIME_DIR/linsoft-host-control.lock"
 flock -w 130 9 || fail 'Another host action is in progress.'
-if [[ $quiet != 1 && ! $action =~ ^(devices|diag|wifi-.*)$ ]]; then
-    if zenity --question --title='Linsoft OS' --text="Potvrdit systemovu operaciu: $action $argument?" --width=520; then
+question="Potvrdit systemovu operaciu: $action $argument?"
+[[ $action == kernel-update ]] &&
+    question="Nainstalovat jadro Linux $argument?\n\nSucasne jadro zostane ako zaloha v ponuke GRUB (predchadzajuce jadro)."
+if [[ $quiet != 1 && ! $action =~ ^(devices|diag|wifi-.*|kernel-status)$ ]]; then
+    if zenity --question --title='Linsoft OS' --text="$question" --width=520; then
         :
     else
         status=$?
@@ -37,7 +40,9 @@ else
     printf '%s\n%s\n' "$action" "$argument" > "$request"
     mv -T -- "$request" "$control/inbox/request"
 fi
-for attempt in $(seq 1 600); do
+polls=600
+[[ $action == kernel-update ]] && polls=3000
+for attempt in $(seq 1 "$polls"); do
     if [[ -f $control/result && $(stat -c '%i:%y' "$control/result") != "$previous" ]]; then
         { IFS= read -r status; message=$(cat); } < "$control/result"
         if [[ $quiet == 1 ]]; then

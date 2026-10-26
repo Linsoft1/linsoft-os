@@ -1,0 +1,46 @@
+#!/bin/bash
+# Builds a signed in-system kernel update for installed Linsoft OS systems
+# from the output of build-iso-kernel:
+#   linsoft-kernel-KVER.tar.zst         kernel (Secure Boot signed) + modules
+#   linsoft-kernel-KVER.tar.zst.sig     Linsoft key signature, checked by
+#                                       /usr/sbin/linsoft-kernel-update
+#   linsoft-kernel-KVER.tar.zst.sha256
+# Attach all three to a GitHub release; "Aktualizacie" finds and installs it.
+# Usage: build-kernel-package OUT_DIR [KERNEL_OUT]
+set -euo pipefail
+[[ $EUID == 0 ]] || { echo 'Run as root.' >&2; exit 2; }
+here=$(cd "$(dirname "$0")" && pwd)
+out=${1:?Usage: build-kernel-package OUT_DIR [KERNEL_OUT]}
+kernel_out=${2:-/mnt/lfs/sources/linsoft-iso-kernel-out}
+keydir=${LINSOFT_SB_KEYDIR:-/root/linsoft-secureboot}
+public=$here/../hardware/linsoft-update-key.pem
+for f in "$keydir/linsoft-sb.key" "$keydir/linsoft-sb.crt" "$public" \
+         "$kernel_out/boot/linsoft-kernel" "$kernel_out/boot/kernel-release"; do
+    [[ -f $f ]] || { echo "Missing $f." >&2; exit 1; }
+done
+for tool in sbsign sbverify zstd openssl python3; do
+    command -v "$tool" >/dev/null || { echo "$tool is required." >&2; exit 1; }
+done
+kver=$(head -n 1 "$kernel_out/boot/kernel-release")
+[[ $kver =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9_+]+)*$ ]] || { echo "Bad kernel release: $kver" >&2; exit 1; }
+[[ -d $kernel_out/lib/modules/$kver/kernel ]] || { echo "Missing modules for $kver." >&2; exit 1; }
+cmp -s <(openssl pkey -in "$keydir/linsoft-sb.key" -pubout) <(tr -d '\r' < "$public") ||
+    { echo "The signing key does not match linsoft/hardware/linsoft-update-key.pem." >&2; exit 1; }
+
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+mkdir -p "$stage/boot" "$stage/lib/modules" "$out"
+install -m 0644 "$kernel_out/boot/linsoft-kernel" "$stage/boot/linsoft-kernel"
+LINSOFT_SB_KEYDIR=$keydir bash "$here/sign-kernel" "$stage/boot/linsoft-kernel"
+for file in System.map-linsoft-kernel config-linsoft-kernel kernel-release; do
+    install -m 0644 "$kernel_out/boot/$file" "$stage/boot/$file"
+done
+cp -a "$kernel_out/lib/modules/$kver" "$stage/lib/modules/$kver"
+rm -f "$stage/lib/modules/$kver/build" "$stage/lib/modules/$kver/source"
+package=$out/linsoft-kernel-$kver.tar.zst
+tar -C "$stage" --owner=0 --group=0 --numeric-owner --sort=name -cf - boot lib |
+    zstd -q -19 -T0 -f -o "$package"
+openssl dgst -sha256 -sign "$keydir/linsoft-sb.key" -out "$package.sig" "$package"
+openssl dgst -sha256 -verify "$public" -signature "$package.sig" "$package" >/dev/null
+(cd "$out" && sha256sum "${package##*/}" > "${package##*/}.sha256")
+echo "Kernel update $kver: $package ($(du -h "$package" | cut -f1))"

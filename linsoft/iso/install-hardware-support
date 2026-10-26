@@ -76,6 +76,9 @@ install -m 0755 "$linsoft/hardware/linsoft-wifi" "$rootfs/usr/sbin/linsoft-wifi"
 install -m 0755 "$linsoft/hardware/linsoft-hwreport" "$rootfs/usr/sbin/linsoft-hwreport"
 install -m 0755 "$linsoft/hardware/linsoft-wifi.init" "$rootfs/etc/rc.d/init.d/linsoft-wifi"
 install -m 0755 "$linsoft/debian/linsoft-host-service" "$rootfs/usr/bin/linsoft-host-service"
+install -m 0755 "$linsoft/hardware/linsoft-kernel-update" "$rootfs/usr/sbin/linsoft-kernel-update"
+install -D -m 0644 "$linsoft/hardware/linsoft-update-key.pem" "$rootfs/usr/share/linsoft/linsoft-update-key.pem"
+printf '%s\n' "$kver" > "$rootfs/boot/linsoft-kernel.release"
 for level in 2 3 4 5; do
     ln -sfn ../init.d/linsoft-wifi "$rootfs/etc/rc.d/rc$level.d/S24linsoft-wifi"
 done

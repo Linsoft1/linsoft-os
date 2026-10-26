@@ -10,6 +10,11 @@ fi
 here=$(cd "$(dirname "$0")" && pwd)
 LFS=/mnt/lfs
 VERSION=${LINSOFT_KERNEL_VERSION:-6.18.58}
+# A different suffix/output (e.g. -linsoft-kernel-test) builds a second kernel
+# for testing in-system kernel updates without touching the ISO kernel.
+SUFFIX=${LINSOFT_KERNEL_LOCALVERSION:--linsoft-kernel}
+OUT=${LINSOFT_KERNEL_OUT:-linsoft-iso-kernel-out}
+[[ $SUFFIX =~ ^-[a-z0-9-]+$ && $OUT =~ ^[a-z0-9-]+$ ]] || { echo "Bad suffix or output name." >&2; exit 2; }
 grep -qx 'ID=linsoft' "$LFS/etc/os-release"
 if findmnt -rn -o TARGET | grep -qE "^$LFS/(dev|proc|sys|run)(/|$)"; then
     echo "Finish other chroot work before building the ISO kernel." >&2
@@ -39,7 +44,7 @@ JOBS=${JOBS:-4}
 bash "$LFS/sources/.chroot-wrapper.sh" -c "
 set -euo pipefail
 cd /sources/linsoft-iso-kernel-$VERSION
-scripts/config --set-str LOCALVERSION -linsoft-kernel --disable LOCALVERSION_AUTO \
+scripts/config --set-str LOCALVERSION $SUFFIX --disable LOCALVERSION_AUTO \
     --enable SQUASHFS --enable SQUASHFS_ZLIB --enable SQUASHFS_XZ \
     --enable SQUASHFS_ZSTD --enable SQUASHFS_FILE_DIRECT --enable SQUASHFS_XATTR \
     --enable OVERLAY_FS \
@@ -76,16 +81,16 @@ done < <(grep -E '^![ymn] [A-Z0-9_]+\$' linsoft-hardware.list)
 (( missing == 0 ))
 make -j$JOBS
 kver=\$(make -s kernelrelease)
-rm -rf /sources/linsoft-iso-kernel-out
-mkdir -p /sources/linsoft-iso-kernel-out/boot
-make INSTALL_MOD_PATH=/sources/linsoft-iso-kernel-out INSTALL_MOD_STRIP=1 modules_install
-rm -f /sources/linsoft-iso-kernel-out/lib/modules/\$kver/build /sources/linsoft-iso-kernel-out/lib/modules/\$kver/source
-install -m 0644 arch/x86/boot/bzImage /sources/linsoft-iso-kernel-out/boot/linsoft-kernel
-install -m 0644 System.map /sources/linsoft-iso-kernel-out/boot/System.map-linsoft-kernel
-install -m 0644 .config /sources/linsoft-iso-kernel-out/boot/config-linsoft-kernel
-printf '%s\n' \"\$kver\" > /sources/linsoft-iso-kernel-out/boot/kernel-release
+rm -rf /sources/$OUT
+mkdir -p /sources/$OUT/boot
+make INSTALL_MOD_PATH=/sources/$OUT INSTALL_MOD_STRIP=1 modules_install
+rm -f /sources/$OUT/lib/modules/\$kver/build /sources/$OUT/lib/modules/\$kver/source
+install -m 0644 arch/x86/boot/bzImage /sources/$OUT/boot/linsoft-kernel
+install -m 0644 System.map /sources/$OUT/boot/System.map-linsoft-kernel
+install -m 0644 .config /sources/$OUT/boot/config-linsoft-kernel
+printf '%s\n' \"\$kver\" > /sources/$OUT/boot/kernel-release
 for opt in SQUASHFS SQUASHFS_XZ SQUASHFS_XATTR OVERLAY_FS BLK_DEV_NVME USB_UAS MMC_BLOCK DRM_SIMPLEDRM; do
     grep -qx \"CONFIG_\$opt=y\" .config || { echo \"missing CONFIG_\$opt\" >&2; exit 1; }
 done
-echo \"Linsoft ISO kernel \$kver ready (\$(find /sources/linsoft-iso-kernel-out/lib/modules -name '*.ko*' | wc -l) modules).\"
+echo \"Linsoft ISO kernel \$kver ready (\$(find /sources/$OUT/lib/modules -name '*.ko*' | wc -l) modules).\"
 "

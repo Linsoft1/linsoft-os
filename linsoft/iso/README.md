@@ -146,3 +146,45 @@ Rufus-style FAT copy), drives the installer with key presses onto an empty
 Boot. Screenshots and serial logs stay in
 `/var/tmp/linsoft-iso-test`. It is a virtual-machine test only; real hardware
 (graphics, Wi-Fi, firmware quirks) has not been tested.
+
+## Kernel updates
+
+Installed systems (1.3 and later) update the kernel without a new ISO:
+
+```bash
+LINSOFT_LFS_BUILD=1 LINSOFT_KERNEL_VERSION=6.18.59 bash build-iso-kernel
+bash build-kernel-package /var/tmp/linsoft-kpkg
+gh release upload vX.Y /var/tmp/linsoft-kpkg/linsoft-kernel-*   # .tar.zst, .sig, .sha256
+```
+
+`build-kernel-package` signs the kernel for Secure Boot (`sign-kernel`, the
+same step the ISO uses), packs it with its modules into
+`linsoft-kernel-KVER.tar.zst` and signs the package with the Linsoft key
+(`linsoft/hardware/linsoft-update-key.pem` is the public half). In the
+system, **Aktualizacie** (`linsoft-update-check`) offers the newest package
+of the latest release whose version is higher than the installed kernel,
+downloads it and asks the host service (`kernel-update`) to install it.
+`/usr/sbin/linsoft-kernel-update` then, as root on the LFS host:
+
+* refuses Live mode, versions that are not newer, and packages without a
+  valid Linsoft signature, unexpected paths or a kernel not prepared for
+  Secure Boot - before anything is changed;
+* installs the modules, keeps the current kernel as
+  `/boot/linsoft-kernel.old` (with its modules) and replaces
+  `/boot/linsoft-kernel` atomically;
+* adds the GRUB entry "Linsoft OS - predchadzajuce jadro (KVER)" and
+  updates `LINSOFT_KERNEL` in `/etc/os-release`.
+
+To test an update, build a second kernel with another suffix and run step 7:
+
+```bash
+LINSOFT_LFS_BUILD=1 LINSOFT_KERNEL_LOCALVERSION=-linsoft-kernel-test \
+    LINSOFT_KERNEL_OUT=linsoft-kernel-test-out bash build-iso-kernel
+bash build-kernel-package /var/tmp/linsoft-kpkg /mnt/lfs/sources/linsoft-kernel-test-out
+LINSOFT_TEST_KERNEL_PACKAGE=/var/tmp/linsoft-kpkg/linsoft-kernel-6.18.58-linsoft-kernel-test.tar.zst \
+    bash test-live-iso ISO      # LINSOFT_TEST_KERNEL_ONLY=1 reuses the installed disk
+```
+
+Step 7 checks that a tampered package is rejected, installs the update, boots
+the new kernel and the fallback kernel with Secure Boot and unlocks the
+desktop on the new kernel.
