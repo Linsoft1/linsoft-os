@@ -1,0 +1,152 @@
+#!/bin/bash
+# Builds a hybrid BIOS/UEFI Linsoft OS Live + installer ISO from a closed
+# Linsoft QCOW2 image. The source image is attached read-only.
+set -euo pipefail
+if [[ $EUID != 0 ]]; then
+    echo 'Run as root (WSL/Linux build host).' >&2
+    exit 2
+fi
+here=$(cd "$(dirname "$0")" && pwd)
+project=$(cd "$here/../../.." && pwd)
+image=${1:-$project/Linsoft-Desktop-Native.qcow2}
+output=${2:-$project/Linsoft-OS-Live.iso}
+work=${LINSOFT_ISO_WORK:-/var/tmp/linsoft-iso}
+kernel_out=${LINSOFT_ISO_KERNEL:-/mnt/lfs/sources/linsoft-iso-kernel-out}
+kver=6.16.1-linsoft-kernel
+build_id=linsoft-$(date +%Y%m%d%H%M%S)
+
+for tool in qemu-nbd rsync mksquashfs grub-mkrescue grub-mkimage xorriso mformat cpio gzip; do
+    command -v "$tool" >/dev/null || { echo "Missing build tool: $tool" >&2; exit 1; }
+done
+[[ -x /bin/busybox ]] && file -L /bin/busybox | grep -q 'statically linked' ||
+    { echo 'Static /bin/busybox is required (busybox-static).' >&2; exit 1; }
+[[ -x /usr/sbin/mkfs.fat && -d /usr/lib/grub/x86_64-efi && -d /usr/lib/grub/i386-pc ]] ||
+    { echo 'dosfstools, grub-efi-amd64-bin and grub-pc-bin are required.' >&2; exit 1; }
+[[ -f $kernel_out/boot/linsoft-kernel && -d $kernel_out/lib/modules/$kver ]] ||
+    { echo "ISO kernel missing; run linsoft/iso/build-iso-kernel first." >&2; exit 1; }
+[[ -f $image ]] || { echo "Image not found: $image" >&2; exit 1; }
+if pgrep -f "qemu-system.*$(basename "$image")" >/dev/null; then
+    echo 'The source image is open in QEMU; close it first.' >&2
+    exit 1
+fi
+
+nbd=''
+mnt=$work/source
+cleanup() {
+    mountpoint -q "$mnt" && umount "$mnt"
+    [[ -n $nbd ]] && qemu-nbd -d "$nbd" >/dev/null
+    return 0
+}
+trap cleanup EXIT
+modprobe nbd max_part=16 2>/dev/null || true
+for dev in /dev/nbd{0..15}; do
+    [[ -b $dev && $(cat "/sys/block/${dev#/dev/}/size") == 0 ]] || continue
+    nbd=$dev
+    break
+done
+[[ -n $nbd ]] || { echo 'No free NBD device.' >&2; exit 1; }
+qemu-nbd --read-only -c "$nbd" "$image"
+for attempt in $(seq 1 50); do [[ -b ${nbd}p1 ]] && break; sleep .2; done
+mkdir -p "$mnt"
+mount -o ro,noload "${nbd}p1" "$mnt"
+grep -qx 'ID=linsoft' "$mnt/etc/os-release"
+
+rootfs=$work/rootfs
+iso=$work/iso
+initrd=$work/initrd
+echo '==> Copying root filesystem'
+mkdir -p "$rootfs"
+rsync -aHAX --delete --numeric-ids \
+    --exclude='/proc/*' --exclude='/sys/*' --exclude='/dev/*' \
+    --exclude='/run/*' --exclude='/tmp/*' --exclude='/lost+found' \
+    "$mnt/" "$rootfs/"
+umount "$mnt"
+qemu-nbd -d "$nbd" >/dev/null
+nbd=''
+
+echo '==> Installing live-capable kernel'
+install -m 0644 "$kernel_out/boot/linsoft-kernel" "$rootfs/boot/linsoft-kernel"
+install -m 0644 "$kernel_out/boot/System.map-linsoft-kernel" "$rootfs/boot/System.map-linsoft-kernel"
+install -m 0644 "$kernel_out/boot/config-linsoft-kernel" "$rootfs/boot/config-linsoft-kernel"
+rm -rf "$rootfs/lib/modules/$kver"
+cp -a "$kernel_out/lib/modules/$kver" "$rootfs/lib/modules/$kver"
+
+echo '==> Removing private and runtime data'
+debian=$rootfs/opt/linsoft-debian
+for dir in "$rootfs/root" "$debian/root" "$debian/home/linsoft"; do
+    rm -f "$dir"/.bash_history "$dir"/.python_history "$dir"/.gdbmtool_history \
+        "$dir"/.lesshst "$dir"/.wget-hsts
+    rm -rf "$dir/.cache" "$dir/.ssh" "$dir/.dbus"
+done
+rm -rf "$debian/home/linsoft/.config/mozilla" "$debian/home/linsoft/.mozilla"
+find "$rootfs/var/log" "$debian/var/log" -type f -exec truncate -s 0 {} +
+rm -f "$debian"/var/cache/apt/archives/*.deb "$debian"/var/cache/apt/*.bin
+rm -f "$rootfs/var/lib/random-seed" "$rootfs/fastboot" "$rootfs/forcefsck"
+for id_file in "$debian/etc/machine-id" "$debian/var/lib/dbus/machine-id"; do
+    [[ -f $id_file && ! -L $id_file ]] && tr -d '-' < /proc/sys/kernel/random/uuid > "$id_file"
+done
+
+echo '==> Building squashfs'
+rm -rf "$iso"
+mkdir -p "$iso/linsoft/live" "$iso/linsoft/boot" "$iso/linsoft/installer" "$iso/boot/grub"
+mksquashfs "$rootfs" "$iso/linsoft/live/rootfs.squashfs" -noappend -quiet \
+    -comp zstd -Xcompression-level 19 -b 1M -processors "$(nproc)"
+du -sm "$rootfs" | cut -f1 > "$iso/linsoft/live/rootfs.mib"
+printf '%s\n' "$build_id" > "$iso/linsoft/live/$build_id.id"
+
+echo '==> Building initramfs'
+rm -rf "$initrd"
+mkdir -p "$initrd"/{bin,dev,proc,sys,live-overlay}
+cp /bin/busybox "$initrd/bin/busybox"
+install -m 0755 "$here/initramfs-init" "$initrd/init"
+mknod -m 0600 "$initrd/dev/console" c 5 1
+cp -a "$here/live-overlay/." "$initrd/live-overlay/"
+lo=$initrd/live-overlay
+chown -R 0:0 "$lo"
+chmod 0755 "$lo/etc/rc.d/init.d/linsoft-live" "$lo/usr/sbin/linsoft-install" \
+    "$lo/opt/linsoft-debian/usr/local/bin/linsoft-live-install-request"
+chmod 0644 "$lo/opt/linsoft-debian/usr/share/applications/linsoft-install.desktop"
+install -d -o 1000 -g 1000 -m 0700 "$lo/opt/linsoft-debian/var/lib/linsoft-live"
+install -d -o 1000 -g 1000 -m 0755 "$lo/opt/linsoft-debian/home/linsoft/Desktop"
+install -o 1000 -g 1000 -m 0755 \
+    "$lo/opt/linsoft-debian/usr/share/applications/linsoft-install.desktop" \
+    "$lo/opt/linsoft-debian/home/linsoft/Desktop/linsoft-install.desktop"
+# Directories that already exist in the squashfs keep their own metadata.
+for dir in etc etc/rc.d etc/rc.d/init.d usr usr/sbin opt opt/linsoft-debian \
+           opt/linsoft-debian/usr opt/linsoft-debian/usr/local \
+           opt/linsoft-debian/usr/local/bin opt/linsoft-debian/usr/share \
+           opt/linsoft-debian/usr/share/applications opt/linsoft-debian/var \
+           opt/linsoft-debian/var/lib opt/linsoft-debian/home \
+           opt/linsoft-debian/home/linsoft opt/linsoft-debian/home/linsoft/Desktop; do
+    [[ -d $rootfs/$dir ]] && chown --reference="$rootfs/$dir" "$lo/$dir" &&
+        chmod --reference="$rootfs/$dir" "$lo/$dir"
+done
+(cd "$initrd" && find . | cpio -o -H newc --quiet | gzip -9) > "$iso/linsoft/boot/initrd.img"
+install -m 0644 "$rootfs/boot/linsoft-kernel" "$iso/linsoft/boot/linsoft-kernel"
+
+echo '==> Preparing installer assets'
+install -m 0755 /usr/sbin/mkfs.fat "$iso/linsoft/installer/mkfs.fat"
+mkdir -p "$iso/linsoft/installer/x86_64-efi"
+cp /usr/lib/grub/x86_64-efi/*.mod /usr/lib/grub/x86_64-efi/*.lst \
+    "$iso/linsoft/installer/x86_64-efi/"
+grub-mkimage -O x86_64-efi -p /EFI/BOOT -o "$iso/linsoft/installer/BOOTX64.EFI" \
+    part_gpt part_msdos fat ext2 normal configfile search search_fs_uuid \
+    search_fs_file search_label linux echo test ls cat sleep reboot halt \
+    all_video efi_gop efi_uga video_bochs video_cirrus gfxterm gfxmenu png \
+    font serial terminal gzio minicmd
+if [[ -d $rootfs/boot/grub/themes/linsoft ]]; then
+    mkdir -p "$iso/boot/grub/themes"
+    cp -a "$rootfs/boot/grub/themes/linsoft" "$iso/boot/grub/themes/linsoft"
+fi
+sed "s|@ID@|$build_id|g" "$here/grub-iso.cfg" > "$iso/boot/grub/grub.cfg"
+
+echo '==> Writing ISO'
+tmp_iso=$work/Linsoft-OS-Live.iso
+rm -f "$tmp_iso"
+grub-mkrescue -o "$tmp_iso" "$iso" -- -volid LINSOFT_OS -compliance iso_9660_level=3 2>&1 |
+    grep -v '^xorriso : UPDATE' || true
+[[ -s $tmp_iso ]] || { echo 'grub-mkrescue failed.' >&2; exit 1; }
+cp "$tmp_iso" "$output.tmp"
+mv -f "$output.tmp" "$output"
+(cd "$(dirname "$output")" && sha256sum "$(basename "$output")" > "$(basename "$output").sha256")
+echo "Linsoft ISO ready: $output ($(du -h "$output" | cut -f1), $build_id)"

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -u
+dir=/var/lib/linsoft-live
+if [[ ! -d $dir ]]; then
+    zenity --error --title='Linsoft OS' --text='Instalator je dostupny iba v Live rezime.'
+    exit 1
+fi
+zenity --question --title='Instalovat Linsoft OS' --width=520 \
+    --text='Spustit instalator Linsoft OS?\n\nInstalator sa otvori na celej obrazovke. Vybrany disk bude uplne vymazany. Po skonceni sa vratite na tuto plochu.' ||
+    exit 0
+touch "$dir/request"

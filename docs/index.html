@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linsoft OS – Váš priestor. Váš systém.</title>
+<meta name="description" content="Linsoft OS – vlastný Linux postavený od základu (Linux From Scratch) s originálnym desktopom. Stiahnite si Live ISO a vyskúšajte ho bez inštalácie.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <nav><span class="logo">L</span> Linsoft OS
+    <a href="#funkcie">Funkcie</a><a href="#stiahnut">Stiahnuť</a><a href="#navod">Návod</a>
+    <a href="https://github.com/Linsoft1/linsoft-os">GitHub</a></nav>
+  <div class="hero-text">
+    <h1>Linsoft OS</h1>
+    <p class="tag">Váš priestor. Váš systém.</p>
+    <p>Vlastný operačný systém postavený od základu na Linux From Scratch&nbsp;12.4 – s originálnou pracovnou plochou, správcom súborov a panelom napísanými v C.</p>
+    <a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso">⬇ Stiahnuť Live ISO</a>
+    <a class="btn ghost" href="https://github.com/Linsoft1/linsoft-os/releases/latest">Všetky verzie</a>
+    <p class="small">x86-64 · BIOS aj UEFI · cca 1,5 GB</p>
+  </div>
+  <img class="shot" src="img/desktop.png" alt="Pracovná plocha Linsoft OS">
+</header>
+
+<main>
+<section id="funkcie">
+  <h2>Funkcie</h2>
+  <div class="grid">
+    <div><h3>Live režim</h3><p>Spustite systém priamo z USB alebo DVD. Nič sa nezapisuje na disk – zmeny sú iba v pamäti.</p></div>
+    <div><h3>Inštalátor</h3><p>Jedným krokom nainštalujete Linsoft OS na disk. Funguje na počítačoch s BIOS aj UEFI.</p></div>
+    <div><h3>Vlastná plocha</h3><p>Originálny správca okien, panel, Štart s vyhľadávaním, 4 pracovné plochy a správca súborov s kartami.</p></div>
+    <div><h3>Aplikácie</h3><p>Firefox, LibreOffice Writer a Calc, terminál, nastavenia a inštalácia dôveryhodných .deb balíkov.</p></div>
+  </div>
+</section>
+
+<section class="gallery">
+  <figure><img src="img/boot-menu.png" alt="Bootovacie menu"><figcaption>Bootovacie menu ISO</figcaption></figure>
+  <figure><img src="img/start.png" alt="Štart menu"><figcaption>Štart s vyhľadávaním</figcaption></figure>
+  <figure><img src="img/files.png" alt="Súbory"><figcaption>Linsoft Súbory</figcaption></figure>
+</section>
+
+<section id="stiahnut">
+  <h2>Stiahnuť</h2>
+  <p><a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso">⬇ Linsoft-OS-Live.iso</a></p>
+  <p>Kontrolný súčet SHA-256 nájdete pri <a href="https://github.com/Linsoft1/linsoft-os/releases/latest">vydaní</a> (súbor <code>Linsoft-OS-Live.iso.sha256</code>).</p>
+  <p class="small">Požiadavky: 64-bitový procesor, min. 3 GB RAM (8 GB pre „načítať do RAM“), na inštaláciu disk min. 12 GB.</p>
+</section>
+
+<section id="navod">
+  <h2>Návod</h2>
+  <ol>
+    <li><b>USB kľúč:</b> zapíšte ISO pomocou <a href="https://rufus.ie">Rufus</a> (režim <i>DD</i>) alebo <a href="https://etcher.balena.io">balenaEtcher</a>. Obsah kľúča sa vymaže.</li>
+    <li><b>Spustenie:</b> v počítači vyberte bootovanie z USB (často F12, F11 alebo Esc). <b>Secure Boot vypnite.</b></li>
+    <li><b>Live:</b> zvoľte „Linsoft OS Live – vyskúšať bez inštalácie“.</li>
+    <li><b>Inštalácia:</b> zvoľte „Inštalovať Linsoft OS na disk“ alebo v Live ploche hľadajte v Štarte <i>Inštalovať Linsoft OS</i>. Vyberte disk a napíšte <code>ANO</code>.</li>
+    <li><b>Virtuálny počítač:</b> ISO funguje aj vo VirtualBoxe, VMware alebo QEMU (typ Linux 64-bit, 3 GB RAM).</li>
+  </ol>
+  <div class="warn"><b>Upozornenie:</b> Linsoft OS je experimentálny projekt, testovaný iba vo virtuálnom počítači. Inštalátor vymaže celý vybraný disk a nepodporuje dual boot. Systém sa prihlasuje automaticky bez hesla – neinštalujte ho na zdieľaný počítač. Zálohujte si dáta.</div>
+</section>
+</main>
+
+<footer>
+  <p>Linsoft OS · postavené na <a href="https://www.linuxfromscratch.org/">Linux From Scratch</a>, Linuxe, Debiane a ďalšom open-source softvéri, ktorý patrí ich autorom. · <a href="https://github.com/Linsoft1/linsoft-os">Zdrojový kód</a></p>
+</footer>
+</body>
+</html>

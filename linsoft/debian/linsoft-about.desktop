@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=About Linsoft OS
+Name[sk]=O Linsoft OS
+Exec=/usr/local/bin/linsoft-settings about
+Icon=help-about
+Terminal=false
+Categories=System;

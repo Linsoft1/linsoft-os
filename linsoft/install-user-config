@@ -1,0 +1,30 @@
+#!/bin/sh
+
+set -eu
+
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
+data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
+
+copy_defaults()
+{
+    source=$1
+    destination=$2
+    if [ ! -e "$destination" ]; then
+        mkdir -p "$(dirname -- "$destination")"
+        install -m 0644 "$source_dir/$source" "$destination"
+        printf 'Installed %s\n' "$destination"
+    else
+        printf 'Kept existing %s\n' "$destination"
+    fi
+}
+
+copy_defaults config/openbox/menu.xml "$config_home/openbox/menu.xml"
+copy_defaults config/lxpanel/Linsoft/panels/panel \
+    "$config_home/lxpanel/Linsoft/panels/panel"
+copy_defaults config/pcmanfm/Linsoft/pcmanfm.conf \
+    "$config_home/pcmanfm/Linsoft/pcmanfm.conf"
+copy_defaults data/applications/linsoft-file-manager.desktop \
+    "$data_home/applications/linsoft-file-manager.desktop"
+copy_defaults data/applications/linsoft-terminal.desktop \
+    "$data_home/applications/linsoft-terminal.desktop"

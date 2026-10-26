@@ -1,0 +1,511 @@
+#!/bin/bash
+set -euo pipefail
+export DISPLAY=:91
+export HOME=/var/tmp/linsoft-native-test/home
+export XDG_DATA_HOME="$HOME/.local/share"
+export LINSOFT_NATIVE=1
+export LC_ALL=C.UTF-8
+unset XDG_RUNTIME_DIR
+if [[ ${LINSOFT_NATIVE_TEST_BUS:-0} != 1 ]]; then
+    export LINSOFT_NATIVE_TEST_BUS=1
+    exec dbus-run-session -- bash -x "$0"
+fi
+test ! -e /tmp/.X91-lock
+test ! -e /var/tmp/linsoft-native-test
+for legacy in openbox tint2 pcmanfm; do
+    if command -v "$legacy"; then
+        echo "ERROR: legacy desktop remains installed: $legacy" >&2
+        exit 1
+    fi
+done
+mkdir -p "$HOME/Docs" "$HOME/.local/share"
+printf 'native-copy-proof\n' > "$HOME/alpha.txt"
+Xvfb :91 -screen 0 1280x800x24 -nolisten tcp > /var/tmp/linsoft-native-test/xvfb.log 2>&1 &
+xserver=$!
+wm=''
+terminal=''
+large_directory=''
+cleanup() {
+    if [[ -n $large_directory ]]; then rm -rf -- "$large_directory"; fi
+    if [[ -n $terminal ]] && kill -0 "$terminal" 2>/dev/null; then kill "$terminal"; fi
+    if [[ -n $wm ]] && kill -0 "$wm" 2>/dev/null; then kill "$wm"; wait "$wm" || true; fi
+    kill "$xserver"
+    wait "$xserver" || [[ $? == 143 ]]
+}
+trap cleanup EXIT
+for ((i=0;i<100;i++)); do
+    if timeout 3 xdpyinfo >/dev/null 2>&1; then break; fi
+    sleep .1
+done
+test "$(timeout 10 xdg-mime query default inode/directory)" == linsoft-files.desktop
+echo 'PASS: Native-only image has no Openbox/tint2/PCManFM and directory association selects Linsoft Files'
+icons=/usr/local/src/linsoft-native/test-native-icons
+"$icons"
+large_directory=$(mktemp -d -- /var/tmp/linsoft-native-directory-count.XXXXXX)
+for ((entry=0; entry<8193; ++entry)); do : > "$large_directory/item-$entry"; done
+"$icons" --directory-count "$large_directory" 8193
+if linsoft-native --files >/dev/null 2>&1; then
+    echo 'ERROR: command accepted without running native desktop' >&2; exit 1
+fi
+linsoft-native > /var/tmp/linsoft-native-test/wm.log 2>&1 &
+wm=$!
+for ((i=0;i<100;i++)); do
+    if grep -q LINSOFT_NATIVE_READY /var/tmp/linsoft-native-test/wm.log; then break; fi
+    sleep .1
+done
+kill -0 "$wm"
+grep -q 'uid=1000' /var/tmp/linsoft-native-test/wm.log
+if linsoft-native >/dev/null 2>&1; then
+    echo 'ERROR: second window manager was accepted' >&2; exit 1
+fi
+linsoft-files
+sleep .5
+files=$(xdotool search --class '^LinsoftFiles$')
+dialog_ready() {
+    local dialog
+    for ((attempt=0;attempt<100;attempt++)); do
+        if dialog=$(xdotool search --onlyvisible --class zenity | head -n1); then
+            xdotool windowactivate --sync "$dialog"
+            dialog_window=$dialog
+            sleep .5
+            return
+        fi
+        sleep .1
+    done
+    echo 'Native dialog did not appear' >&2
+    return 1
+}
+dialog_dismiss() {
+    local window=$dialog_window
+    xdotool key "$1"
+    for ((attempt=0;attempt<100;attempt++)); do
+        if ! xdotool getwindowname "$window" >/dev/null 2>&1; then return; fi
+        sleep .1
+    done
+    echo "Native dialog did not close: $window" >&2
+    return 1
+}
+xdotool windowactivate --sync "$files"
+xdotool key ctrl+shift+n
+xdotool type --clearmodifiers 'AuditFolder'
+xdotool key Return
+sleep .5
+test -d "$HOME/AuditFolder"
+xdotool key Down F2
+xdotool key --repeat 11 BackSpace
+xdotool type 'Renamed'
+xdotool key Return
+sleep .5
+test -d "$HOME/Renamed"
+test ! -e "$HOME/AuditFolder"
+xdotool key Down Down F2
+xdotool key --repeat 7 BackSpace
+xdotool type 'Docs'
+xdotool key Return
+sleep .5
+test -d "$HOME/Docs"
+test -d "$HOME/Renamed"
+xdotool key Down Down Down ctrl+c Up Up Return ctrl+v
+sleep 1
+cmp "$HOME/alpha.txt" "$HOME/Docs/alpha.txt"
+printf 'existing-destination\n' > "$HOME/Docs/alpha.txt"
+xdotool key ctrl+v
+dialog_ready
+grep -qx 'existing-destination' "$HOME/Docs/alpha.txt"
+dialog_dismiss Return
+xdotool windowactivate --sync "$files"
+xdotool key F5 Down Delete
+dialog_ready
+dialog_dismiss Return
+sleep 1
+test ! -e "$HOME/Docs/alpha.txt"
+test -f "$XDG_DATA_HOME/Trash/files/alpha.txt"
+echo 'PASS: native files: create, rename, no overwrite, copy, trash, keyboard input'
+gio trash --list > /var/tmp/linsoft-native-test/trash-list
+cat /var/tmp/linsoft-native-test/trash-list
+linsoft-native-trash &
+trash_dialog=$!
+dialog_ready
+xdotool key Down Return
+sleep 1
+dialog_ready
+xdotool key Return
+wait "$trash_dialog"
+grep -qx existing-destination "$HOME/Docs/alpha.txt"
+echo 'PASS: native trash restore to original path'
+xdotool windowactivate --sync "$files"
+xdotool key F5 Down Delete
+dialog_ready
+xdotool key Escape
+sleep .5
+grep -qx existing-destination "$HOME/Docs/alpha.txt"
+echo 'PASS: cancelled trash leaves selected data untouched'
+printf trash-proof > "$HOME/Docs/restore-guard.txt"
+gio trash -- "$HOME/Docs/restore-guard.txt"
+uri=$(gio trash --list | awk -F '\t' '/restore-guard.txt/ {print $1}')
+test -n "$uri"
+printf keep-destination > "$HOME/Docs/restore-guard.txt"
+if gio trash --restore -- "$uri"; then
+    echo 'Trash restored over an existing destination' >&2
+    exit 1
+fi
+grep -qx keep-destination "$HOME/Docs/restore-guard.txt"
+rm -- "$HOME/Docs/restore-guard.txt"
+gio trash --restore -- "$uri"
+grep -qx trash-proof "$HOME/Docs/restore-guard.txt"
+echo 'PASS: restoring trash refuses an existing destination'
+mkdir -p "$HOME/MoveSource" "$HOME/MoveTarget"
+printf one > "$HOME/MoveSource/one.txt"
+printf two > "$HOME/MoveSource/two.txt"
+location() {
+    xdotool windowactivate --sync "$files"
+    xdotool key ctrl+l
+    xdotool key --clearmodifiers ctrl+a
+    xdotool type --clearmodifiers "$1"
+    xdotool key Return
+    sleep .5
+}
+location "$HOME/MoveSource"
+xdotool key ctrl+a ctrl+x
+location "$HOME/MoveTarget"
+xdotool key ctrl+v
+sleep 1
+test -f "$HOME/MoveTarget/one.txt"
+test -f "$HOME/MoveTarget/two.txt"
+test ! -e "$HOME/MoveSource/one.txt"
+test ! -e "$HOME/MoveSource/two.txt"
+xdotool key alt+Left ctrl+shift+n
+xdotool type BackProof
+xdotool key Return
+sleep .5
+test -d "$HOME/MoveSource/BackProof"
+xdotool key alt+Right ctrl+shift+n
+xdotool type ForwardProof
+xdotool key Return
+sleep .5
+test -d "$HOME/MoveTarget/ForwardProof"
+location "$HOME/MoveTarget"
+xdotool key ctrl+a ctrl+c
+location "$HOME/MoveSource"
+xdotool key ctrl+v
+sleep .7
+cmp "$HOME/MoveTarget/one.txt" "$HOME/MoveSource/one.txt"
+cmp "$HOME/MoveTarget/two.txt" "$HOME/MoveSource/two.txt"
+test -d "$HOME/MoveSource/ForwardProof"
+location "$HOME"
+mkdir "$HOME/.HiddenProof"
+xdotool key ctrl+h F5 Down Return ctrl+shift+n
+xdotool type VisibleHiddenProof
+xdotool key Return
+sleep .4
+test -d "$HOME/.HiddenProof/VisibleHiddenProof"
+location "$HOME/.HiddenProof"
+xdotool key ctrl+shift+n
+setxkbmap sk
+sleep .3
+xdotool key Caps_Lock zcaron Caps_Lock
+xdotool type --delay 100 --clearmodifiers 'ltý-priečinok'
+xdotool key Return
+sleep .5
+test -d "$HOME/.HiddenProof/Žltý-priečinok"
+setxkbmap us -variant intl
+xdotool key ctrl+shift+n dead_acute e Return
+sleep .5
+test -d "$HOME/.HiddenProof/é"
+setxkbmap us
+xdotool key --clearmodifiers shift+F10
+sleep .3
+context_window=$(xdotool search --onlyvisible --name '^Linsoft Context$')
+test -n "$context_window"
+xdotool key Escape
+xdotool key super+space
+sleep .3
+test -n "$(xdotool search --onlyvisible --name '^Linsoft Start$')"
+xdotool key Down Up Escape
+echo 'PASS: multiple-selection move, location/history, hidden directory, UTF-8 name, keyboard context and Start'
+"$icons" --write-wallpaper "$HOME/test-wallpaper.png"
+linsoft-native --check-wallpaper "$HOME/test-wallpaper.png"
+if linsoft-native --check-wallpaper "$HOME/alpha.txt"; then exit 1; fi
+export XDG_CONFIG_HOME="$HOME/.config"
+mkdir -p "$XDG_CONFIG_HOME/linsoft-native"
+printf '2\n1\n64\n4\n%s\n' "$HOME/test-wallpaper.png" > "$XDG_CONFIG_HOME/linsoft-native/desktop.conf"
+linsoft-native --reload
+sleep .7
+"$icons" --pixel '#26445a'
+preferences_choice() {
+    local row=$1 value=$2 pid
+    linsoft-native-preferences &
+    pid=$!
+    dialog_ready
+    xdotool key Down Home
+    for ((n=0;n<row;n++)); do xdotool key Down; done
+    xdotool key Return
+    sleep .5
+    dialog_ready
+    xdotool key Down Home
+    for ((n=0;n<value;n++)); do xdotool key Down; done
+    xdotool key Return
+    wait "$pid"
+}
+preferences_choice 4 0
+test "$(sed -n '3p' "$XDG_CONFIG_HOME/linsoft-native/desktop.conf")" == 32
+preferences_choice 5 2
+test "$(sed -n '4p' "$XDG_CONFIG_HOME/linsoft-native/desktop.conf")" == 3
+linsoft-native --quit
+wait "$wm"
+linsoft-native >> /var/tmp/linsoft-native-test/wm.log 2>&1 &
+wm=$!
+sleep 1
+"$icons" --pixel '#26445a'
+printf '0\n0\n48\n1\n-\n' > "$XDG_CONFIG_HOME/linsoft-native/desktop.conf"
+linsoft-native --reload
+sleep .5
+linsoft-native --files
+sleep .5
+files=$(xdotool search --onlyvisible --class '^LinsoftFiles$')
+echo 'PASS: PNG decoding/limit, wallpaper pixel, real settings dialogs, configuration reload and desktop restart persistence'
+mkdir -p "$HOME/NextA/Target" "$HOME/NextB"
+printf search-proof > "$HOME/NextA/Needle.txt"
+printf drag-proof > "$HOME/NextA/Drop.txt"
+"$icons" --write-wallpaper "$HOME/NextA/Preview.png"
+"$icons" --write-jpeg "$HOME/NextA/Photo.jpg"
+location "$HOME/NextA"
+xdotool key ctrl+t
+location "$HOME/NextB"
+xdotool key ctrl+Tab ctrl+shift+n
+xdotool type TabAProof
+xdotool key Return
+sleep .3
+test -d "$HOME/NextA/TabAProof"
+xdotool key ctrl+shift+Tab ctrl+shift+n
+xdotool type TabBProof
+xdotool key Return
+sleep .3
+test -d "$HOME/NextB/TabBProof"
+xdotool key ctrl+w
+sleep .3
+xdotool key ctrl+f
+xdotool type needle
+xdotool key Return Down F2 ctrl+a
+xdotool type Found.txt
+xdotool key Return
+sleep .3
+test -f "$HOME/NextA/Found.txt"
+test ! -e "$HOME/NextA/Needle.txt"
+xdotool key ctrl+f ctrl+a
+xdotool type preview
+xdotool key Return Down
+sleep .5
+"$icons" --preview-pixel "$files"
+xdotool key ctrl+f ctrl+a BackSpace Return
+sleep .3
+xdotool key ctrl+f
+xdotool type photo
+xdotool key Return Down
+sleep .5
+"$icons" --preview-pixel "$files"
+xdotool key ctrl+f ctrl+a BackSpace Return
+sleep .3
+xdotool mousemove --window "$files" 90 203 mousedown 1 sleep .2 \
+    mousemove --window "$files" 90 145 sleep .3 mouseup 1
+dialog_ready
+xdotool key Down Home Return
+sleep .7
+cmp "$HOME/NextA/Drop.txt" "$HOME/NextA/TabAProof/Drop.txt"
+mkdir -p "$HOME/DropGroup/Target"
+printf first > "$HOME/DropGroup/First.txt"
+printf second > "$HOME/DropGroup/Second.txt"
+location "$HOME/DropGroup"
+xdotool key Down Down shift+Down
+xdotool mousemove --window "$files" 90 174 mousedown 1 sleep .2 \
+    mousemove --window "$files" 90 145 sleep .3 mouseup 1
+dialog_ready
+xdotool key Down Home Down Return
+sleep .7
+test ! -e "$HOME/DropGroup/First.txt"
+test ! -e "$HOME/DropGroup/Second.txt"
+grep -qx first "$HOME/DropGroup/Target/First.txt"
+grep -qx second "$HOME/DropGroup/Target/Second.txt"
+echo 'PASS: independent tabs, forward/reverse cycling, tab close, actual name-filter rename, PNG/JPEG preview RGB and mouse-drop copy'
+echo 'PASS: multi-selected mouse-drop move keeps the complete selection and exact contents'
+xdotool key super+space
+sleep .3
+xdotool type xterm
+xdotool key Return
+sleep 1
+search_terminal=$(xdotool search --onlyvisible --class '^XTerm$' | head -n1)
+test -n "$search_terminal"
+xdotool windowactivate --sync "$search_terminal"
+xdotool key alt+F4
+sleep .4
+xdotool key super+space
+sleep .3
+xdotool type zzzNoSuchNativeApp
+xdotool key Return
+sleep .2
+test -n "$(xdotool search --onlyvisible --name '^Linsoft Start$')"
+xdotool key Escape
+echo 'PASS: Start query launches installed xterm and empty-result Enter is safe'
+xdotool windowactivate --sync "$files"
+xprop -root _NET_NUMBER_OF_DESKTOPS | grep -q '= 4'
+xdotool key super+shift+2
+sleep .3
+xprop -id "$files" _NET_WM_DESKTOP | grep -q '= 1'
+test -z "$(xdotool search --onlyvisible --class '^LinsoftFiles$' || true)"
+xdotool key super+2
+sleep .3
+xprop -root _NET_CURRENT_DESKTOP | grep -q '= 1'
+test -n "$(xdotool search --onlyvisible --class '^LinsoftFiles$')"
+xdotool windowactivate --sync "$files"
+xdotool key super+shift+1 super+1
+sleep .3
+test -n "$(xdotool search --onlyvisible --class '^LinsoftFiles$')"
+echo 'PASS: four EWMH workspaces, keyboard window transfer and workspace visibility'
+linsoft-native-center calendar &
+calendar=$!
+dialog_ready
+xdotool key Escape
+wait "$calendar"
+linsoft-native-center &
+center=$!
+dialog_ready
+xdotool key Escape
+wait "$center"
+echo 'PASS: real panel-center/calendar dialogs and cancellation'
+external="$HOME/External folder Ž"
+mkdir "$external"
+linsoft-files "$external"
+xdotool key ctrl+shift+n
+xdotool type DirectPathProof
+xdotool key Return
+sleep .4
+test -d "$external/DirectPathProof"
+location "$HOME"
+timeout 10 env XDG_CURRENT_DESKTOP=X-Generic xdg-open "$external"
+sleep .5
+xdotool key ctrl+shift+n
+xdotool type XdgPathProof
+xdotool key Return
+sleep .4
+test -d "$external/XdgPathProof"
+if linsoft-files "$HOME/no-such-directory" > /var/tmp/linsoft-native-test/invalid-directory.log 2>&1; then
+    echo 'ERROR: missing external directory was accepted' >&2; exit 1
+fi
+grep -q 'invalid directory' /var/tmp/linsoft-native-test/invalid-directory.log
+echo 'PASS: Linsoft Files and xdg-open open the exact directory with spaces/Unicode; invalid paths fail explicitly'
+"$icons" --modal
+"$icons" --notification
+rss_before=$(awk '/VmRSS:/ {print $2}' "/proc/$wm/status")
+fds_before=$(find "/proc/$wm/fd" -maxdepth 1 -type l | wc -l)
+for ((iteration=0;iteration<25;iteration++)); do
+    linsoft-native --files
+    sleep .08
+    xdotool key alt+F4
+    sleep .08
+done
+linsoft-native --files
+sleep .4
+files=$(xdotool search --onlyvisible --class '^LinsoftFiles$')
+kill -0 "$wm"
+rss_after=$(awk '/VmRSS:/ {print $2}' "/proc/$wm/status")
+test "$rss_after" -le "$((rss_before+8192))"
+test "$(find "/proc/$wm/fd" -maxdepth 1 -type l | wc -l)" -eq "$fds_before"
+echo 'PASS: 25 repeated file-window open/close cycles with input-context recreation'
+xterm -fa 'DejaVu Sans Mono' -title NativeWindowTest -geometry 70x18 > /var/tmp/linsoft-native-test/xterm.log 2>&1 &
+terminal=$!
+for ((i=0;i<100;i++)); do
+    if win=$(xdotool search --name '^NativeWindowTest$'); then break; fi
+    sleep .1
+done
+xdotool windowactivate --sync "$win"
+geometry() {
+    eval "$(xdotool getwindowgeometry --shell "$win")"
+    Y=$(LC_ALL=C xwininfo -id "$win" | awk '/Absolute upper-left Y:/ {print $4}')
+}
+geometry
+old_x=$X; old_y=$Y; old_w=$WIDTH; old_h=$HEIGHT
+xdotool windowmove "$win" 0 0
+sleep .3
+geometry
+test "$X" -eq "$old_x"
+test "$Y" -eq "$old_y"
+xprop -id "$win" _NET_FRAME_EXTENTS | grep -q '= 1, 1, 33, 1'
+xdotool mousemove "$((X+80))" "$((Y-16))" mousedown 1 sleep .2 mousemove "$((X+130))" "$((Y+24))" sleep .2 mouseup 1
+sleep .5
+geometry
+test "$X" -eq "$((old_x+50))"
+test "$Y" -eq "$((old_y+40))"
+xdotool mousemove "$((X+80))" "$((Y-16))" mousedown 3 sleep .2 mousemove "$((X+150))" "$((Y+34))" sleep .2 mouseup 3
+sleep .5
+geometry
+test "$WIDTH" -ge "$((old_w+55))"
+test "$WIDTH" -le "$((old_w+70))"
+test "$HEIGHT" -ge "$((old_h+30))"
+test "$HEIGHT" -le "$((old_h+50))"
+resized_width=$WIDTH
+xdotool key super+Left
+sleep .3
+geometry
+test "$WIDTH" -eq 640
+test "$HEIGHT" -eq 716
+xdotool key super+Right
+sleep .3
+geometry
+test "$X" -eq 641
+test "$WIDTH" -eq 640
+xdotool key super+Up
+sleep .3
+xdotool key super+Up
+sleep .3
+geometry
+test "$WIDTH" -eq "$resized_width"
+xdotool mousemove "$((X+80))" "$((Y-16))" click --repeat 2 --delay 120 1
+sleep .4
+geometry
+test "$WIDTH" -eq 1280
+xdotool mousemove 80 16 click --repeat 2 --delay 120 1
+sleep .4
+geometry
+test "$WIDTH" -eq "$resized_width"
+edge_width=$WIDTH
+xdotool mousemove "$((X+WIDTH-3))" "$((Y+90))" mousedown 1 sleep .2 \
+    mousemove "$((X+WIDTH+77))" "$((Y+90))" sleep .2 mouseup 1
+sleep .4
+geometry
+test "$WIDTH" -ge "$((edge_width+65))"
+test "$WIDTH" -le "$((edge_width+80))"
+resized_width=$WIDTH
+echo 'PASS: measured half-screen snapping, double-click maximize/restore and edge resize'
+xdotool key super+Up
+sleep .5
+geometry
+test "$WIDTH" -eq 1280
+test "$HEIGHT" -eq 716
+xdotool key super+Up
+sleep .5
+geometry
+test "$WIDTH" -eq "$resized_width"
+xdotool key super+Down
+sleep .5
+xprop -id "$win" WM_STATE | grep -q Iconic
+xdotool mousemove 550 774 click 1
+sleep .5
+xprop -id "$win" WM_STATE | grep -q Normal
+xdotool key alt+Tab
+sleep .3
+test "$(xdotool getactivewindow)" -eq "$files"
+xdotool key alt+Tab
+sleep .3
+test "$(xdotool getactivewindow)" -eq "$win"
+xdotool key alt+F4
+wait "$terminal"
+terminal=''
+echo 'PASS: native windows: decorate, move, resize, maximize, restore, minimize, focus, Alt+Tab, close'
+if grep -q 'Linsoft Native X11:' /var/tmp/linsoft-native-test/wm.log; then
+    cat /var/tmp/linsoft-native-test/wm.log >&2; exit 1
+fi
+linsoft-native --quit
+wait "$wm"
+wm=''
+if linsoft-native --files >/dev/null 2>&1; then exit 1; fi
+echo 'PASS: original desktop lifecycle and command error handling'

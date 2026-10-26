@@ -1,0 +1,59 @@
+#!/bin/bash
+set -euo pipefail
+fail() {
+    printf 'Linsoft preferences: %s\n' "$*" >&2
+    zenity --error --title='Linsoft Native - plocha' --text="$*"
+    exit 1
+}
+cancel_or_fail() {
+    local result=$1
+    [[ $result == 1 ]] && exit 0
+    fail "Dialog zlyhal: $result"
+}
+config="${XDG_CONFIG_HOME:-$HOME/.config}/linsoft-native"
+mkdir -p "$config"
+theme=0; accent=0; size=48; pin=1; wallpaper=-
+if [[ -f $config/desktop.conf ]]; then
+    mapfile -t values < "$config/desktop.conf"
+    [[ ${#values[@]} == 5 ]] || fail 'Neplatna konfiguracia plochy.'
+    theme=${values[0]}; accent=${values[1]}; size=${values[2]}; pin=${values[3]}; wallpaper=${values[4]}
+fi
+if action=$(zenity --list --title='Linsoft Native - plocha' --width=600 --height=420 \
+    --text='Zmeny sa prejavia ihned a zostanu po restarte.' --column=ID --column=Nastavenie --hide-column=1 \
+    --print-column=1 wallpaper 'Vybrat PNG pozadie' clear 'Povodne pozadie Linsoft' \
+    theme 'Farba pozadia plochy' accent 'Farba zvyraznenia a ikon' size 'Velkost ikon na ploche' \
+    pin 'Aplikacia pripnuta vedla Suborov'); then :
+else cancel_or_fail "$?"; fi
+case "$action" in
+    wallpaper)
+        if wallpaper=$(zenity --file-selection --title='Vyber PNG pozadie (do 24 megapixelov)' \
+            --file-filter='PNG | *.png *.PNG'); then :
+        else cancel_or_fail "$?"; fi
+        [[ $wallpaper == /* && -r $wallpaper && $wallpaper != *$'\n'* ]] || fail 'Neplatna cesta pozadia.'
+        linsoft-native --check-wallpaper "$wallpaper" || fail 'Pozadie nie je platne PNG do 24 megapixelov.'
+        ;;
+    clear) wallpaper=- ;;
+    theme|accent|size|pin)
+        case "$action" in
+            theme) options=(0 'Modra noc' 1 Grafit 2 'Lesna noc') ;;
+            accent) options=(0 Tyrkysova 1 Matova 2 Fialova) ;;
+            size) options=(32 Mala 48 Stredna 64 Velka) ;;
+            pin) options=(1 Terminal 2 Internet 3 Writer 4 Calc) ;;
+        esac
+        if value=$(zenity --list --title='Linsoft Native - vyber' --column=ID --column=Hodnota \
+            --hide-column=1 --print-column=1 "${options[@]}"); then :
+        else cancel_or_fail "$?"; fi
+        case "$action" in
+            theme) theme=$value ;; accent) accent=$value ;; size) size=$value ;; pin) pin=$value ;;
+        esac
+        ;;
+    *) fail 'Nezname nastavenie.' ;;
+esac
+[[ $theme =~ ^[012]$ && $accent =~ ^[012]$ && $size =~ ^(32|48|64)$ && $pin =~ ^[1234]$ ]] ||
+    fail 'Neplatna hodnota nastavenia.'
+temporary=$(mktemp "$config/desktop.conf.XXXXXX")
+trap 'rm -f -- "$temporary"' EXIT
+printf '%s\n' "$theme" "$accent" "$size" "$pin" "$wallpaper" > "$temporary"
+chmod 0600 "$temporary"
+mv -- "$temporary" "$config/desktop.conf"
+linsoft-native --reload || fail 'Konfiguracia bola ulozena, ale plocha neodpoveda.'

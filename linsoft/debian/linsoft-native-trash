@@ -1,0 +1,28 @@
+#!/bin/bash
+set -euo pipefail
+fail() {
+    printf 'Linsoft trash: %s\n' "$*" >&2
+    zenity --error --title='Kos Linsoft' --text="$*"
+    exit 1
+}
+if listing=$(gio trash --list); then :
+else fail 'Nepodarilo sa nacitat kos.'; fi
+if [[ -z $listing ]]; then
+    exec zenity --info --title='Kos Linsoft' --text='Kos je prazdny.'
+fi
+rows=()
+while IFS=$'\t' read -r uri origin; do
+    [[ $uri == trash:///* ]] || fail 'Kos vratil neocakavany format polozky.'
+    rows+=("$uri" "${origin:-$uri}")
+done <<< "$listing"
+if selected=$(zenity --list --title='Kos Linsoft - obnovit polozku' --width=850 --height=500 \
+    --text='Vyber polozku na obnovenie do povodneho priecinka. Existujuci ciel sa neprepise.' \
+    --column=URI --column='Povodna cesta' --hide-column=1 --print-column=1 "${rows[@]}"); then :
+else
+    result=$?
+    [[ $result == 1 ]] && exit 0
+    fail "Vyber z kosa zlyhal: $result"
+fi
+[[ $selected == trash:///* ]] || fail 'Neplatny vyber z kosa.'
+gio trash --restore -- "$selected" || fail 'Obnovenie zlyhalo. Skontroluj povodny priecinok a existujuci ciel.'
+zenity --info --title='Kos Linsoft' --text='Polozka bola obnovena. V spravcovi suborov pouzi F5.'

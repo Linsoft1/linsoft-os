@@ -1,0 +1,150 @@
+#!/bin/bash
+set -euo pipefail
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+temporary=$(mktemp -d)
+cleanup() {
+    rm -f -- "$temporary/zenity" "$temporary/apt-cache" "$temporary/xterm" \
+        "$temporary/openbox" "$temporary/apt-get" "$temporary/notify-send" \
+        "$temporary/events" "$temporary/errors" "$temporary/linsoft-native" "$temporary/linsoft-native-preferences"
+    rmdir "$temporary"
+}
+trap cleanup EXIT
+cat > "$temporary/zenity" <<'MOCK'
+#!/bin/bash
+printf 'zenity %s\n' "$*" >> "$EVENTS"
+case "$*" in
+    *--entry*) printf '%s' "${PACKAGE:-tree}" ;;
+    *--list*) printf '%s' "${QUICK_ACTION:-}" ;;
+    *--question*) exit "${QUESTION_STATUS:-${ZENITY_STATUS:-0}}" ;;
+esac
+exit "${ZENITY_STATUS:-0}"
+MOCK
+cat > "$temporary/apt-cache" <<'MOCK'
+#!/bin/bash
+printf 'apt-cache %s\n' "$*" >> "$EVENTS"
+echo 'tree - display an indented directory tree'
+exit "${APT_STATUS:-0}"
+MOCK
+cat > "$temporary/xterm" <<'MOCK'
+#!/bin/bash
+printf 'xterm %s\n' "$*" >> "$EVENTS"
+exit "${APP_STATUS:-0}"
+MOCK
+chmod 0755 "$temporary/zenity" "$temporary/apt-cache" "$temporary/xterm"
+cat > "$temporary/openbox" <<'MOCK'
+#!/bin/bash
+printf 'openbox %s\n' "$*" >> "$EVENTS"
+MOCK
+chmod 0755 "$temporary/openbox"
+cat > "$temporary/linsoft-native" <<'MOCK'
+#!/bin/bash
+printf 'linsoft-native %s\n' "$*" >> "$EVENTS"
+MOCK
+chmod 0755 "$temporary/linsoft-native"
+cp "$temporary/linsoft-native" "$temporary/linsoft-native-preferences"
+sed -i 's/linsoft-native /linsoft-native-preferences /' "$temporary/linsoft-native-preferences"
+cat > "$temporary/apt-get" <<'MOCK'
+#!/bin/bash
+printf 'apt-get %s\n' "$*" >> "$EVENTS"
+for ((index=0; index<${UPDATE_COUNT:-0}; index++)); do
+    printf 'Inst package%s [1.0] (2.0 Debian:stable)\n' "$index"
+done
+exit "${UPDATE_STATUS:-0}"
+MOCK
+cat > "$temporary/notify-send" <<'MOCK'
+#!/bin/bash
+printf 'notify-send %s\n' "$*" >> "$EVENTS"
+MOCK
+chmod 0755 "$temporary/apt-get" "$temporary/notify-send"
+export PATH="$temporary:$PATH" EVENTS="$temporary/events"
+for action in search install remove; do
+    : > "$EVENTS"
+    bash "$source_dir/debian/linsoft-app-center" "$action"
+    if [[ $action == search ]]; then
+        grep -qx 'apt-cache search -- tree' "$EVENTS"
+    else
+        grep -q "/usr/local/bin/linsoft-package-window $action tree$" "$EVENTS"
+    fi
+done
+for value in '-y' '/tmp/package.deb' 'tree;id' 'tree another' 'tree_foo'; do
+    export PACKAGE=$value
+    : > "$EVENTS"
+    if bash "$source_dir/debian/linsoft-app-center" install 2>"$temporary/errors"; then
+        echo "Invalid package entry accepted: $value" >&2; exit 1
+    fi
+    ! grep -q '^xterm ' "$EVENTS"
+done
+unset PACKAGE
+export ZENITY_STATUS=1
+: > "$EVENTS"
+bash "$source_dir/debian/linsoft-app-center" install
+! grep -q '^xterm ' "$EVENTS"
+export ZENITY_STATUS=255
+if bash "$source_dir/debian/linsoft-app-center" 2>"$temporary/errors"; then
+    echo 'Dialog error was accepted as cancellation.' >&2; exit 1
+fi
+unset ZENITY_STATUS
+export APP_STATUS=7
+if bash "$source_dir/debian/linsoft-app-center" install 2>"$temporary/errors"; then
+    echo 'Package terminal failure was accepted.' >&2; exit 1
+fi
+grep -q 'Sprava balikov zlyhala' "$temporary/errors"
+export QUICK_ACTION=logout
+for status in 0 1 255; do
+    export QUESTION_STATUS=$status
+    : > "$EVENTS"
+    if bash "$source_dir/debian/linsoft-quick-settings" 2>"$temporary/errors"; then
+        [[ $status != 255 ]]
+    else
+        [[ $status == 255 ]]
+        grep -q 'logout confirmation failed (255)' "$temporary/errors"
+    fi
+    if [[ $status == 0 ]]; then
+        grep -qx 'openbox --exit' "$EVENTS"
+    else
+        ! grep -q '^openbox ' "$EVENTS"
+    fi
+done
+unset QUICK_ACTION QUESTION_STATUS
+export LINSOFT_NATIVE=1 QUICK_ACTION=logout QUESTION_STATUS=0
+: > "$EVENTS"
+bash "$source_dir/debian/linsoft-quick-settings"
+grep -qx 'linsoft-native --quit' "$EVENTS"
+! grep -q '^openbox ' "$EVENTS"
+export QUICK_ACTION=panel
+: > "$EVENTS"
+bash "$source_dir/debian/linsoft-quick-settings"
+grep -qx 'linsoft-native-preferences ' "$EVENTS"
+unset LINSOFT_NATIVE QUICK_ACTION QUESTION_STATUS
+for count in 0 2; do
+    export UPDATE_COUNT=$count
+    : > "$EVENTS"
+    bash "$source_dir/debian/linsoft-update-notice"
+    if [[ $count == 0 ]]; then
+        ! grep -q '^notify-send ' "$EVENTS"
+    else
+        grep -q '2 aktualizacii podla ulozenych indexov' "$EVENTS"
+    fi
+done
+export UPDATE_STATUS=7
+: > "$EVENTS"
+if bash "$source_dir/debian/linsoft-update-notice" 2>"$temporary/errors"; then
+    echo 'Failed update check was accepted.' >&2; exit 1
+fi
+grep -q 'Linsoft update check failed' "$temporary/errors"
+grep -q '^notify-send -u critical ' "$EVENTS"
+unset UPDATE_COUNT UPDATE_STATUS
+if [[ $EUID == 0 ]]; then
+    export SUDO_USER=linsoft
+    for action in arbitrary 'install /tmp/file.deb' 'install -y' 'remove bash;id'; do
+        read -r -a args <<< "$action"
+        if bash "$source_dir/debian/linsoft-package-admin" "${args[@]}" >"$temporary/errors" 2>&1; then
+            echo "Invalid privileged package request accepted: $action" >&2; exit 1
+        fi
+        test -s "$temporary/errors"
+    done
+    if bash "$source_dir/debian/linsoft-authorize" session poweroff extra >"$temporary/errors" 2>&1; then
+        echo 'Session poweroff accepted an argument.' >&2; exit 1
+    fi
+fi
+echo 'PASS: app-center dispatch, cancellation/errors, package-input rejection and fixed privileged action validation'

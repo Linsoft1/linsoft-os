@@ -1,0 +1,12 @@
+#!/bin/bash
+set -u
+printf 'Linsoft: requesting new DHCP configuration...\n'
+/usr/sbin/dhcpcd -n
+result=$?
+/usr/sbin/ip -brief address
+/usr/sbin/ip route
+if [[ $result != 0 ]]; then
+    printf 'DHCP renewal failed (exit %d). Check link and system log.\n' "$result" >&2
+fi
+read -r -p 'Press Enter to return to the desktop. '
+exit "$result"

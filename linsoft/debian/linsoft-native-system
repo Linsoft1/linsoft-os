@@ -1,0 +1,126 @@
+#!/bin/bash
+set -euo pipefail
+export LC_ALL=C
+fail() {
+    printf 'Linsoft system panel: %s\n' "$*" >&2
+    zenity --error --title='Linsoft - systemovy panel' --text="$*"
+    exit 1
+}
+status() {
+    volume='?'
+    if output=$(pactl get-sink-volume @DEFAULT_SINK@ 2>&1); then
+        volume=$(awk 'NR==1 {print $5}' <<< "$output")
+        if muted=$(pactl get-sink-mute @DEFAULT_SINK@); then
+            [[ $muted != *yes ]] || volume=MUTE
+        else printf 'Linsoft audio: cannot query mute\n' >&2; fi
+    else
+        printf 'Linsoft audio: %s\n' "$output" >&2
+    fi
+    network=OFF
+    for interface in /sys/class/net/*; do
+        [[ ${interface##*/} != lo ]] || continue
+        if [[ -r $interface/operstate && $(cat "$interface/operstate") == up ]]; then network=LAN; fi
+    done
+    battery=AC
+    for device in /sys/class/power_supply/*; do
+        [[ -r $device/type && $(cat "$device/type") == Battery ]] || continue
+        if [[ -r $device/capacity ]]; then battery="$(cat "$device/capacity")%"; else battery='BAT?'; fi
+        break
+    done
+    usb=0
+    for device in /sys/bus/usb/devices/*; do
+        [[ -r $device/idVendor ]] || continue
+        usb=$((usb+1))
+    done
+    printf '%s %s %s %s\n' "$volume" "$network" "$battery" "$usb"
+}
+storage_devices() {
+    for device in /sys/class/block/*; do
+        [[ -r $device/dev && ! -f $device/partition ]] || continue
+        resolved=$(readlink -f "$device")
+        if [[ $resolved == */usb* || ( -r $device/removable && $(cat "$device/removable") == 1 ) ]]; then
+            printf '%s:%s\n' "${device##*/}" "$(cat "$device/dev")"
+        fi
+    done
+}
+device_notice() {
+    local change=$1 result_file child result
+    result_file=$(mktemp)
+    notify-send --app-name='Linsoft zariadenia' --expire-time=12000 \
+        --action=devices='Otvorit zariadenia' --wait 'USB / vymenitelne disky' \
+        "$change Bezpecne odpojenie najdes v Centre Linsoft." > "$result_file" &
+    child=$!
+    trap 'if kill -0 "$child" 2>/dev/null; then kill "$child"; fi; rm -f -- "$result_file"; exit 0' TERM INT
+    if wait "$child"; then
+        choice=$(cat "$result_file")
+        rm -f -- "$result_file"
+        trap - TERM INT
+        [[ $choice != devices ]] || linsoft-native-center devices
+    else
+        result=$?
+        rm -f -- "$result_file"
+        trap - TERM INT
+        printf 'Linsoft devices: notification failed\n' >&2
+        return "$result"
+    fi
+}
+if [[ ${1:-} == --storage ]]; then storage_devices; exit; fi
+if [[ ${1:-} == --watch ]]; then
+    previous=$(storage_devices)
+    notice=''
+    cleanup() {
+        if [[ -n $notice ]] && kill -0 "$notice" 2>/dev/null; then kill "$notice"; wait "$notice" || [[ $? == 143 ]]; fi
+    }
+    trap cleanup EXIT
+    trap 'exit 0' TERM INT
+    while :; do
+        value=$(status)
+        xprop -root -f _LINSOFT_NATIVE_STATUS 8s -set _LINSOFT_NATIVE_STATUS "$value"
+        current=$(storage_devices)
+        if [[ $current != "$previous" ]]; then
+            if [[ -n $notice ]]; then
+                if kill -0 "$notice" 2>/dev/null; then kill "$notice"; fi
+                wait "$notice" || [[ $? == 143 ]]
+            fi
+            device_notice 'Zoznam diskov sa zmenil.' &
+            notice=$!
+            previous=$current
+        fi
+        sleep 5
+    done
+fi
+summary=$(status)
+if action=$(zenity --list --title='Linsoft - systemovy panel' --width=640 --height=490 \
+    --text="Hlasitost / siet / bateria / USB zariadenia:\n$summary\nAC = bez zistenej baterie; LAN = aktivne rozhranie, nie test internetu." \
+    --column=ID --column=Ovladanie --hide-column=1 --print-column=1 \
+    sound 'Zvukove zariadenia a hlasitost' mute 'Stlmit / obnovit zvuk' \
+    network 'Podrobnosti siete' renew 'Obnovit DHCP' devices 'USB a disky' \
+    mount 'Pripojit USB disk' unmount 'Bezpecne odpojit USB disk' \
+    notifications 'Oznamenia a historia' battery 'Podrobnosti baterie'); then :
+else
+    result=$?
+    [[ $result == 1 ]] && exit 0
+    fail "Systemovy dialog zlyhal: $result"
+fi
+case "$action" in
+    sound|network|renew|devices|mount|unmount) exec linsoft-settings "$action" ;;
+    notifications) exec linsoft-native-center ;;
+    mute) pactl set-sink-mute @DEFAULT_SINK@ toggle || fail 'Stlmenie zvuku zlyhalo.' ;;
+    battery)
+        report=$(mktemp)
+        trap 'rm -f -- "$report"' EXIT
+        found=false
+        for device in /sys/class/power_supply/*; do
+            [[ -r $device/uevent ]] || continue
+            cat "$device/uevent" >> "$report"
+            found=true
+        done
+        $found || printf 'Tento pocitac neposkytuje udaje baterie. QEMU obvykle nema bateriu.\n' > "$report"
+        if zenity --text-info --title='Bateria Linsoft' --filename="$report"; then :
+        else
+            result=$?
+            [[ $result == 1 ]] || fail "Zobrazenie baterie zlyhalo: $result"
+        fi
+        ;;
+    *) fail 'Neznama systemova akcia.' ;;
+esac

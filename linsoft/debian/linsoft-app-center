@@ -1,0 +1,90 @@
+#!/bin/bash
+set -euo pipefail
+fail() {
+    echo "Linsoft applications: $*" >&2
+    zenity --error --title='Aplikacie Linsoft OS' --text="$*"
+    exit 1
+}
+action=${1:-}
+if [[ -z $action ]]; then
+    if action=$(zenity --list --title='Aplikacie a aktualizacie Linsoft OS' --width=700 --height=430 \
+        --column=ID --column=Operacia --hide-column=1 --print-column=1 \
+        search 'Vyhladat aplikaciu v repozitaroch' installed 'Nainstalovane baliky' \
+        install 'Nainstalovat aplikaciu' remove 'Odinstalovat aplikaciu' \
+        updates 'Zobrazit dostupne aktualizacie' refresh 'Obnovit zoznam balikov' \
+        upgrade 'Nainstalovat aktualizacie' backup 'Zaloha a obnova systemu'); then :; else
+        status=$?
+        [[ $status == 1 ]] && exit 0
+        fail "Vyber zlyhal (stav $status)."
+    fi
+fi
+[[ $action =~ ^(search|installed|install|remove|updates|refresh|upgrade|backup)$ ]] ||
+    fail 'Neznama operacia.'
+report=$(mktemp)
+trap 'rm -f -- "$report"' EXIT
+package=''
+case "$action" in
+    search|install|remove)
+        if package=$(zenity --entry --title='Aplikacie Linsoft OS' \
+            --text='Nazov balika alebo hladane slovo, napr. gimp, vlc, hello'); then :; else
+            status=$?; [[ $status == 1 ]] && exit 0; fail "Vstup zlyhal: $status"
+        fi
+        [[ $package =~ ^[a-z0-9][a-z0-9+.-]+$ && ${#package} -le 150 ]] ||
+            fail 'Pouzite jeden nazov balika; cesty, prikazy a prepinace nie su povolene.'
+        ;;
+esac
+case "$action" in
+    search) apt-cache search -- "$package" > "$report" ;;
+    installed) dpkg-query -W -f='${binary:Package}\t${Version}\t${db:Status-Status}\n' > "$report" ;;
+    updates)
+        {
+            echo 'Dostupne aktualizacie podla lokalnych indexov.'
+            echo 'Najprv zvolte Obnovit zoznam balikov pre aktualne vysledky.'
+            echo 'Toto aktualizuje Debian aplikacie, nie jadro ani zaklad LFS.'
+            apt-get -s --no-remove upgrade
+        } > "$report"
+        ;;
+    backup)
+        if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
+            printf '%s\n' 'Native: vypni system a vo Windows spusti Update-Linsoft-Native.cmd pred aktualizaciou.' \
+                'Ten vytvori overenu plnu zalohu: kontrola QCOW2, porovnanie obsahu a SHA256.' \
+                'Obnova: Manage-Linsoft-Native.cmd, potom vyber spravnu zalohu Native.' \
+                'Obnova je RUCNA a vrati CELY disk vratane dokumentov. Najprv exportuj novsie dokumenty.' \
+                'Pred obnovou zostane aktualny disk ako bezpecnostna kopia.' > "$report"
+        else
+        printf '%s\n' 'Plna zaloha/obnova sa robi vo Windows pri vypnutom Linsoft OS.' \
+            'Spustite Manage-Linsoft-OS.cmd a vyberte Zaloha alebo Obnova.' \
+            'Obnova nahradi cely disk vratane dokumentov stavom zo zalohy.' \
+            'Pred obnovou sa automaticky vytvori bezpecnostna kopia aktualneho disku.' \
+            'APT historie uchovavaju iba konfiguraciu a zoznam balikov, nie plnu zalohu.' > "$report"
+        fi
+        ;;
+    install|remove|refresh|upgrade)
+        if [[ $action == upgrade && ${LINSOFT_NATIVE:-0} == 1 ]]; then
+            if zenity --question --default-cancel --title='Native - overena zaloha pred aktualizaciou' \
+                --width=680 --text='Mas dokoncenu a overenu plnu zalohu cez Update-Linsoft-Native.cmd vo Windows? Ak nie, zrus tuto operaciu, normalne vypni Native a spusti tento nastroj. Obnova je rucna a vracia aj dokumenty do stavu zalohy.'; then :
+            else
+                status=$?; [[ $status == 1 ]] && exit 0; fail "Potvrdenie zalohy zlyhalo: $status"
+            fi
+        fi
+        if [[ -n $package ]]; then
+            apt-cache show -- "$package" > "$report" || fail 'Balik sa nenasiel; obnovte zoznam balikov.'
+            if zenity --text-info --title='Informacie o baliku' --filename="$report" --width=780 --height=540; then :; else
+                status=$?; [[ $status == 1 ]] && exit 0; fail "Informacie zlyhali: $status"
+            fi
+        fi
+        if zenity --question --title='Linsoft OS - systemova zmena' --width=620 \
+            --text="Operacia: $action $package. Baliky z repozitarov mozu spustat skripty ako root. Pred vacsou zmenou vytvorte plnu zalohu vo Windows. Pokracovat?"; then :; else
+            status=$?; [[ $status == 1 ]] && exit 0; fail "Potvrdenie zlyhalo: $status"
+        fi
+        args=("$action")
+        [[ -z $package ]] || args+=("$package")
+        xterm -T 'Linsoft OS - sprava aplikacii' -fa 'DejaVu Sans Mono' -fs 11 \
+            -bg '#111d30' -fg '#e3effb' -e /usr/local/bin/linsoft-package-window "${args[@]}" ||
+            fail 'Sprava balikov zlyhala alebo bola zrusena. Podrobnosti boli zobrazene v terminali.'
+        exit
+        ;;
+esac
+if zenity --text-info --title='Aplikacie Linsoft OS' --filename="$report" --width=900 --height=600; then :; else
+    status=$?; [[ $status == 1 ]] && exit 0; fail "Vysledky zlyhali: $status"
+fi

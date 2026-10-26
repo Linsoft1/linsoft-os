@@ -1,0 +1,111 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 ]]; then
+    echo "Set LINSOFT_LFS_BUILD=1 to build into the offline /mnt/lfs tree." >&2
+    exit 2
+fi
+if [[ $EUID != 0 ]]; then
+    echo "This build requires root for the LFS chroot." >&2
+    exit 1
+fi
+if [[ ! -f /mnt/lfs/etc/os-release ]] ||
+   ! grep -qx 'ID=linsoft' /mnt/lfs/etc/os-release; then
+    echo "Expected the Linsoft LFS build tree at /mnt/lfs." >&2
+    exit 1
+fi
+if findmnt -rn -o TARGET | grep -qE '^/mnt/lfs(/|$)'; then
+    echo "The LFS tree has active mounts; finish other chroot work first." >&2
+    exit 1
+fi
+
+cache=/mnt/lfs/sources/linsoft-plasma-foundation
+mkdir -p "$cache"
+
+download()
+{
+    local url=$1 digest=$2 file=$cache/${1##*/}
+    if [[ ! -f $file ]]; then
+        curl --fail --location --retry 3 --output "$file.part" "$url"
+        mv "$file.part" "$file"
+    fi
+    printf '%s  %s\n' "$digest" "$file" | sha256sum --check --status || {
+        echo "Pinned SHA-256 checksum mismatch: $file" >&2
+        exit 1
+    }
+    sha256sum "$file"
+}
+
+download https://www.x.org/archive/individual/lib/libpciaccess-0.18.1.tar.xz \
+    4af43444b38adb5545d0ed1c2ce46d9608cc47b31c2387fc5181656765a6fa76
+download https://dri.freedesktop.org/libdrm/libdrm-2.4.125.tar.xz \
+    d4bae92797a50f81a93524762e0410a49cd84cfa0f997795bc0172ac8fb1d96a
+download https://www.freedesktop.org/software/libevdev/libevdev-1.13.4.tar.xz \
+    f00ab8d42ad8b905296fab67e13b871f1a424839331516642100f82ad88127cd
+download https://bitmath.org/code/mtdev/mtdev-1.1.7.tar.bz2 \
+    a107adad2101fecac54ac7f9f0e0a0dd155d954193da55c2340c97f2ff1d814e
+download https://gitlab.freedesktop.org/libinput/libinput/-/archive/1.29.0/libinput-1.29.0.tar.gz \
+    ec71f6ec6632108a62756f49d86e864494108e70cf670e85f8b7579e970e152c
+
+bash /mnt/lfs/sources/.chroot-wrapper.sh -c '
+set -euo pipefail
+cd /sources/linsoft-plasma-foundation
+
+build()
+{
+    local name=$1
+    shift
+    if [[ ! -d $name ]]; then
+        tar -xf "$name.tar.xz"
+    fi
+    (
+        cd "$name"
+        if [[ -f build/build.ninja ]]; then
+            meson setup --reconfigure build --prefix=/usr \
+                --buildtype=release --wrap-mode=nofallback "$@"
+        else
+            meson setup build --prefix=/usr \
+                --buildtype=release --wrap-mode=nofallback "$@"
+        fi
+        ninja -C build -j2
+        ninja -C build install
+    )
+}
+
+build libpciaccess-0.18.1
+build libdrm-2.4.125 -Dudev=true -Dvalgrind=disabled
+build libevdev-1.13.4 -Ddocumentation=disabled -Dtests=disabled
+
+if [[ ! -d mtdev-1.1.7 ]]; then
+    tar -xf mtdev-1.1.7.tar.bz2
+fi
+(
+    cd mtdev-1.1.7
+    ./configure --prefix=/usr --disable-static
+    make -j2
+    make install
+)
+
+if [[ ! -d libinput-1.29.0 ]]; then
+    tar -xf libinput-1.29.0.tar.gz
+fi
+(
+    cd libinput-1.29.0
+    options=(--prefix=/usr --buildtype=release --wrap-mode=nofallback
+        -Ddebug-gui=false -Dtests=false -Dlibwacom=false
+        -Dudev-dir=/usr/lib/udev)
+    if [[ -f build/build.ninja ]]; then
+        meson setup --reconfigure build "${options[@]}"
+    else
+        meson setup build "${options[@]}"
+    fi
+    ninja -C build -j2
+    ninja -C build install
+)
+ldconfig
+pkg-config --modversion pciaccess libdrm libdrm_intel libevdev mtdev libinput
+libinput --version
+'
+
+echo "Graphics/input foundation installed in /mnt/lfs only."
+echo "No running VM disk was modified. Mesa, Qt and Plasma are still required."

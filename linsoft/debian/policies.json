@@ -1,0 +1,8 @@
+{
+  "policies": {
+    "HardwareAcceleration": false,
+    "DontCheckDefaultBrowser": true,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": ""
+  }
+}

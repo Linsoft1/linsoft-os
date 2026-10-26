@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
+
+copy_default()
+{
+    source=$1
+    destination=$2
+    if [ -e "$destination" ] || [ -L "$destination" ]; then
+        printf 'Kept existing %s\n' "$destination"
+        return
+    fi
+    install -D -m 0644 "$source_dir/$source" "$destination"
+    printf 'Installed %s\n' "$destination"
+}
+
+copy_default LinsoftNight.colors "$data_home/color-schemes/LinsoftNight.colors"
+copy_default wallpaper/metadata.json \
+    "$data_home/wallpapers/org.linsoft.night/metadata.json"
+copy_default wallpaper/contents/images/3840x2160.svg \
+    "$data_home/wallpapers/org.linsoft.night/contents/images/3840x2160.svg"
+
+printf '%s\n' \
+    "Appearance files installed for this user; the active theme was not changed." \
+    "After installing Plasma, select Linsoft Night in Colors and the wallpaper selector."

@@ -1,0 +1,10 @@
+gcc
+make
+pkg-config
+libx11-dev
+libxft-dev
+xvfb
+xdotool
+libpng-dev
+libglib2.0-dev
+libgdk-pixbuf-2.0-dev

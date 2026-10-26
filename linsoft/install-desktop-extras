@@ -1,0 +1,63 @@
+#!/bin/bash
+set -euo pipefail
+target=/mnt/linsoft-debian-image
+[[ $EUID == 0 && ${LINSOFT_LFS_BUILD:-} == 1 ]] || {
+    echo 'Use root and LINSOFT_LFS_BUILD=1 on a closed, separately mounted image.' >&2
+    exit 2
+}
+mountpoint -q "$target"
+grep -qx 'ID=linsoft' "$target/etc/os-release"
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root="$target/opt/linsoft-debian"
+while IFS= read -r package; do
+    status=$(chroot "$root" dpkg-query -W -f='${Status}' "$package")
+    [[ $status == 'install ok installed' ]] || {
+        echo "Missing desktop extension dependency: $package" >&2
+        exit 1
+    }
+done < "$source_dir/debian/packages-desktop-extras"
+chroot "$root" locale -a | grep -qi '^sk_SK.utf8$'
+LINSOFT_LFS_BUILD=1 bash "$source_dir/install-unified-desktop"
+for program in linsoft-settings linsoft-panel-network linsoft-host-control; do
+    install -m0755 "$source_dir/debian/$program" "$root/usr/local/bin/$program"
+done
+install -m0755 "$source_dir/debian/linsoft-host-service" "$target/usr/bin/"
+for entry in linsoft-settings linsoft-about; do
+    install -m0644 "$source_dir/debian/$entry.desktop" "$root/usr/share/applications/"
+done
+chroot "$root" update-desktop-database /usr/share/applications
+install -m0644 "$source_dir/debian/extras-menu.xml" "$root/etc/linsoft-apps/menu.xml"
+install -m0644 "$source_dir/debian/extras-keyboard-shortcuts.xml" "$root/etc/linsoft-apps/"
+install -m0644 "$source_dir/debian/extras-xsettings.xml" "$root/etc/linsoft-apps/"
+install -m0644 "$source_dir/debian/extras-mimeapps.list" "$root/etc/linsoft-apps/mimeapps.list"
+sed -i '\|<keyboard>|a \
+    <keybind key="W-i"><action name="Execute"><command>/usr/local/bin/linsoft-settings</command></action></keybind>\
+    <keybind key="W-r"><action name="Execute"><command>xfce4-appfinder --disable-server</command></action></keybind>\
+    <keybind key="C-S-Escape"><action name="Execute"><command>xfce4-taskmanager</command></action></keybind>\
+    <keybind key="XF86AudioRaiseVolume"><action name="Execute"><command>pactl set-sink-volume @DEFAULT_SINK@ +5%</command></action></keybind>\
+    <keybind key="XF86AudioLowerVolume"><action name="Execute"><command>pactl set-sink-volume @DEFAULT_SINK@ -5%</command></action></keybind>\
+    <keybind key="XF86AudioMute"><action name="Execute"><command>pactl set-sink-mute @DEFAULT_SINK@ toggle</command></action></keybind>' \
+    "$root/etc/linsoft-apps/rc.xml"
+cat >> "$root/etc/linsoft-apps/tint2rc" <<'PANEL'
+execp = new
+execp_command = /usr/local/bin/linsoft-panel-network
+execp_interval = 10
+execp_font = DejaVu Sans 9
+execp_font_color = #e3effb 100
+execp_lclick_command = /usr/local/bin/linsoft-settings network
+execp_padding = 8 0
+button = new
+button_text = Zvuk
+button_font = DejaVu Sans 10
+button_font_color = #e3effb 100
+button_lclick_command = /usr/local/bin/linsoft-settings sound
+button_padding = 8 0
+clock_lclick_command = /usr/local/bin/linsoft-settings clock
+PANEL
+sed -i 's/^panel_items = .*/panel_items = LTSEPBC/;
+    \|^launcher_padding|a launcher_item_app = /usr/share/applications/linsoft-settings.desktop' \
+    "$root/etc/linsoft-apps/tint2rc"
+cat "$source_dir/debian/packages" "$source_dir/debian/packages-desktop-extras" \
+    > "$target/usr/share/doc/linsoft-debian/requested-packages"
+touch "$root/etc/linsoft-apps/desktop-extras"
+echo 'Desktop extras installed. Validate this image in QEMU before release; physical hardware remains uncertified.'

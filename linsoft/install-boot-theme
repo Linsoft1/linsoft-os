@@ -1,0 +1,67 @@
+#!/bin/bash
+set -euo pipefail
+target=/mnt/linsoft-system-image
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Use root and LINSOFT_LFS_BUILD=1 on a separate mounted Linsoft image." >&2
+    exit 2
+fi
+mountpoint -q "$target"
+grep -qx 'ID=linsoft' "$target/etc/os-release"
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+device=$(findmnt -rn -o SOURCE --target "$target")
+partuuid=$(blkid -s PARTUUID -o value "$device")
+if [[ ! $partuuid =~ ^[a-fA-F0-9-]+$ ]]; then
+    echo "Missing/invalid partition identity; refusing to write GRUB config." >&2
+    exit 1
+fi
+install -d "$target/boot/grub/themes/linsoft" "$target/usr/share/doc/linsoft-boot"
+install -m 0644 "$source_dir/boot/"{theme.txt,background.png,linsoft.pf2} \
+    "$target/boot/grub/themes/linsoft/"
+install -m 0644 "$source_dir/../../linsoft-desktop-drm-backup/assets/FONT-LICENSE" \
+    "$target/usr/share/doc/linsoft-boot/FONT-LICENSE"
+install -m 0755 "$source_dir/pc-runtime/linsoft-system-settings" \
+    "$target/usr/bin/linsoft-system-settings"
+if [[ ! -f $target/root/.bash_profile.before-linsoft-boot ]]; then
+    cp -a "$target/root/.bash_profile" "$target/root/.bash_profile.before-linsoft-boot"
+fi
+install -m 0644 "$source_dir/boot/bash-profile" "$target/root/.bash_profile"
+for module in gfxterm gfxmenu png all_video font; do
+    test -f "$target/boot/grub/i386-pc/$module.mod"
+done
+if [[ ! -f $target/boot/grub/grub.cfg.before-linsoft-theme ]]; then
+    cp -a "$target/boot/grub/grub.cfg" "$target/boot/grub/grub.cfg.before-linsoft-theme"
+fi
+cat > "$target/boot/grub/grub.cfg" <<EOF
+set default=0
+set timeout=8
+serial --unit=0 --speed=115200 --word=8 --parity=no --stop=1
+terminal_input console serial
+insmod all_video
+insmod gfxterm
+insmod gfxmenu
+insmod png
+set gfxmode=1280x720,1024x768,auto
+set gfxpayload=keep
+if loadfont /boot/grub/themes/linsoft/linsoft.pf2; then
+    terminal_output gfxterm serial
+    set theme=/boot/grub/themes/linsoft/theme.txt
+    export theme
+else
+    echo "Linsoft: boot font unavailable; using text menu."
+    terminal_output console serial
+fi
+menuentry 'Linsoft OS - pracovna plocha' --id linsoft-desktop {
+    echo 'Linsoft OS: starting kernel and system services...'
+    linux /boot/linsoft-kernel root=PARTUUID=$partuuid rootfstype=ext4 rootwait ro console=ttyS0,115200n8 console=tty1 net.ifnames=0
+}
+menuentry 'Linsoft OS - diagnostika / konzola' --id linsoft-console {
+    terminal_output console serial
+    linux /boot/linsoft-kernel root=PARTUUID=$partuuid rootfstype=ext4 rootwait ro console=ttyS0,115200n8 console=tty1 net.ifnames=0 linsoft.console=1
+}
+menuentry 'Linsoft OS - obnova (root heslo)' --id linsoft-recovery {
+    terminal_output console serial
+    linux /boot/linsoft-kernel root=PARTUUID=$partuuid rootfstype=ext4 rootwait ro console=ttyS0,115200n8 console=tty1 net.ifnames=0 single
+}
+EOF
+/usr/sbin/chroot "$target" /usr/bin/grub-script-check /boot/grub/grub.cfg
+echo "Graphical Linsoft BIOS boot menu installed; no physical bootloader changed."

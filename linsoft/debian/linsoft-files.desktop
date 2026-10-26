@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Linsoft Files
+Exec=linsoft-files %f
+Icon=/usr/share/linsoft-apps/files.png
+Terminal=false
+Categories=System;FileManager;
+MimeType=inode/directory;

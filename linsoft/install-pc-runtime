@@ -1,0 +1,77 @@
+#!/bin/bash
+set -euo pipefail
+target=/mnt/linsoft-pc-image
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Run as root with LINSOFT_LFS_BUILD=1 on a separately mounted Linsoft image." >&2
+    exit 2
+fi
+mountpoint -q "$target"
+grep -qx 'ID=linsoft' "$target/etc/os-release"
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+stage=/mnt/lfs/sources/linsoft-pc-runtime/stage
+test -x "$stage/usr/sbin/dhcpcd"
+test -x "$stage/usr/bin/alsamixer"
+test -f /mnt/lfs/boot/linsoft-kernel-pc
+test -x /mnt/lfs/sources/linsoft-desktop-visual/linsoft-desktop
+(
+    cd "$source_dir/pc-runtime/firmware"
+    sha256sum --check SHA256SUMS
+)
+cp -a "$stage/." "$target/"
+install -m 0755 /mnt/lfs/sources/linsoft-desktop-visual/linsoft-desktop \
+    "$target/usr/bin/linsoft-desktop"
+install -m 0644 /mnt/lfs/boot/linsoft-kernel-pc "$target/boot/linsoft-kernel"
+install -m 0644 /mnt/lfs/boot/config-linsoft-kernel-pc "$target/boot/config-linsoft-kernel"
+install -m 0644 /mnt/lfs/boot/System.map-linsoft-kernel-pc "$target/boot/System.map-linsoft-kernel"
+release=$(make -s -C /mnt/lfs/sources/ch10-linux-build kernelrelease)
+install -d "$target/usr/lib/modules/$release"
+cp -a "/mnt/lfs/usr/lib/modules/$release/." "$target/usr/lib/modules/$release/"
+if ! /usr/sbin/chroot "$target" /usr/bin/getent passwd dhcpcd >/dev/null; then
+    /usr/sbin/chroot "$target" /usr/sbin/groupadd --system dhcpcd
+    /usr/sbin/chroot "$target" /usr/sbin/useradd --system --gid dhcpcd \
+        --home-dir /var/lib/dhcpcd --shell /bin/false dhcpcd
+fi
+/usr/sbin/chroot "$target" /usr/bin/install -d -m 0700 \
+    -o dhcpcd -g dhcpcd /var/lib/dhcpcd
+for package in dhcpcd-10.2.4 alsa-lib-1.2.14 alsa-utils-1.2.14; do
+    install -d "$target/usr/share/doc/$package"
+    for notice in /mnt/lfs/sources/linsoft-pc-runtime/"$package"/COPYING* \
+                  /mnt/lfs/sources/linsoft-pc-runtime/"$package"/LICENSE*; do
+        if [[ -f $notice ]]; then
+            install -m 0644 "$notice" "$target/usr/share/doc/$package/"
+        fi
+    done
+done
+for name in linsoft-network-renew linsoft-hardware-info linsoft-audio-mixer; do
+    install -m 0755 "$source_dir/pc-runtime/$name" "$target/usr/bin/$name"
+done
+install -Dm0755 "$source_dir/pc-runtime/linsoft-dhcp" \
+    "$target/etc/rc.d/init.d/linsoft-dhcp"
+install -d "$target/etc/linsoft/pre-dhcp"
+if [[ -f $target/etc/sysconfig/ifconfig.eth0 ]]; then
+    if [[ ! -f $target/etc/linsoft/pre-dhcp/ifconfig.eth0 ]]; then
+        cp -a "$target/etc/sysconfig/ifconfig.eth0" "$target/etc/linsoft/pre-dhcp/"
+    fi
+    printf 'ONBOOT=no\nIFACE=eth0\nSERVICE=ipv4-static\n' > "$target/etc/sysconfig/ifconfig.eth0"
+fi
+for level in 2 3 4 5; do
+    ln -sfn ../init.d/linsoft-dhcp "$target/etc/rc.d/rc$level.d/S25linsoft-dhcp"
+done
+for level in 0 1 6; do
+    ln -sfn ../init.d/linsoft-dhcp "$target/etc/rc.d/rc$level.d/K75linsoft-dhcp"
+done
+install -d "$target/usr/lib/firmware/rtl_nic" \
+    "$target/usr/share/doc/linsoft-firmware"
+install -m 0644 "$source_dir/pc-runtime/firmware/rtl_nic/"*.fw \
+    "$target/usr/lib/firmware/rtl_nic/"
+install -m 0644 "$source_dir/pc-runtime/firmware/LICENSES/LICENSE.r8169" \
+    "$target/usr/share/doc/linsoft-firmware/"
+if [[ -f $target/etc/resolv.conf ]]; then
+    if [[ ! -f $target/etc/linsoft/pre-dhcp/resolv.conf ]]; then
+        cp -a "$target/etc/resolv.conf" "$target/etc/linsoft/pre-dhcp/resolv.conf"
+    fi
+fi
+/usr/sbin/chroot "$target" /usr/sbin/ldconfig
+/usr/sbin/chroot "$target" /usr/bin/aplay --version
+/usr/sbin/chroot "$target" /usr/sbin/dhcpcd --version
+echo "PC runtime installed. Wi-Fi, physical audio and physical LAN still require hardware boot testing."

@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+[[ $EUID == 0 && ${SUDO_USER:-} == linsoft ]] || {
+    echo 'Linsoft authorization must be invoked through sudo by linsoft.' >&2; exit 2;
+}
+kind=${1:-}
+action=${2:-}
+argument=${3:-}
+[[ $# == 3 && $argument != *$'\n'* && ${#argument} -le 2048 ]] || {
+    echo 'Invalid authorized request.' >&2; exit 2;
+}
+case "$kind" in
+    host)
+        [[ $action =~ ^(clock|timezone|renew|devices|mount|unmount)$ ]] || exit 2
+        directory=/run/linsoft-host/inbox
+        ;;
+    session)
+        [[ $action =~ ^(drm|restart|poweroff|install)$ ]] || exit 2
+        if [[ $action == install ]]; then
+            [[ $argument == /* && $argument == *.deb && -f $argument ]] || {
+                echo 'Choose an existing trusted .deb file.' >&2; exit 2;
+            }
+        else
+            [[ -z $argument ]] || exit 2
+        fi
+        directory=/run/linsoft-session
+        ;;
+    *) echo 'Unsupported request kind.' >&2; exit 2 ;;
+esac
+[[ -d $directory && ! -L $directory && $(stat -c %u "$directory") == 0 ]] || {
+    echo 'Root-controlled request directory is unavailable.' >&2; exit 1;
+}
+request=$(mktemp "$directory/authorized.XXXXXX")
+trap 'rm -f -- "$request"' EXIT
+printf '%s\n%s\n' "$action" "$argument" > "$request"
+chmod 0600 "$request"
+mv -T -- "$request" "$directory/request"

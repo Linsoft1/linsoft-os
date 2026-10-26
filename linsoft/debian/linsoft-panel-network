@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+addresses=$(ip -o -4 address show up scope global)
+if [[ -n $addresses ]]; then
+    printf '%s\n' "$addresses" | awk '{print $2 ": " $4}'
+else
+    printf 'Siet: bez IPv4\n'
+fi

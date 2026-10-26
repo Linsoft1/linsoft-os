@@ -1,0 +1,28 @@
+#!/bin/bash
+# Live-only service: opens the Linsoft installer on VT9 when the desktop
+# user requests it through /opt/linsoft-debian/var/lib/linsoft-live/request.
+set -u
+case "${1:-}" in
+    start)
+        [[ -d /run/linsoft-live ]] || exit 0
+        grep -qw 'linsoft.installer=1' /proc/cmdline && exit 0
+        setsid /bin/bash "$0" watch </dev/null >/dev/null 2>&1 &
+        printf '%s\n' "$!" > /run/linsoft-live/service.pid
+        ;;
+    stop)
+        [[ -f /run/linsoft-live/service.pid ]] || exit 0
+        read -r pid < /run/linsoft-live/service.pid
+        [[ $pid =~ ^[0-9]+$ ]] && kill "$pid" 2>/dev/null
+        rm -f /run/linsoft-live/service.pid
+        ;;
+    watch)
+        dir=/opt/linsoft-debian/var/lib/linsoft-live
+        while sleep .5; do
+            [[ -e $dir/request || -L $dir/request ]] || continue
+            rm -f -- "$dir/request"
+            openvt -c 9 -s -w -- /usr/sbin/linsoft-install
+            chvt 8
+        done
+        ;;
+    *) echo 'Usage: linsoft-live start|stop' >&2; exit 2 ;;
+esac

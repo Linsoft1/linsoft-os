@@ -1,0 +1,71 @@
+#!/bin/bash
+set -euo pipefail
+target=/mnt/linsoft-debian-image
+[[ $EUID == 0 && ${LINSOFT_LFS_BUILD:-} == 1 && ${LINSOFT_NATIVE_IMAGE:-} == 1 ]] || {
+    echo 'Use root, LINSOFT_LFS_BUILD=1 and LINSOFT_NATIVE_IMAGE=1 on the closed separate Native image.' >&2
+    exit 2
+}
+mountpoint -q "$target"
+grep -qx ID=linsoft "$target/etc/os-release"
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root="$target/opt/linsoft-debian"
+test -f "$root/etc/linsoft-apps/professional"
+test -f "$root/etc/linsoft-apps/autologin"
+zoneinfo=/usr/share/zoneinfo/Europe/Bratislava
+test -f "$target$zoneinfo" && test -f "$root$zoneinfo"
+ln -sfn "$zoneinfo" "$target/etc/localtime"
+printf 'Europe/Bratislava\n' > "$target/etc/timezone"
+ln -sfn "$zoneinfo" "$root/etc/localtime"
+printf 'Europe/Bratislava\n' > "$root/etc/timezone"
+while IFS= read -r package; do
+    [[ $(chroot "$root" dpkg-query -W -f='${Status}' "$package") == 'install ok installed' ]]
+done < <(cat "$source_dir/debian/packages-native" "$source_dir/debian/packages-native-build")
+install -d "$root/usr/local/src/linsoft-native"
+install -m0644 "$source_dir/native/linsoft-native.c" "$source_dir/native/Makefile" \
+    "$source_dir/native/test-native-icons.c" \
+    "$root/usr/local/src/linsoft-native/"
+install -m0755 "$source_dir/native/test-native" "$root/usr/local/src/linsoft-native/"
+chroot "$root" make -C /usr/local/src/linsoft-native linsoft-native test-native-icons
+install -m0755 "$root/usr/local/src/linsoft-native/linsoft-native" "$root/usr/local/bin/"
+install -d "$root/usr/share/doc/linsoft-native"
+install -m0644 "$source_dir/native/README.md" "$root/usr/share/doc/linsoft-native/"
+for program in linsoft-app-session linsoft-session-action linsoft-quick-settings linsoft-settings linsoft-files \
+    linsoft-native-file-action linsoft-native-trash linsoft-native-preferences linsoft-native-system \
+    linsoft-native-center linsoft-app-center; do
+    install -m0755 "$source_dir/debian/$program" "$root/usr/local/bin/"
+done
+install -m0644 "$source_dir/debian/linsoft-files.desktop" "$root/usr/share/applications/"
+chroot "$root" update-desktop-database /usr/share/applications
+plan=$(chroot "$root" apt-get -s purge openbox tint2 pcmanfm)
+printf '%s\n' "$plan"
+if ! awk '
+    $1=="Inst" {bad=1}
+    $1=="Remv" || $1=="Purg" {
+        if ($2!="openbox" && $2!="tint2" && $2!="pcmanfm") bad=1
+    }
+    END {exit bad}
+' <<< "$plan"; then
+    echo 'Refusing legacy desktop removal: APT would change additional packages.' >&2
+    exit 1
+fi
+DEBIAN_FRONTEND=noninteractive chroot "$root" apt-get -y purge openbox tint2 pcmanfm
+for program in openbox tint2 pcmanfm; do
+    test ! -x "$root/usr/bin/$program"
+done
+sed -i '/^openbox$/d; /^tint2$/d; /^pcmanfm$/d' "$root/etc/linsoft-apps/protected-packages"
+for associations in "$root/etc/linsoft-apps/mimeapps.list" "$root/home/linsoft/.config/mimeapps.list"; do
+    if [[ -f $associations ]]; then
+        sed -i 's/pcmanfm\.desktop/linsoft-files.desktop/g' "$associations"
+    fi
+done
+chroot "$root" env HOME=/root XDG_CONFIG_HOME=/etc/xdg XDG_CURRENT_DESKTOP=X-Generic \
+    timeout 10 xdg-mime default linsoft-files.desktop inode/directory
+cat "$source_dir/debian/packages-native" >> "$root/etc/linsoft-apps/protected-packages"
+sort -u -o "$root/etc/linsoft-apps/protected-packages" "$root/etc/linsoft-apps/protected-packages"
+install -m0644 /dev/null "$root/etc/linsoft-apps/native"
+rm -f "$root/etc/linsoft-apps/native-virgl"
+chroot "$root" dpkg-query -W -f='${binary:Package}\t${Version}\n' > "$root/linsoft-debian-packages.txt"
+install -m0644 "$root/linsoft-debian-packages.txt" "$target/usr/share/doc/linsoft-debian/installed-packages"
+chroot "$root" visudo -c
+chroot "$root" dpkg --audit
+echo 'Native-only Linsoft Desktop Professional installed. Openbox, tint2 and PCManFM removed; old disks preserved.'

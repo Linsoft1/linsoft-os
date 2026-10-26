@@ -1,0 +1,110 @@
+#!/bin/bash
+set -euo pipefail
+[[ $EUID == 0 ]] || { echo 'Host service requires root.' >&2; exit 2; }
+root=/opt/linsoft-debian
+control="$root/run/linsoft-host"
+private=$(mktemp -d /run/linsoft-host-worker.XXXXXX)
+cleanup() { rm -f -- "$private/request" "$private/result"; rmdir "$private"; }
+trap cleanup EXIT
+trap 'exit 0' TERM
+usb_device() {
+    [[ $1 =~ ^/dev/[a-zA-Z0-9]+$ && -b $1 ]] || return 1
+    local parent removable transport
+    parent=$(lsblk -ndo PKNAME "$1")
+    [[ -n $parent ]] || parent=${1#/dev/}
+    removable=$(cat "/sys/class/block/$parent/removable")
+    transport=$(lsblk -ndo TRAN "/dev/$parent")
+    [[ $removable == 1 || $transport == usb ]]
+}
+operate() {
+    local action=$1 argument=$2 device destination zone
+    case "$action" in
+        clock)
+            [[ $argument =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2}$ ]] ||
+                { echo 'Expected YYYY-MM-DD HH:MM:SS' >&2; return 2; }
+            date --date="$argument" >/dev/null
+            date --set="$argument"
+            hwclock --systohc
+            ;;
+        timezone)
+            [[ $argument =~ ^[A-Za-z0-9_+/-]+$ && $argument != *..* ]] ||
+                { echo 'Invalid timezone' >&2; return 2; }
+            zone=$(realpath -e "/usr/share/zoneinfo/$argument")
+            [[ $zone == /usr/share/zoneinfo/* && -f $zone ]]
+            ln -sfn -- "$zone" /etc/localtime
+            ln -sfn -- "$zone" "$root/etc/localtime"
+            printf '%s\n' "$argument" > "$root/etc/timezone"
+            echo "Timezone: $argument"
+            ;;
+        renew)
+            [[ -z $argument ]]
+            /usr/sbin/dhcpcd -n
+            /usr/sbin/ip -brief address
+            ;;
+        devices)
+            [[ -z $argument ]]
+            lsblk -p -o NAME,TYPE,TRAN,RM,SIZE,FSTYPE,LABEL,MOUNTPOINTS
+            ;;
+        mount)
+            device=$argument
+            usb_device "$device" || { echo 'Only removable/USB block devices are accepted.' >&2; return 2; }
+            [[ -z $(lsblk -ndo MOUNTPOINTS "$device") ]] ||
+                { echo 'Device is already mounted.' >&2; return 2; }
+            destination="$root/media/${device#/dev/}"
+            [[ ! -L $destination ]] || return 2
+            mkdir -p "$destination"
+            case "$(blkid -s TYPE -o value "$device")" in
+                vfat|exfat) mount -o nosuid,nodev,noexec,uid=1000,gid=1000,umask=0077 "$device" "$destination" ;;
+                ext2|ext3|ext4) mount -o nosuid,nodev,noexec "$device" "$destination" ;;
+                *) echo 'Supported USB filesystems: FAT, exFAT and ext2/3/4.' >&2; return 2 ;;
+            esac
+            echo "/media/${device#/dev/}"
+            ;;
+        unmount)
+            usb_device "$argument" || { echo 'Only removable/USB devices are accepted.' >&2; return 2; }
+            destination="$root/media/${argument#/dev/}"
+            [[ ! -L $destination ]]
+            mountpoint -q "$destination"
+            sync
+            umount -- "$destination"
+            rmdir "$destination"
+            echo 'USB filesystem safely unmounted; the device may be removed.'
+            ;;
+        *)
+            echo "Unsupported host action: $action" >&2
+            return 2
+            ;;
+    esac
+}
+if [[ ${1:-} == --operate ]]; then
+    [[ $# == 3 ]]
+    operate "$2" "$3"
+    exit
+fi
+while sleep .2; do
+    [[ -e $control/inbox/request || -L $control/inbox/request ]] || continue
+    mv -T -- "$control/inbox/request" "$private/request"
+    if [[ ! -f $private/request || -L $private/request ]] ||
+       [[ $(stat -c %s "$private/request") -gt 4096 ]]; then
+        printf 'Invalid request file.\n' > "$private/result"
+        status=2
+    else
+        action=''
+        argument=''
+        {
+            if ! IFS= read -r action; then action=''; fi
+            IFS= read -r argument || true
+        } < "$private/request"
+        if /bin/bash "$0" --operate "$action" "$argument" > "$private/result" 2>&1; then
+            status=0
+            printf 'HOST_ACTION_PASS:%s\n' "$action" >> "$private/result"
+        else
+            status=$?
+            printf 'Linsoft host action %s failed (status %s).\n' "$action" "$status" >&2
+        fi
+    fi
+    { printf '%s\n' "$status"; cat "$private/result"; } > "$control/result.new"
+    chmod 0644 "$control/result.new"
+    mv -T -- "$control/result.new" "$control/result"
+    rm -f -- "$private/request"
+done

@@ -1,0 +1,67 @@
+#!/bin/sh
+
+set -eu
+
+if [ "${LINSOFT_LFS_CHROOT:-}" != "1" ]; then
+    printf '%s\n' \
+        "Refusing to install desktop components outside the LFS chroot." \
+        "Set LINSOFT_LFS_CHROOT=1 only after entering the target LFS chroot." >&2
+    exit 2
+fi
+
+source_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+prefix=${PREFIX:-/usr}
+jobs=${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '1\n')}
+
+case "$jobs" in
+    ''|*[!0-9]*|0)
+        printf 'JOBS must be a positive integer (received: %s)\n' "$jobs" >&2
+        exit 2
+        ;;
+esac
+
+build_component()
+{
+    component=$1
+    shift
+    source_dir=$source_root/$component
+
+    if [ ! -d "$source_dir" ]; then
+        printf 'Missing source component: %s\n' "$source_dir" >&2
+        exit 1
+    fi
+
+    if [ ! -f "$source_dir/configure" ]; then
+        case "$component" in
+            openbox) bootstrap=bootstrap ;;
+            *) bootstrap=autogen.sh ;;
+        esac
+        if [ ! -f "$source_dir/$bootstrap" ]; then
+            printf 'Missing build bootstrap script: %s\n' "$source_dir/$bootstrap" >&2
+            exit 1
+        fi
+        (cd "$source_dir" && sh "./$bootstrap")
+    fi
+
+    printf '\n==> Building %s\n' "$component"
+    (
+        cd "$source_dir"
+        sh ./configure --prefix="$prefix" "$@"
+        make -j"$jobs"
+        make install
+    )
+}
+
+build_component libfm --with-extra-only --without-gtk --disable-old-actions
+build_component menu-cache
+build_component libfm --disable-old-actions
+build_component openbox
+build_component lxpanel
+build_component pcmanfm
+
+install -D -m 0755 "$source_root/linsoft/linsoft-session" \
+    "$prefix/bin/linsoft-session"
+install -D -m 0644 "$source_root/linsoft/data/xsessions/linsoft.desktop" \
+    "$prefix/share/xsessions/linsoft.desktop"
+
+printf '\nLinsoft Desktop components installed under %s\n' "$prefix"

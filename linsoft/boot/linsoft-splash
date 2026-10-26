@@ -1,0 +1,29 @@
+#!/bin/bash
+set -euo pipefail
+case "${1:-}" in
+    start)
+        grep -qw 'linsoft.splash=1' /proc/cmdline || exit 0
+        for option in linsoft.console=1 linsoft.drm=1 single; do
+            if grep -qw "$option" /proc/cmdline; then exit 0; fi
+        done
+        /usr/bin/linsoft-splash </dev/null >/dev/ttyS0 2>&1 &
+        printf '%s\n' "$!" > /run/linsoft-splash.pid
+        ;;
+    stop)
+        [[ -f /run/linsoft-splash.pid ]] || exit 0
+        read -r pid < /run/linsoft-splash.pid
+        [[ $pid =~ ^[0-9]+$ ]] || { echo 'Invalid splash PID' >&2; exit 1; }
+        if [[ $(readlink "/proc/$pid/exe") == /usr/bin/linsoft-splash ]]; then
+            kill "$pid"
+            for attempt in $(seq 1 100); do
+                [[ $(readlink "/proc/$pid/exe") == /usr/bin/linsoft-splash ]] || break
+                sleep .02
+            done
+            if [[ $(readlink "/proc/$pid/exe") == /usr/bin/linsoft-splash ]]; then
+                echo 'Linsoft splash did not release the display.' >&2; exit 1
+            fi
+        fi
+        rm -f -- /run/linsoft-splash.pid
+        ;;
+    *) echo 'Usage: linsoft-splash start|stop' >&2; exit 2 ;;
+esac

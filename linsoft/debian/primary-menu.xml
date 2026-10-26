@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+  <menu id="root-menu" label="Linsoft Desktop">
+    <item label="Linsoft Browser (Firefox ESR)"><action name="Execute"><command>/usr/local/bin/linsoft-browser</command></action></item>
+    <item label="LibreOffice Writer"><action name="Execute"><command>libreoffice --writer</command></action></item>
+    <item label="LibreOffice Calc"><action name="Execute"><command>libreoffice --calc</command></action></item>
+    <separator/>
+    <item label="Files"><action name="Execute"><command>pcmanfm /home/linsoft</command></action></item>
+    <item label="Terminal"><action name="Execute"><command>xterm -fa 'DejaVu Sans Mono' -fs 11 -bg '#111d30' -fg '#e3effb'</command></action></item>
+    <item label="Installed applications"><action name="Execute"><command>pcmanfm /usr/share/applications</command></action></item>
+    <item label="Install trusted .deb package"><action name="Execute"><command>/usr/local/bin/linsoft-install-package</command></action></item>
+    <separator/>
+    <item label="Original desktop / system tools"><action name="Execute"><command>/usr/local/bin/linsoft-session-action drm</command></action></item>
+    <item label="Restart Linsoft OS"><action name="Execute"><command>/usr/local/bin/linsoft-session-action restart</command></action></item>
+    <item label="Shut down Linsoft OS"><action name="Execute"><command>/usr/local/bin/linsoft-session-action poweroff</command></action></item>
+  </menu>
+</openbox_menu>

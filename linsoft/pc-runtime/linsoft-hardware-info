@@ -1,0 +1,30 @@
+#!/bin/bash
+set -u
+printf '\n=== Linsoft hardware diagnostics ===\n'
+uname -r
+printf '\n=== Network interfaces and drivers ===\n'
+for path in /sys/class/net/*; do
+    [[ ${path##*/} == lo ]] && continue
+    printf '%s: ' "${path##*/}"
+    if [[ -L $path/device/driver ]]; then
+        readlink -f "$path/device/driver"
+    else
+        printf 'No hardware driver binding (virtual/software interface).\n'
+    fi
+    if [[ -d $path/wireless ]]; then
+        printf 'Wireless interface; WPA credentials and a supplicant are required.\n'
+    fi
+done
+/usr/sbin/ip -brief address
+/usr/sbin/ip route
+printf '\n=== Audio cards ===\n'
+if [[ -r /proc/asound/cards ]]; then
+    cat /proc/asound/cards
+    /usr/bin/aplay -l
+else
+    printf 'ALSA is unavailable: check the kernel audio drivers.\n' >&2
+fi
+printf '\n=== Firmware and driver messages ===\n'
+dmesg | grep -iE 'firmware|r8169|snd|audio|wifi|wlan' | tail -n 35
+printf '\nNo Wi-Fi interface means a missing adapter, driver or firmware; it is not a working connection.\n'
+read -r -p 'Press Enter to return to the desktop. '

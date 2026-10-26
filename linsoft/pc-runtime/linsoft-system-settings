@@ -1,0 +1,58 @@
+#!/bin/bash
+set -euo pipefail
+if [[ $EUID != 0 ]]; then
+    echo "Linsoft system settings requires root." >&2
+    exit 1
+fi
+printf '\nLinsoft: system settings\n'
+printf '1  Computer name\n2  Time zone\n3  Root password\n0  Return\n'
+read -r -p 'Select: ' choice
+case "$choice" in
+    1)
+        printf 'Current name: '
+        cat /etc/hostname
+        read -r -p 'New computer name (a-z, 0-9, hyphen; empty cancels): ' name
+        [[ -z $name ]] && exit 0
+        if [[ ${#name} -gt 63 || ! $name =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+            echo "Invalid hostname. No changes were made." >&2
+            read -r -p 'Press Enter to return. '
+            exit 2
+        fi
+        temporary=$(mktemp /etc/hostname.linsoft.XXXXXX)
+        trap 'rm -f -- "$temporary"' EXIT
+        printf '%s\n' "$name" > "$temporary"
+        chmod 0644 "$temporary"
+        # Keep the active kernel name and boot-time file in agreement.
+        hostname "$name"
+        mv "$temporary" /etc/hostname
+        trap - EXIT
+        echo "Computer name saved. New sessions will use it."
+        ;;
+    2)
+        printf '1  Europe/Bratislava\n2  Europe/Prague\n3  UTC\n0  Cancel\n'
+        read -r -p 'Select: ' zone
+        case "$zone" in
+            1) zone=Europe/Bratislava ;;
+            2) zone=Europe/Prague ;;
+            3) zone=UTC ;;
+            0|'') exit 0 ;;
+            *) echo "Invalid time zone selection." >&2; exit 2 ;;
+        esac
+        test -f "/usr/share/zoneinfo/$zone"
+        temporary=$(mktemp /etc/localtime.linsoft.XXXXXX)
+        trap 'rm -f -- "$temporary"' EXIT
+        cat "/usr/share/zoneinfo/$zone" > "$temporary"
+        chmod 0644 "$temporary"
+        mv "$temporary" /etc/localtime
+        trap - EXIT
+        echo "Saved time zone: $zone (no hardware clock change)."
+        date
+        ;;
+    3)
+        passwd root
+        echo "Password saved. Graphical tty1 still uses the previously enabled root autologin."
+        ;;
+    0|'') exit 0 ;;
+    *) echo "Invalid selection. No changes were made." >&2; exit 2 ;;
+esac
+read -r -p 'Press Enter to return to the desktop. '

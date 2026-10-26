@@ -1,0 +1,120 @@
+#!/bin/bash
+set -euo pipefail
+if [[ -f /etc/linsoft-apps/native-virgl ]]; then
+    unset LIBGL_ALWAYS_SOFTWARE
+else
+    export LIBGL_ALWAYS_SOFTWARE=1
+fi
+export GTK_THEME=Adwaita:dark
+cd "$HOME"
+mkdir -p Documents Downloads Desktop
+xsetroot -solid '#0b1020'
+desktop=''
+extras=()
+native=false
+if [[ ${LINSOFT_PRIMARY:-0} == 1 && -f /etc/linsoft-apps/native ]]; then
+    native=true
+    export LINSOFT_NATIVE=1
+    export XDG_CURRENT_DESKTOP=X-Generic XDG_SESSION_DESKTOP=linsoft-native DESKTOP_SESSION=linsoft-native
+fi
+if ! $native; then mkdir -p .config/openbox .config/tint2; fi
+if [[ ${LINSOFT_PRIMARY:-0} == 1 && -f /etc/linsoft-apps/desktop-extras ]]; then
+    export LANG=sk_SK.UTF-8
+    export LANGUAGE=sk:en
+    export PULSE_SERVER=unix:/run/user/1000/pulse/native
+    unset GTK_THEME
+    mkdir -p "$HOME/.config/xfce4/xfconf/xfce-perchannel-xml"
+    shortcuts="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml"
+    if [[ ! -f $shortcuts ]]; then
+        cp /etc/linsoft-apps/extras-keyboard-shortcuts.xml "$shortcuts"
+    fi
+    appearance="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml"
+    if [[ ! -f $appearance ]]; then
+        cp /etc/linsoft-apps/extras-xsettings.xml "$appearance"
+    fi
+fi
+if [[ ${LINSOFT_PRIMARY:-0} == 1 ]] && ! $native; then
+    profile="$HOME/.config/pcmanfm/Linsoft"
+    mkdir -p "$profile"
+    if [[ ! -f $profile/desktop-items-0.conf ]]; then
+        cp /etc/linsoft-apps/desktop-items-0.conf "$profile/desktop-items-0.conf"
+    fi
+    for entry in linsoft-browser libreoffice-writer libreoffice-calc linsoft-files linsoft-terminal linsoft-install-package; do
+        if [[ ! -e $HOME/Desktop/$entry.desktop ]]; then
+            cp "/usr/share/applications/$entry.desktop" "$HOME/Desktop/"
+            chmod u+x "$HOME/Desktop/$entry.desktop"
+        fi
+    done
+    pcmanfm --desktop --profile=Linsoft &
+    desktop=$!
+fi
+panel=''
+if $native; then
+    :
+elif [[ ${LINSOFT_PRIMARY:-0} == 1 ]]; then
+    if [[ -f /etc/linsoft-apps/professional ]]; then
+        if [[ ! -e $HOME/.config/tint2/linsoft.conf ]]; then
+            cp /etc/linsoft-apps/tint2rc "$HOME/.config/tint2/linsoft.conf"
+        fi
+        tint2 -c "$HOME/.config/tint2/linsoft.conf" &
+    else
+        tint2 -c /etc/linsoft-apps/tint2rc &
+    fi
+else
+    tint2 &
+fi
+if ! $native; then panel=$!; fi
+cleanup() {
+    for pid in "${extras[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid"
+            wait "$pid" || [[ $? == 143 ]]
+        fi
+    done
+    if [[ -n $desktop ]] && kill -0 "$desktop" 2>/dev/null; then
+        kill "$desktop"
+        wait "$desktop" || [[ $? == 143 ]]
+    fi
+    if [[ -n $panel ]] && kill -0 "$panel" 2>/dev/null; then
+        kill "$panel"
+        wait "$panel" || [[ $? == 143 ]]
+    fi
+}
+trap cleanup EXIT
+if [[ ${LINSOFT_PRIMARY:-0} == 1 && -f /etc/linsoft-apps/desktop-extras ]]; then
+    if [[ ! -f $HOME/.config/mimeapps.list ]]; then
+        cp /etc/linsoft-apps/mimeapps.list "$HOME/.config/mimeapps.list"
+    fi
+    xfsettingsd &
+    extras+=("$!")
+    /usr/lib/x86_64-linux-gnu/xfce4/notifyd/xfce4-notifyd &
+    extras+=("$!")
+    pulseaudio --daemonize=no --exit-idle-time=-1 &
+    extras+=("$!")
+    if [[ -f /etc/linsoft-apps/professional ]]; then
+        if [[ ! -f /etc/linsoft-apps/autologin ]]; then
+            if [[ ! -e $HOME/.xscreensaver ]]; then
+                printf 'mode: blank\nlock: True\ntimeout: 0:10:00\nlockTimeout: 0:00:00\n' > "$HOME/.xscreensaver"
+            fi
+            xscreensaver -no-splash &
+            extras+=("$!")
+        fi
+        linsoft-update-notice &
+        extras+=("$!")
+    fi
+fi
+if $native; then
+    if [[ ${LINSOFT_PRIMARY:-0} == 1 && -f /etc/linsoft-apps/desktop-extras ]]; then
+        for ((attempt=0; attempt<30; ++attempt)); do
+            if pactl info >/dev/null 2>&1; then break; fi
+            sleep .1
+        done
+    fi
+    linsoft-native-system --watch &
+    extras+=("$!")
+fi
+if $native; then
+    linsoft-native
+else
+    openbox --config-file /etc/linsoft-apps/rc.xml
+fi

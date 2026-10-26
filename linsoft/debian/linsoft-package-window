@@ -1,0 +1,10 @@
+#!/bin/bash
+set -uo pipefail
+if sudo -k -- /usr/local/sbin/linsoft-package-admin "$@"; then
+    status=0
+else
+    status=$?
+    printf '\nOperacia zlyhala alebo bola zrusena (stav %s).\n' "$status" >&2
+fi
+read -r -p 'Stlacte Enter pre zatvorenie. ' answer
+exit "$status"

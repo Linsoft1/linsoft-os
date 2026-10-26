@@ -1,0 +1,2 @@
+Defaults:linsoft timestamp_timeout=0, passwd_tries=3, use_pty
+linsoft ALL=(root) /usr/bin/true, /usr/local/sbin/linsoft-authorize *, /usr/local/sbin/linsoft-package-admin *

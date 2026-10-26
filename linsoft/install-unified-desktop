@@ -1,0 +1,68 @@
+#!/bin/bash
+set -euo pipefail
+target=/mnt/linsoft-debian-image
+if [[ $EUID != 0 || ${LINSOFT_LFS_BUILD:-} != 1 ]]; then
+    echo "Use root and LINSOFT_LFS_BUILD=1 on a separately mounted unified image." >&2
+    exit 2
+fi
+mountpoint -q "$target"
+grep -qx 'ID=linsoft' "$target/etc/os-release"
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+source="$source_dir/debian"
+root="$target/opt/linsoft-debian"
+test -x "$root/usr/bin/pcmanfm"
+test -x "$root/usr/bin/zenity"
+test -x "$root/usr/bin/xdotool"
+command -v rsvg-convert
+for program in linsoft-debian linsoft-unified-desktop linsoft-deb-install; do
+    install -m0755 "$source/$program" "$target/usr/bin/$program"
+done
+for program in linsoft-x-client linsoft-app-session linsoft-session-action linsoft-install-package linsoft-files; do
+    install -m0755 "$source/$program" "$root/usr/local/bin/$program"
+done
+install -m0644 "$source/primary-menu.xml" "$root/etc/linsoft-apps/menu.xml"
+install -m0644 "$source/rc.xml" "$root/etc/linsoft-apps/rc.xml"
+sed -i 's/<name>Clearlooks<\/name>/<name>Linsoft Night<\/name>/;
+    s/<name>Linsoft Apps<\/name>/<name>Linsoft Desktop<\/name>/' "$root/etc/linsoft-apps/rc.xml"
+install -m0644 "$source/desktop-items-0.conf" "$root/etc/linsoft-apps/desktop-items-0.conf"
+install -m0644 "$source/tint2rc" "$root/etc/xdg/tint2/tint2rc"
+sed -i '\|^launcher_padding|a launcher_item_app = /usr/share/applications/linsoft-menu.desktop' \
+    "$root/etc/xdg/tint2/tint2rc"
+sed -i 's|debian-xterm.desktop|linsoft-terminal.desktop|;
+    s|pcmanfm.desktop|linsoft-files.desktop|' "$root/etc/xdg/tint2/tint2rc"
+install -m0644 "$root/etc/xdg/tint2/tint2rc" "$root/etc/linsoft-apps/tint2rc"
+for entry in linsoft-menu linsoft-install-package linsoft-terminal linsoft-files; do
+    install -m0644 "$source/$entry.desktop" "$root/usr/share/applications/"
+done
+for icon in menu terminal files; do
+    install -m0644 "$source/$icon.svg" "$root/usr/share/linsoft-apps/"
+    rsvg-convert -w 64 -h 64 "$source/$icon.svg" -o "$root/usr/share/linsoft-apps/$icon.png"
+done
+install -d "$root/etc/gtk-3.0"
+if [[ ! -e $root/etc/gtk-3.0/settings.ini ]]; then
+    printf '[Settings]\ngtk-theme-name=Adwaita\ngtk-icon-theme-name=Adwaita\ngtk-font-name=DejaVu Sans 11\n' > "$root/etc/gtk-3.0/settings.ini"
+fi
+if [[ ! -e $root/etc/gtk-2.0/gtkrc ]]; then
+    install -d "$root/etc/gtk-2.0"
+    printf 'gtk-icon-theme-name="Adwaita"\ngtk-font-name="DejaVu Sans 11"\n' > "$root/etc/gtk-2.0/gtkrc"
+fi
+install -d "$root/usr/share/themes/Linsoft Night/openbox-3"
+install -m0644 "$source/themerc" "$root/usr/share/themes/Linsoft Night/openbox-3/themerc"
+rsvg-convert -w 1920 -h 1080 \
+    "$source_dir/plasma/wallpaper/contents/images/3840x2160.svg" \
+    -o "$root/usr/share/linsoft-apps/wallpaper.png"
+if [[ ! -e $target/root/.bash_profile.apps-backup ]]; then
+    cp -a "$target/root/.bash_profile" "$target/root/.bash_profile.apps-backup"
+fi
+install -m0644 "$source/unified-profile" "$target/root/.bash_profile"
+if ! grep -q 'linsoft.drm=1' "$target/boot/grub/grub.cfg"; then
+    kernel=$(awk '/^[[:space:]]*linux / {print; exit}' "$target/boot/grub/grub.cfg")
+    [[ $kernel == *'root=PARTUUID='* ]]
+    printf "\nmenuentry 'Linsoft OS - povodna DRM plocha' --id linsoft-drm {\n%s linsoft.drm=1\n}\n" \
+        "$kernel" >> "$target/boot/grub/grub.cfg"
+fi
+install -d "$target/usr/share/doc/linsoft-debian"
+install -m0644 "$source/packages" "$target/usr/share/doc/linsoft-debian/requested-packages"
+chroot "$root" dpkg-query -W -f='${binary:Package}\t${Version}\n' > "$root/linsoft-debian-packages.txt"
+install -m0644 "$root/linsoft-debian-packages.txt" "$target/usr/share/doc/linsoft-debian/installed-packages"
+echo "Unified desktop installed. Original DRM and diagnostic boot entries preserved."

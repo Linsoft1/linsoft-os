@@ -1,0 +1,14 @@
+#!/bin/bash
+set -u
+/usr/bin/alsamixer
+result=$?
+if [[ $result == 0 ]]; then
+    /usr/sbin/alsactl store
+    result=$?
+fi
+if [[ $result != 0 ]]; then
+    printf 'Linsoft audio configuration failed (exit %d).\n' "$result" >&2
+    printf 'Check that an audio card exists and select it with F6 in alsamixer.\n' >&2
+    read -r -p 'Press Enter to return to the desktop. '
+fi
+exit "$result"

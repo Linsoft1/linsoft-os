@@ -1,0 +1,76 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Run as root with LINSOFT_LFS_BUILD=1 for offline Linsoft." >&2
+    exit 2
+fi
+grep -qx 'ID=linsoft' /mnt/lfs/etc/os-release
+if findmnt -rn -o TARGET | grep -qE '^/mnt/lfs(/|$)'; then
+    echo "Finish other chroot work before building PC runtime." >&2
+    exit 1
+fi
+cache=/mnt/lfs/sources/linsoft-pc-runtime
+mkdir -p "$cache"
+download()
+{
+    local url=$1 digest=$2 file=$cache/${1##*/}
+    if [[ ! -f $file ]]; then
+        curl --fail --location --retry 3 --output "$file.part" "$url"
+        mv "$file.part" "$file"
+    fi
+    printf '%s  %s\n' "$digest" "$file" | sha256sum --check --status || {
+        echo "BLFS archive checksum mismatch: $file" >&2
+        exit 1
+    }
+    sha256sum "$file"
+}
+download https://github.com/NetworkConfiguration/dhcpcd/releases/download/v10.2.4/dhcpcd-10.2.4.tar.xz \
+    6721e606609226dbf4d864a78802a9e96beec0ee034a1bd84138b3e037bba7d9
+download https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.14.tar.bz2 \
+    be9c88a0b3604367dd74167a2b754a35e142f670292ae47a2fdef27a2ee97a32
+download https://www.alsa-project.org/files/pub/utils/alsa-utils-1.2.14.tar.bz2 \
+    0794c74d33fed943e7c50609c13089e409312b6c403d6ae8984fc429c0960741
+
+bash /mnt/lfs/sources/.chroot-wrapper.sh -c '
+set -euo pipefail
+cd /sources/linsoft-pc-runtime
+for archive in *.tar.*; do
+    directory=${archive%.tar.*}
+    if [[ ! -d $directory ]]; then
+        tar -xf "$archive"
+    fi
+done
+if ! getent passwd dhcpcd >/dev/null; then
+    groupadd --system dhcpcd
+    useradd --system --gid dhcpcd --home-dir /var/lib/dhcpcd \
+        --shell /bin/false --comment "DHCP privilege separation" dhcpcd
+fi
+install -d -m 0700 -o dhcpcd -g dhcpcd /var/lib/dhcpcd
+(
+    cd dhcpcd-10.2.4
+    ./configure --prefix=/usr --sysconfdir=/etc \
+        --libexecdir=/usr/lib/dhcpcd --dbdir=/var/lib/dhcpcd \
+        --runstatedir=/run --privsepuser=dhcpcd
+    make -j2
+    make test
+    make install
+)
+(
+    cd alsa-lib-1.2.14
+    ./configure --prefix=/usr --disable-static
+    make -j2
+    make install
+)
+(
+    cd alsa-utils-1.2.14
+    ./configure --prefix=/usr --disable-alsaconf --disable-bat \
+        --disable-xmlto --with-curses=ncursesw
+    make -j2
+    make install
+)
+ldconfig
+pkg-config --modversion alsa
+dhcpcd --version
+aplay --version
+'

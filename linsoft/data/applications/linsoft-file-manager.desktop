@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Linsoft File Manager
+Comment=Browse files and folders
+Exec=pcmanfm
+Icon=system-file-manager
+Terminal=false
+Categories=System;FileTools;FileManager;
+StartupNotify=true

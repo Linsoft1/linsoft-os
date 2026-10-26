@@ -1,0 +1,98 @@
+#!/bin/busybox sh
+# Linsoft OS live boot: finds the ISO/USB medium, mounts the read-only
+# squashfs root with a RAM overlay and starts the normal Linsoft init.
+/bin/busybox --install -s /bin
+export PATH=/bin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs -o mode=0755 devtmpfs /dev
+
+say() {
+    echo "Linsoft live: $*"
+    echo "Linsoft live: $*" > /dev/tty1 2>/dev/null
+}
+fail() {
+    say "$*"
+    say "Spustam nudzovy shell (exit = restart)."
+    setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+    reboot -f
+}
+
+live_id=''
+toram=0
+installer=0
+for arg in $(cat /proc/cmdline); do
+    case "$arg" in
+        linsoft.id=*) live_id=${arg#linsoft.id=} ;;
+        linsoft.toram=1) toram=1 ;;
+        linsoft.installer=1) installer=1 ;;
+    esac
+done
+[ -n "$live_id" ] || fail 'chyba parameter linsoft.id.'
+marker="linsoft/live/$live_id.id"
+
+mkdir -p /medium /squash /rw /newroot
+found=''
+attempt=0
+while [ $attempt -lt 60 ] && [ -z "$found" ]; do
+    for dev in /sys/class/block/*; do
+        name=${dev##*/}
+        case "$name" in loop*|ram*|zram*) continue ;; esac
+        [ -b "/dev/$name" ] || continue
+        for fs in iso9660 vfat; do
+            if mount -t "$fs" -o ro "/dev/$name" /medium 2>/dev/null; then
+                if [ -f "/medium/$marker" ]; then
+                    found="/dev/$name"
+                    break 2
+                fi
+                umount /medium
+            fi
+        done
+    done
+    [ -n "$found" ] && break
+    [ $attempt = 3 ] && say 'cakam na instalacne medium...'
+    attempt=$((attempt + 1))
+    sleep 1
+done
+[ -n "$found" ] || fail "medium s $marker sa nenaslo."
+
+squashfs=/medium/linsoft/live/rootfs.squashfs
+if [ "$toram" = 1 ]; then
+    say 'kopirujem system do RAM...'
+    mkdir -p /toram
+    mount -t tmpfs -o size=100% tmpfs /toram
+    cp "$squashfs" /toram/rootfs.squashfs || fail 'kopirovanie do RAM zlyhalo.'
+    squashfs=/toram/rootfs.squashfs
+fi
+mount -t squashfs -o ro,loop "$squashfs" /squash || fail 'squashfs sa neda pripojit.'
+mount -t tmpfs -o mode=0755,size=75% tmpfs /rw
+mkdir -p /rw/upper /rw/work
+mount -t overlay overlay \
+    -o lowerdir=/squash,upperdir=/rw/upper,workdir=/rw/work /newroot ||
+    fail 'overlay sa neda pripojit.'
+
+# Live-only additions live in the RAM layer; the squashfs stays the pristine
+# installed system that linsoft-install copies to disk.
+cp -a /live-overlay/. /newroot/
+sed -i 's|^/dev/vda1 .*|overlay        /            overlay  defaults                0     0|' \
+    /newroot/etc/fstab
+: > /newroot/fastboot
+ln -sf ../init.d/linsoft-live /newroot/etc/rc.d/rc3.d/S95linsoft-live
+if [ "$installer" = 1 ]; then
+    sed -i 's|^1:2345:respawn:.*|1:2345:respawn:/usr/bin/openvt -c 1 -f -w -- /usr/sbin/linsoft-install --boot|' \
+        /newroot/etc/inittab
+fi
+
+mount -t tmpfs -o mode=0755,nosuid,nodev tmpfs /newroot/run
+mkdir -p /newroot/run/linsoft-live/medium /newroot/run/linsoft-live/squash \
+    /newroot/run/linsoft-live/rw
+mount --move /medium /newroot/run/linsoft-live/medium
+mount --move /squash /newroot/run/linsoft-live/squash
+mount --move /rw /newroot/run/linsoft-live/rw
+[ "$toram" = 1 ] && mkdir -p /newroot/run/linsoft-live/toram &&
+    mount --move /toram /newroot/run/linsoft-live/toram
+echo "$found" > /newroot/run/linsoft-live/device
+mount --move /dev /newroot/dev
+umount /sys
+umount /proc
+exec switch_root /newroot /sbin/init

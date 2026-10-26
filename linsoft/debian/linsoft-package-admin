@@ -1,0 +1,51 @@
+#!/bin/bash
+set -euo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin LC_ALL=C
+[[ $EUID == 0 && ${SUDO_USER:-} == linsoft ]] || {
+    echo 'Use the authenticated Linsoft application manager.' >&2; exit 2;
+}
+action=${1:-}
+package=${2:-}
+[[ $# -le 2 && $action =~ ^(refresh|upgrade|install|remove)$ ]] || {
+    echo 'Invalid package action.' >&2; exit 2;
+}
+if [[ $action == install || $action == remove ]]; then
+    [[ $package =~ ^[a-z0-9][a-z0-9+.-]+$ && ${#package} -le 150 ]] || {
+        echo 'Enter one repository package name, not a path or command option.' >&2; exit 2;
+    }
+else
+    [[ $# == 1 ]] || { echo 'This action takes no package argument.' >&2; exit 2; }
+fi
+install -d -m0700 /var/lib/linsoft-package-history
+exec 9>/run/linsoft-package-admin.lock
+flock -n 9 || { echo 'Another Linsoft package operation is running.' >&2; exit 1; }
+stamp=$(date -u +%Y%m%dT%H%M%S)-$$
+log="/var/lib/linsoft-package-history/$stamp.log"
+exec > >(tee "$log") 2>&1
+trap 'status=$?; if (( status != 0 )); then printf "Linsoft package operation FAILED (status %s). Log: %s\n" "$status" "$log" >&2; fi' EXIT
+printf 'Linsoft: %s %s\nLog: %s\n' "$action" "$package" "$log"
+dpkg-query -W -f='${binary:Package}\t${Version}\n' > "/var/lib/linsoft-package-history/$stamp.packages"
+tar -czf "/var/lib/linsoft-package-history/$stamp-config.tar.gz" \
+    --exclude=etc/shadow --exclude=etc/shadow- --exclude=etc/gshadow --exclude=etc/gshadow- \
+    -C / etc/apt etc/linsoft-apps etc/sudoers.d
+echo 'Configuration/package inventory saved. This is NOT a full OS/data rollback; use the Windows offline backup tool for that.'
+case "$action" in
+    refresh) apt-get update ;;
+    upgrade) apt-get update; apt-get --no-remove upgrade ;;
+    install) apt-get --no-remove install -- "$package" ;;
+    remove)
+        plan=$(apt-get -s remove -- "$package")
+        printf '%s\n' "$plan"
+        while IFS= read -r protected; do
+            [[ -n $protected ]] || continue
+            if awk -v name="$protected" '$1=="Remv" && $2==name {found=1} END {exit !found}' <<< "$plan"; then
+                echo "Refusing to remove desktop/authentication dependency: $protected" >&2
+                exit 2
+            fi
+        done < /etc/linsoft-apps/protected-packages
+        apt-get remove -- "$package"
+        ;;
+esac
+audit=$(dpkg --audit)
+[[ -z $audit ]] || { printf '%s\n' "$audit" >&2; exit 1; }
+echo "Linsoft: operation completed. Log: $log"

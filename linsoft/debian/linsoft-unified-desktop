@@ -1,0 +1,67 @@
+#!/bin/bash
+set -u
+control=/run/linsoft-unified
+professional=false
+if [[ -f /opt/linsoft-debian/etc/linsoft-apps/professional ]]; then
+    professional=true
+    install -d -o 0 -g 0 -m 0755 "$control" || exit 1
+else
+    install -d -o 1000 -g 1000 -m 0700 "$control" || exit 1
+fi
+if [[ -x /etc/rc.d/init.d/linsoft-splash ]]; then
+    /etc/rc.d/init.d/linsoft-splash stop || exit 1
+fi
+while :; do
+    rm -f -- "$control/request"
+    if ! openvt -c 8 -s -w -- /usr/bin/linsoft-debian primary; then
+        if $professional; then
+            echo 'Linsoft: login/session failed. Returning to authenticated login.' >&2
+            sleep 5
+            continue
+        fi
+        echo "Linsoft: graphical session failed; opening the original DRM desktop." >&2
+        break
+    fi
+    action=drm
+    if $professional; then action=logout; fi
+    package=''
+    if [[ -f $control/request && ! -L $control/request ]]; then
+        {
+            IFS= read -r action
+            IFS= read -r package || true
+        } < "$control/request"
+    fi
+    case "$action" in
+        logout) continue ;;
+        restart|poweroff)
+            if [[ $action == restart ]]; then option=-r; else option=-h; fi
+            if /sbin/shutdown "$option" now; then
+                sleep 30
+                exit 0
+            fi
+            echo "Linsoft: shutdown failed; opening the original desktop." >&2
+            break
+            ;;
+        install)
+            root=/opt/linsoft-debian
+            resolved=$(realpath -e -- "$root$package") || {
+                echo "Linsoft: requested package no longer exists." >&2
+                read -r -p 'Press Enter to return. '
+                continue
+            }
+            if [[ $package != /* || $resolved != "$root/"* ||
+                  $resolved != *.deb || ! -f $resolved ]]; then
+                echo "Linsoft: package must be a regular .deb inside the app environment." >&2
+                read -r -p 'Press Enter to return. '
+                continue
+            fi
+            /usr/bin/linsoft-deb-install "$resolved"
+            ;;
+        drm) break ;;
+        *)
+            echo "Linsoft: invalid session request; opening the original desktop." >&2
+            break
+            ;;
+    esac
+done
+exec /usr/bin/linsoft-desktop

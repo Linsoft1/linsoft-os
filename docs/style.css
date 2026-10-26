@@ -1,0 +1,32 @@
+:root { --bg:#0b1426; --panel:#13213a; --ink:#e6eefb; --muted:#9fb3cf; --cyan:#45d4e0; --violet:#8b7cf6; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: "Segoe UI", system-ui, sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
+a { color:var(--cyan); }
+nav { display:flex; gap:1.5rem; align-items:center; padding:1rem 2rem; font-weight:600; }
+nav a { color:var(--muted); text-decoration:none; }
+nav a:first-of-type { margin-left:auto; }
+nav a:hover { color:var(--cyan); }
+.logo { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:50%;
+  border:3px solid var(--cyan); border-bottom-color:var(--violet); font-weight:800; }
+.hero { background: radial-gradient(circle at 70% 30%, #17305a, var(--bg) 60%); padding-bottom:3rem; text-align:center; }
+.hero h1 { font-size:3.5rem; margin:2rem 0 0; font-weight:300; }
+.tag { color:var(--cyan); font-size:1.3rem; margin-top:0; }
+.hero-text { max-width:44rem; margin:auto; padding:0 1rem; }
+.btn { display:inline-block; margin:.5rem; padding:.8rem 1.6rem; border-radius:.5rem; background:linear-gradient(90deg,var(--cyan),var(--violet));
+  color:#06101f; font-weight:700; text-decoration:none; }
+.btn.ghost { background:none; border:1px solid var(--cyan); color:var(--cyan); }
+.small { color:var(--muted); font-size:.9rem; }
+.shot { width:min(90%,1000px); margin-top:2rem; border-radius:.6rem; box-shadow:0 20px 60px #0008; border:1px solid #2a3f63; }
+main { max-width:1100px; margin:auto; padding:1rem 1.5rem; }
+section { padding:2rem 0; }
+h2 { font-weight:400; border-bottom:1px solid #2a3f63; padding-bottom:.4rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem; }
+.grid div { background:var(--panel); border-radius:.6rem; padding:1rem 1.2rem; }
+.grid h3 { color:var(--cyan); margin:.2rem 0; }
+.gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1rem; }
+.gallery img { width:100%; border-radius:.5rem; border:1px solid #2a3f63; }
+figcaption { color:var(--muted); text-align:center; font-size:.9rem; }
+ol li { margin:.5rem 0; }
+code { background:var(--panel); padding:.1rem .4rem; border-radius:.3rem; }
+.warn { background:#3a2a10; border-left:4px solid #f0b43c; padding:1rem; border-radius:.4rem; }
+footer { text-align:center; color:var(--muted); padding:2rem 1rem; border-top:1px solid #2a3f63; font-size:.9rem; }

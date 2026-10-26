@@ -1,0 +1,7 @@
+# Linsoft desktop startup; diagnostic boot leaves a real console.
+if [ "$(tty 2>/dev/null)" = "/dev/tty1" ] &&
+   [ -x /usr/bin/linsoft-desktop ]; then
+    if ! grep -qw 'linsoft.console=1' /proc/cmdline; then
+        exec /usr/bin/linsoft-desktop
+    fi
+fi

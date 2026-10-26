@@ -1,0 +1,49 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Run as root with LINSOFT_LFS_BUILD=1 for the offline /mnt/lfs build tree." >&2
+    exit 2
+fi
+if [[ ! -f /mnt/lfs/etc/os-release ]] ||
+   ! grep -qx 'ID=linsoft' /mnt/lfs/etc/os-release; then
+    echo "Expected the Linsoft LFS build tree at /mnt/lfs." >&2
+    exit 1
+fi
+if findmnt -rn -o TARGET | grep -qE '^/mnt/lfs(/|$)'; then
+    echo "Finish existing chroot work before running session tests." >&2
+    exit 1
+fi
+
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+install -m 0644 "$source_dir/graphics-smoke.c" \
+    /mnt/lfs/sources/linsoft-plasma-foundation/graphics-smoke.c
+
+bash /mnt/lfs/sources/.chroot-wrapper.sh -c '
+set -euo pipefail
+cd /sources/linsoft-plasma-foundation
+meson test -C wayland-1.24.0/build --num-processes 2 --print-errorlogs
+meson test -C wayland-protocols-1.45/build --num-processes 2 --print-errorlogs
+meson test -C pixman-0.46.4/build --num-processes 2 --print-errorlogs
+xkbcli compile-keymap --layout us > us-keymap.xkb
+xkbcli compile-keymap --layout sk > sk-keymap.xkb
+test -s us-keymap.xkb
+test -s sk-keymap.xkb
+pkg-config --modversion dbus-1 wayland-client wayland-server wayland-protocols pixman-1 xkbcommon
+if pkg-config --exists egl glesv2; then
+    gcc -std=c11 -Wall -Wextra -Werror graphics-smoke.c \
+        $(pkg-config --cflags --libs egl glesv2) -o graphics-smoke
+    LIBGL_ALWAYS_SOFTWARE=1 ./graphics-smoke
+else
+    echo "Mesa EGL/GLES not installed; rendering test is not available yet." >&2
+    exit 1
+fi
+'
+
+/usr/sbin/chroot /mnt/lfs /usr/bin/env -i PATH=/usr/bin:/usr/sbin \
+    /usr/bin/dbus-run-session -- /bin/sh -c '
+        test -n "$DBUS_SESSION_BUS_ADDRESS"
+        dbus-send --session --print-reply --dest=org.freedesktop.DBus \
+            /org/freedesktop/DBus org.freedesktop.DBus.ListNames
+    '
+echo "Session and software-rendering checks passed. This does not validate a physical GPU or desktop login."

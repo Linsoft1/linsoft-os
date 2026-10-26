@@ -1,0 +1,90 @@
+Global {
+    edge=bottom
+    align=left
+    margin=0
+    widthtype=percent
+    width=100
+    height=38
+    transparent=0
+    tintcolor=#0b1020
+    alpha=0
+    setdocktype=1
+    setpartialstrut=1
+    usefontcolor=1
+    fontcolor=#e8efff
+    background=0
+}
+
+Plugin {
+    type = menu
+    Config {
+        name=Linsoft
+        system {
+        }
+        separator {
+        }
+        item {
+            command=run
+        }
+        separator {
+        }
+        item {
+            image=gnome-logout
+            command=logout
+        }
+    }
+}
+
+Plugin {
+    type = launchbar
+    Config {
+        Button {
+            id=linsoft-file-manager.desktop
+        }
+        Button {
+            id=linsoft-terminal.desktop
+        }
+    }
+}
+
+Plugin {
+    type = space
+    Config {
+        Size=8
+    }
+}
+
+Plugin {
+    type = pager
+}
+
+Plugin {
+    type = taskbar
+    expand=1
+    Config {
+        tooltips=1
+        IconsOnly=0
+        AcceptSkipPager=1
+        ShowIconified=1
+        ShowMapped=1
+        ShowAllDesks=0
+        UseMouseWheel=1
+        UseUrgencyHint=1
+        FlatButton=0
+        MaxTaskWidth=240
+        spacing=2
+    }
+}
+
+Plugin {
+    type = tray
+}
+
+Plugin {
+    type = dclock
+    Config {
+        ClockFmt=%H:%M
+        TooltipFmt=%A %x
+        BoldFont=0
+    }
+}

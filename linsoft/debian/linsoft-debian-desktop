@@ -1,0 +1,9 @@
+#!/bin/bash
+set -u
+echo "Starting separate Debian graphical applications on VT8."
+echo "Right-click desktop > Return to Linsoft to leave the app session."
+if ! /usr/bin/linsoft-debian desktop; then
+    echo "The Debian graphical session failed. See /opt/linsoft-debian/var/log/Xorg.linsoft.log." >&2
+    read -r -p 'Press Enter to return to Linsoft. '
+    exit 1
+fi

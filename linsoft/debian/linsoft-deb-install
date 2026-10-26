@@ -1,0 +1,13 @@
+#!/bin/bash
+set -u
+if [[ $# != 1 ]]; then
+    echo "Usage: linsoft-deb-install FILE.deb" >&2
+    exit 2
+fi
+/usr/bin/linsoft-debian install "$1"
+result=$?
+if (( result != 0 )); then
+    echo "DEB installation failed (status $result). Review the errors above before retrying." >&2
+fi
+read -r -p 'Press Enter to return to Linsoft. '
+exit "$result"

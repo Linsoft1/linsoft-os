@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070d1b"/>
+      <stop offset=".55" stop-color="#132442"/>
+      <stop offset="1" stop-color="#083b4d"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#204376" stop-opacity=".15"/>
+      <stop offset=".55" stop-color="#328bd0" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#59e0d9" stop-opacity=".8"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#36b8ce" stop-opacity=".23"/>
+      <stop offset="1" stop-color="#36b8ce" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h3840v2160H0z"/>
+  <ellipse cx="2900" cy="1100" rx="1550" ry="1100" fill="url(#glow)"/>
+  <path d="M-200 2000C800 2100 1700 500 2600 750S3500 1600 4100 400"
+        fill="none" stroke="url(#ribbon)" stroke-width="380"/>
+  <path d="M-200 1810C800 1910 1700 310 2600 560S3500 1410 4100 210"
+        fill="none" stroke="#63e4e1" stroke-width="3" opacity=".35"/>
+  <path d="M-200 2210C800 2310 1700 710 2600 960S3500 1810 4100 610"
+        fill="none" stroke="#7caef8" stroke-width="2" opacity=".22"/>
+  <g transform="translate(2760 770)" fill="none" stroke="#dff8ff" stroke-width="16" opacity=".85">
+    <path d="M0 0v180h130"/>
+  </g>
+</svg>

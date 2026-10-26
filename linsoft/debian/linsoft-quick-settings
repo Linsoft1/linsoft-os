@@ -1,0 +1,46 @@
+#!/bin/bash
+set -euo pipefail
+export SUDO_ASKPASS=/usr/local/bin/linsoft-askpass
+if action=$(zenity --list --title='Linsoft OS - rychle ovladanie' --width=520 --height=500 \
+    --column=ID --column=Ovladanie --hide-column=1 --print-column=1 \
+    sound 'Hlasitost a zvukove zariadenia' network 'Siet a pripojenie' calendar 'Kalendar' \
+    dark 'Tmavy vzhlad' light 'Svetly vzhlad' wallpaper 'Zmenit pozadie' \
+    panel 'Pripnut aplikacie na panel' lock 'Zamknut obrazovku' \
+    password 'Zmenit moje heslo' logout 'Odhlasit sa'); then :; else
+    status=$?; [[ $status == 1 ]] && exit 0
+    echo "Linsoft quick settings: dialog failed ($status)." >&2; exit "$status"
+fi
+case "$action" in
+    sound|network|wallpaper) exec linsoft-settings "$action" ;;
+    calendar) exec gsimplecal ;;
+    dark) exec xfconf-query -c xsettings -p /Net/ThemeName -s Adwaita-dark ;;
+    light) exec xfconf-query -c xsettings -p /Net/ThemeName -s Adwaita ;;
+    panel)
+        if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
+            exec linsoft-native-preferences
+        fi
+        exec tint2conf "$HOME/.config/tint2/linsoft.conf"
+        ;;
+    lock)
+        if [[ -f /etc/linsoft-apps/autologin ]]; then
+            exec zenity --info --title='Linsoft OS' \
+                --text='Zamykanie je vypnute spolu s automatickym prihlasovanim.'
+        fi
+        exec xscreensaver-command -lock
+        ;;
+    password) exec xterm -T 'Linsoft OS - zmena hesla' -e passwd ;;
+    logout)
+        if zenity --question --title='Linsoft OS - odhlasenie' --text='Ulozte pracu. Odhlasit sa a zatvorit aplikacie?'; then
+            if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
+                exec linsoft-native --quit
+            fi
+            exec openbox --exit
+        else
+            status=$?
+            [[ $status == 1 ]] && exit 0
+            echo "Linsoft quick settings: logout confirmation failed ($status)." >&2
+            exit "$status"
+        fi
+        ;;
+    *) echo "Invalid quick-settings action: $action" >&2; exit 2 ;;
+esac

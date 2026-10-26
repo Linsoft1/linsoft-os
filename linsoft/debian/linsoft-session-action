@@ -1,0 +1,50 @@
+#!/bin/bash
+set -euo pipefail
+fail() { zenity --error --title='Linsoft Desktop' --text="$*"; exit 1; }
+action=${1:-}
+exit_desktop() {
+    if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
+        linsoft-native --quit
+    else
+        openbox --exit
+    fi
+}
+case "$action" in
+    drm) question='Save your work. Open the original Linsoft DRM desktop?' ;;
+    restart) question='Save your work. Restart Linsoft OS?' ;;
+    poweroff) question='Save your work. Shut down Linsoft OS?' ;;
+    install)
+        [[ $# == 2 && -f $2 && $2 == /* && $2 == *.deb && $2 != *$'\n'* ]] ||
+            fail "Select an existing .deb file with an absolute path."
+        question='Save your work. Close this desktop and open the trusted-DEB installer? The desktop will restart after installation. Package scripts run as root; this is not a sandbox.'
+        ;;
+    *) fail "Unknown desktop action." ;;
+esac
+if [[ ${LINSOFT_PRIMARY:-0} != 1 ]]; then
+    [[ $action == drm ]] || fail "This action is available only in the unified desktop."
+    exit_desktop
+    exit
+fi
+if zenity --question --title='Linsoft Desktop' --text="$question" --width=480; then
+    :
+else
+    result=$?
+    if (( result == 1 )); then exit 0; fi
+    echo "Linsoft Desktop: confirmation dialog failed (status $result)." >&2
+    exit "$result"
+fi
+control=/run/linsoft-session
+if [[ -f /etc/linsoft-apps/professional ]]; then
+    export SUDO_ASKPASS=/usr/local/bin/linsoft-askpass
+    sudo -A -k -- /usr/local/sbin/linsoft-authorize session "$action" "${2:-}" || {
+        echo 'Linsoft: authorization failed or cancelled.' >&2
+        fail 'Overenie hesla alebo systemova poziadavka zlyhala.'
+    }
+    exit_desktop
+    exit
+fi
+request=$(mktemp "$control/request.XXXXXX")
+trap 'rm -f -- "$request"' EXIT
+printf '%s\n%s\n' "$action" "${2:-}" > "$request"
+mv -f -- "$request" "$control/request"
+exit_desktop

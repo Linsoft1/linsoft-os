@@ -1,0 +1,63 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Run as root with LINSOFT_LFS_BUILD=1 for the offline /mnt/lfs build tree." >&2
+    exit 2
+fi
+if [[ ! -f /mnt/lfs/etc/os-release ]] ||
+   ! grep -qx 'ID=linsoft' /mnt/lfs/etc/os-release; then
+    echo "Expected the Linsoft LFS build tree at /mnt/lfs." >&2
+    exit 1
+fi
+if findmnt -rn -o TARGET | grep -qE '^/mnt/lfs(/|$)'; then
+    echo "Finish existing chroot work before building Mesa." >&2
+    exit 1
+fi
+
+cache=/mnt/lfs/sources/linsoft-plasma-foundation
+mkdir -p "$cache"
+archive=$cache/mesa-25.1.8.tar.xz
+if [[ ! -f $archive ]]; then
+    curl --fail --location --retry 3 --output "$archive.part" \
+        https://mesa.freedesktop.org/archive/mesa-25.1.8.tar.xz
+    mv "$archive.part" "$archive"
+fi
+printf '%s  %s\n' 5cf1571d0d646d90047f3d93f57acc787cf88ec7e95efe172c555b492c30fb71 "$archive" |
+    sha256sum --check --status || {
+        echo "Mesa archive SHA-256 checksum mismatch." >&2
+        exit 1
+    }
+sha256sum "$archive"
+
+bash /mnt/lfs/sources/.chroot-wrapper.sh -c '
+set -euo pipefail
+cd /sources/linsoft-plasma-foundation
+if [[ -x mesa-build-venv/bin/python ]]; then
+    export PATH="$PWD/mesa-build-venv/bin:$PATH"
+fi
+if [[ ! -d mesa-25.1.8 ]]; then
+    tar -xf mesa-25.1.8.tar.xz
+fi
+cd mesa-25.1.8
+options=(--prefix=/usr --libdir=lib --buildtype=release --wrap-mode=nofallback
+    -Dplatforms=wayland -Dglx=disabled -Dglvnd=disabled
+    -Degl=enabled -Dgbm=enabled -Dgles1=disabled -Dgles2=enabled
+    -Dgallium-drivers=crocus,virgl,softpipe -Dvulkan-drivers=
+    -Dllvm=disabled -Dvalgrind=disabled -Dlibunwind=disabled
+    -Dgallium-va=disabled -Dgallium-vdpau=disabled
+    -Dintel-rt=disabled -Dvideo-codecs=)
+if [[ -f build/build.ninja ]]; then
+    meson setup --reconfigure build "${options[@]}"
+else
+    meson setup build "${options[@]}"
+fi
+ninja -C build -j2
+ninja -C build install
+ldconfig
+pkg-config --modversion egl gbm glesv2
+'
+echo "Mesa EGL/GLES and GBM installed in the offline LFS tree."
+echo "X11/GLX, Vulkan, hardware video codecs and LLVM acceleration are not enabled."
+echo "Modern Intel iris support requires the LLVM/libclc compiler stack and is not enabled."
+echo "GPU runtime testing is still required before publishing a bootable image."

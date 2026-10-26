@@ -1,0 +1,93 @@
+#!/bin/bash
+set -euo pipefail
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+temporary=$(mktemp -d)
+cleanup() {
+    rm -f -- "$temporary/zenity" "$temporary/events" "$temporary/errors" \
+        "$temporary/xfce4-display-settings" "$temporary/xfce4-appearance-settings" \
+        "$temporary/xfce4-mouse-settings" "$temporary/xfce4-keyboard-settings" \
+        "$temporary/pcmanfm" "$temporary/pavucontrol" "$temporary/xfce4-taskmanager" \
+        "$temporary/xfce4-appfinder" "$temporary/xfce4-notifyd-config" \
+        "$temporary/linsoft-session-action" "$temporary/linsoft-host-control" "$temporary/linsoft-native" \
+        "$temporary/linsoft-native-preferences"
+    rmdir "$temporary"
+}
+trap cleanup EXIT
+cat > "$temporary/zenity" <<'MOCK'
+#!/bin/bash
+printf 'zenity %s\n' "$*" >> "$EVENTS"
+printf '%s' "${ZENITY_VALUE:-}"
+exit "${ZENITY_RESULT:-0}"
+MOCK
+for program in xfce4-display-settings xfce4-appearance-settings xfce4-mouse-settings \
+    xfce4-keyboard-settings pcmanfm pavucontrol xfce4-taskmanager xfce4-appfinder \
+    xfce4-notifyd-config linsoft-session-action linsoft-host-control linsoft-native linsoft-native-preferences; do
+    cat > "$temporary/$program" <<'MOCK'
+#!/bin/bash
+printf '%s %s\n' "${0##*/}" "$*" >> "$EVENTS"
+exit "${APP_RESULT:-0}"
+MOCK
+    chmod 0755 "$temporary/$program"
+done
+chmod 0755 "$temporary/zenity"
+export PATH="$temporary:$PATH" EVENTS="$temporary/events"
+export LINSOFT_NATIVE=1
+: > "$EVENTS"
+bash "$source_dir/debian/linsoft-settings" files
+grep -qx 'linsoft-native --files' "$EVENTS"
+! grep -q '^pcmanfm ' "$EVENTS"
+: > "$EVENTS"
+bash "$source_dir/debian/linsoft-settings" wallpaper
+grep -qx 'linsoft-native-preferences ' "$EVENTS"
+! grep -q '^pcmanfm ' "$EVENTS"
+: > "$EVENTS"
+bash "$source_dir/debian/linsoft-files"
+grep -qx 'linsoft-native --files' "$EVENTS"
+unset LINSOFT_NATIVE
+: > "$EVENTS"
+bash "$source_dir/debian/linsoft-files" /tmp
+grep -qx 'pcmanfm /tmp' "$EVENTS"
+for pair in display:xfce4-display-settings appearance:xfce4-appearance-settings \
+    mouse:xfce4-mouse-settings keyboard:xfce4-keyboard-settings \
+    wallpaper:pcmanfm files:pcmanfm sound:pavucontrol tasks:xfce4-taskmanager \
+    applications:xfce4-appfinder notifications:xfce4-notifyd-config \
+    system:linsoft-session-action devices:linsoft-host-control renew:linsoft-host-control; do
+    : > "$EVENTS"
+    bash "$source_dir/debian/linsoft-settings" "${pair%%:*}"
+    grep -q "^${pair#*:} " "$EVENTS"
+done
+for pair in 'clock:2026-10-21 16:20:00' timezone:Europe/Bratislava mount:/dev/sda1 unmount:/dev/sda1; do
+    : > "$EVENTS"
+    export ZENITY_VALUE=${pair#*:}
+    bash "$source_dir/debian/linsoft-settings" "${pair%%:*}"
+    grep -qx "linsoft-host-control ${pair%%:*} ${pair#*:}" "$EVENTS"
+done
+unset ZENITY_VALUE
+export ZENITY_RESULT=1
+bash "$source_dir/debian/linsoft-settings"
+for action in clock timezone mount unmount; do
+    : > "$EVENTS"
+    bash "$source_dir/debian/linsoft-settings" "$action"
+    ! grep -q '^linsoft-host-control ' "$EVENTS"
+done
+export ZENITY_RESULT=255
+if bash "$source_dir/debian/linsoft-settings" 2>"$temporary/errors"; then
+    echo 'Dialog errors must not be accepted as cancellation.' >&2
+    exit 1
+fi
+grep -q 'status 255' "$temporary/errors"
+export ZENITY_RESULT=0 APP_RESULT=4
+if bash "$source_dir/debian/linsoft-settings" display 2>"$temporary/errors"; then
+    echo 'Application failure must be reported.' >&2
+    exit 1
+fi
+grep -q 'Program zlyhal' "$temporary/errors"
+unset APP_RESULT
+if bash "$source_dir/debian/linsoft-settings" invalid 2>"$temporary/errors"; then
+    echo 'Invalid settings action must fail.' >&2
+    exit 1
+fi
+for entry in linsoft-settings linsoft-about; do
+    ! LC_ALL=C grep -q $'\r' "$source_dir/debian/$entry.desktop"
+done
+echo 'PASS: all settings routes, cancellation, dialog/application errors and desktop-entry line endings'

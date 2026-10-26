@@ -1,0 +1,191 @@
+#!/bin/bash
+# Linsoft OS installer: copies the pristine live squashfs system to a disk
+# and makes it bootable on BIOS and UEFI (removable EFI path) computers.
+set -uo pipefail
+live=/run/linsoft-live
+source_root=$live/squash
+assets=$live/medium/linsoft/installer
+target=/mnt/linsoft-target
+esp_mount=/mnt/linsoft-esp
+min_bytes=$((12 * 1024 * 1024 * 1024))
+boot_mode=false
+[[ ${1:-} == --boot ]] && boot_mode=true
+export PATH=/usr/bin:/usr/sbin:/bin:/sbin
+
+pause() { read -r -p "${1:-Stlacte Enter...}" _ || true; }
+cleanup() {
+    for m in "$esp_mount" "$target"; do
+        mountpoint -q "$m" && umount "$m"
+    done
+    return 0
+}
+finish() {
+    if $boot_mode; then
+        while :; do
+            echo
+            read -r -p 'Napiste r = restart, v = vypnut, s = shell: ' answer || answer=r
+            case "$answer" in
+                r|R) /sbin/shutdown -r now; sleep 60 ;;
+                v|V) /sbin/shutdown -h now; sleep 60 ;;
+                s|S) /bin/bash -l ;;
+            esac
+        done
+    fi
+    exit "${1:-0}"
+}
+die() {
+    echo
+    echo "CHYBA: $*" >&2
+    cleanup
+    pause 'Instalacia zlyhala. Stlacte Enter...'
+    finish 1
+}
+part_dev() {
+    local base=${1##*/} number=$2 entry
+    for entry in /sys/class/block/"$base"/"$base"*; do
+        [[ -f $entry/partition && $(<"$entry/partition") == "$number" ]] &&
+            { echo "/dev/${entry##*/}"; return 0; }
+    done
+    return 1
+}
+
+clear
+cat <<'EOF'
+ ==============================================================
+                     Instalator Linsoft OS
+ ==============================================================
+ Linsoft OS sa nainstaluje na cely vybrany disk. VSETKY DATA na
+ tomto disku budu NAVZDY VYMAZANE. Zalohujte si data vopred.
+
+ Instalovany system bude rovnaky ako po spusteni Live media
+ (bez zmien urobenych v Live rezime). Podporuje BIOS aj UEFI
+ (Secure Boot musi byt vypnuty). Prihlasenie je automaticke bez
+ hesla, rovnako ako v edicii Native.
+EOF
+echo
+[[ $EUID == 0 ]] || die 'Instalator musi bezat ako root.'
+[[ -d $source_root/etc && -f $source_root/boot/linsoft-kernel ]] ||
+    die 'Live system nie je dostupny (spustite instalator z Live media).'
+[[ -x $assets/mkfs.fat && -f $assets/BOOTX64.EFI && -d $assets/x86_64-efi ]] ||
+    die 'Chybaju instalacne subory na mediu.'
+
+medium_disk=''
+if [[ -r $live/device ]]; then
+    medium=$(<"$live/device")
+    medium_disk=$(lsblk -ndo PKNAME "$medium" 2>/dev/null)
+    [[ -n $medium_disk ]] && medium_disk=/dev/$medium_disk || medium_disk=$medium
+fi
+
+disks=()
+while read -r name type size ro; do
+    [[ $type == disk && $ro == 0 && $name != "$medium_disk" ]] || continue
+    (( size >= min_bytes )) || continue
+    disks+=("$name")
+done < <(lsblk -dbnpo NAME,TYPE,SIZE,RO -e 1,7,11)
+if (( ${#disks[@]} == 0 )); then
+    die 'Nenasiel sa ziadny vhodny disk (minimum 12 GiB, okrem Live media).'
+fi
+
+echo ' Dostupne disky:'
+for i in "${!disks[@]}"; do
+    info=$(lsblk -dno SIZE,TRAN,MODEL "${disks[$i]}" | sed 's/  */ /g')
+    printf '   %d) %-16s %s\n' "$((i + 1))" "${disks[$i]}" "$info"
+done
+echo
+read -r -p ' Cislo disku (q = koniec): ' choice || finish 0
+[[ $choice =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#disks[@]} )) || {
+    echo ' Instalacia zrusena.'; finish 0; }
+disk=${disks[$((choice - 1))]}
+
+echo
+lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS "$disk"
+echo
+echo " POZOR: disk $disk bude uplne vymazany."
+read -r -p ' Pre pokracovanie napiste ANO: ' confirm || finish 0
+[[ $confirm == ANO ]] || { echo ' Instalacia zrusena.'; finish 0; }
+[[ -z $(lsblk -nro MOUNTPOINTS "$disk" | tr -d '[:space:]') ]] ||
+    die "Disk $disk je pripojeny; odpojte ho a skuste znova."
+
+echo; echo '[1/5] Vytvaram oddiely...'
+wipefs -a -q "$disk" || die 'Vymazanie podpisov disku zlyhalo.'
+sfdisk -q --wipe always --wipe-partitions always "$disk" <<'EOF' || die 'Rozdelenie disku zlyhalo.'
+label: gpt
+size=1MiB, type=21686148-6449-6E6F-744E-656564454649, name="BIOS boot"
+size=512MiB, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="EFI System"
+type=0FC63DAF-8483-4772-8E79-3D69C47D8E4D, name="Linsoft OS"
+EOF
+partx -u "$disk" 2>/dev/null
+udevadm settle 2>/dev/null
+for attempt in $(seq 1 50); do
+    esp=$(part_dev "$disk" 2) && root=$(part_dev "$disk" 3) &&
+        [[ -b $esp && -b $root ]] && break
+    sleep .2
+done
+[[ -b ${esp:-} && -b ${root:-} ]] || die 'Nove oddiely sa nezobrazili.'
+
+echo '[2/5] Formatujem...'
+"$assets/mkfs.fat" -F 32 -n LINSOFT-EFI "$esp" >/dev/null || die 'Formatovanie EFI oddielu zlyhalo.'
+mkfs.ext4 -F -q -L Linsoft "$root" || die 'Formatovanie systemoveho oddielu zlyhalo.'
+
+echo '[3/5] Kopirujem system (niekolko minut)...'
+mkdir -p "$target"
+mount -t ext4 "$root" "$target" || die 'Systemovy oddiel sa neda pripojit.'
+total=0
+[[ -r $live/medium/linsoft/live/rootfs.mib ]] && total=$(<"$live/medium/linsoft/live/rootfs.mib")
+base=$(df -m --output=used "$target" | tail -1)
+cp -a "$source_root/." "$target/" &
+copy_pid=$!
+while kill -0 "$copy_pid" 2>/dev/null; do
+    if (( total > 0 )); then
+        used=$(( $(df -m --output=used "$target" | tail -1) - base ))
+        percent=$(( used * 100 / total )); (( percent > 99 )) && percent=99
+        printf '\r      %3d %%  (%d / %d MiB)' "$percent" "$used" "$total"
+    fi
+    sleep 2
+done
+wait "$copy_pid" || die 'Kopirovanie systemu zlyhalo.'
+printf '\r      100 %%                              \n'
+
+echo '[4/5] Nastavujem system...'
+uuid=$(blkid -s UUID -o value "$root")
+partuuid=$(blkid -s PARTUUID -o value "$root")
+[[ -n $uuid && -n $partuuid ]] || die 'UUID oddielu sa nepodarilo zistit.'
+sed -i "s|^/dev/vda1 .*|UUID=$uuid  /            ext4     defaults                1     1|" \
+    "$target/etc/fstab" || die 'Zapis fstab zlyhal.'
+grep -q "^UUID=$uuid " "$target/etc/fstab" || die 'fstab neobsahuje novy korenovy oddiel.'
+sed -i "s|root=PARTUUID=[^ ]*|root=PARTUUID=$partuuid|g" "$target/boot/grub/grub.cfg" ||
+    die 'Uprava grub.cfg zlyhala.'
+for id_file in "$target/etc/machine-id" "$target/opt/linsoft-debian/etc/machine-id" \
+               "$target/opt/linsoft-debian/var/lib/dbus/machine-id"; do
+    if [[ -f $id_file && ! -L $id_file ]]; then
+        tr -d '-' < /proc/sys/kernel/random/uuid > "$id_file"
+    fi
+done
+
+echo '[5/5] Instalujem zavadzac GRUB (BIOS + UEFI)...'
+grub-install --target=i386-pc --boot-directory="$target/boot" --recheck "$disk" \
+    >/dev/null 2>&1 || die 'Instalacia GRUB pre BIOS zlyhala.'
+rm -rf "$target/boot/grub/x86_64-efi"
+cp -a "$assets/x86_64-efi" "$target/boot/grub/x86_64-efi" || die 'Kopirovanie modulov GRUB EFI zlyhalo.'
+mkdir -p "$esp_mount"
+mount -t vfat "$esp" "$esp_mount" || die 'EFI oddiel sa neda pripojit.'
+mkdir -p "$esp_mount/EFI/BOOT"
+cp "$assets/BOOTX64.EFI" "$esp_mount/EFI/BOOT/BOOTX64.EFI" || die 'Kopirovanie EFI zavadzaca zlyhalo.'
+cat > "$esp_mount/EFI/BOOT/grub.cfg" <<EOF
+search --no-floppy --fs-uuid --set=root $uuid
+set prefix=(\$root)/boot/grub
+configfile \$prefix/grub.cfg
+EOF
+sync
+cleanup
+
+echo
+echo ' =============================================================='
+echo "  Linsoft OS je nainstalovany na $disk."
+echo '  Vyberte Live medium a restartujte pocitac.'
+echo ' =============================================================='
+if $boot_mode; then
+    finish 0
+fi
+pause ' Stlacte Enter pre navrat na plochu...'
+exit 0

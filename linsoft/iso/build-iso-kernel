@@ -1,0 +1,47 @@
+#!/bin/bash
+# Builds the Linsoft live/installer kernel in a copy of the LFS kernel tree.
+# The original /sources/ch10-linux-build tree is never modified.
+set -euo pipefail
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Run as root with LINSOFT_LFS_BUILD=1." >&2
+    exit 2
+fi
+LFS=/mnt/lfs
+grep -qx 'ID=linsoft' "$LFS/etc/os-release"
+if findmnt -rn -o TARGET | grep -qE "^$LFS/(dev|proc|sys|run)(/|$)"; then
+    echo "Finish other chroot work before building the ISO kernel." >&2
+    exit 1
+fi
+SRC=$LFS/sources/ch10-linux-build
+DST=$LFS/sources/linsoft-iso-kernel
+if [[ ! -d $DST ]]; then
+    cp -a "$SRC" "$DST.tmp"
+    mv "$DST.tmp" "$DST"
+fi
+JOBS=${JOBS:-$(nproc)}
+bash "$LFS/sources/.chroot-wrapper.sh" -c "
+set -euo pipefail
+cd /sources/linsoft-iso-kernel
+scripts/config \
+    --enable SQUASHFS --enable SQUASHFS_ZLIB --enable SQUASHFS_XZ \
+    --enable SQUASHFS_ZSTD --enable SQUASHFS_FILE_DIRECT --enable SQUASHFS_XATTR \
+    --enable OVERLAY_FS \
+    --enable NVME_CORE --enable BLK_DEV_NVME \
+    --enable USB_UAS \
+    --enable MMC --enable MMC_BLOCK --enable MMC_SDHCI \
+    --enable MMC_SDHCI_PCI --enable MMC_SDHCI_ACPI \
+    --enable SYSFB_SIMPLEFB --enable DRM_SIMPLEDRM \
+    --enable EFIVAR_FS --enable ATA_GENERIC
+make olddefconfig
+make -j$JOBS
+rm -rf /sources/linsoft-iso-kernel-out
+mkdir -p /sources/linsoft-iso-kernel-out/boot
+make INSTALL_MOD_PATH=/sources/linsoft-iso-kernel-out INSTALL_MOD_STRIP=1 modules_install
+install -m 0644 arch/x86/boot/bzImage /sources/linsoft-iso-kernel-out/boot/linsoft-kernel
+install -m 0644 System.map /sources/linsoft-iso-kernel-out/boot/System.map-linsoft-kernel
+install -m 0644 .config /sources/linsoft-iso-kernel-out/boot/config-linsoft-kernel
+for opt in SQUASHFS SQUASHFS_XZ SQUASHFS_XATTR OVERLAY_FS BLK_DEV_NVME USB_UAS MMC_BLOCK DRM_SIMPLEDRM; do
+    grep -qx \"CONFIG_\$opt=y\" .config || { echo \"missing CONFIG_\$opt\" >&2; exit 1; }
+done
+echo 'Linsoft ISO kernel ready.'
+"

@@ -1,0 +1,197 @@
+#!/bin/bash
+set -euo pipefail
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+temporary=$(mktemp -d)
+cleanup() {
+    rm -f -- "$temporary/zenity" "$temporary/linsoft-settings" "$temporary/xterm" \
+        "$temporary/events" "$temporary/error" "$temporary/source/item" "$temporary/target/item" \
+        "$temporary/source/link" "$temporary/target/link" "$temporary/cp" "$temporary/mv" \
+        "$temporary/cp-count" "$temporary/mv-count" "$temporary/cp-started" "$temporary/mv-started"
+    rm -rf -- "$temporary/transaction"
+    rmdir "$temporary/source" "$temporary/target" "$temporary"
+}
+trap cleanup EXIT
+mkdir "$temporary/source" "$temporary/target"
+cat > "$temporary/zenity" <<'MOCK'
+#!/bin/bash
+printf 'zenity %s\n' "$*" >> "$EVENTS"
+case "$*" in
+    *--question*) exit "${QUESTION_STATUS:-0}" ;;
+    *--list*) printf '%s' "${CHOICE:-}"; exit "${DIALOG_STATUS:-0}" ;;
+    *--calendar*) printf '23.10.2026'; exit "${DIALOG_STATUS:-0}" ;;
+esac
+MOCK
+for program in linsoft-settings xterm; do
+    cat > "$temporary/$program" <<'MOCK'
+#!/bin/bash
+printf '%s %s\n' "${0##*/}" "$*" >> "$EVENTS"
+MOCK
+    chmod 0755 "$temporary/$program"
+done
+chmod 0755 "$temporary/zenity"
+export PATH="$temporary:$PATH" EVENTS="$temporary/events"
+for action in notifications devices mount unmount; do
+    : > "$EVENTS"
+    bash "$source_dir/debian/linsoft-native-center" "$action"
+    grep -qx "linsoft-settings $action" "$EVENTS"
+done
+bash "$source_dir/debian/linsoft-native-center" calendar
+grep -q 'Vybrany datum: 23.10.2026' "$EVENTS"
+export DIALOG_STATUS=1
+bash "$source_dir/debian/linsoft-native-center"
+export DIALOG_STATUS=255
+if bash "$source_dir/debian/linsoft-native-center" 2>"$temporary/error"; then exit 1; fi
+grep -q 'Vyber centra zlyhal' "$temporary/error"
+unset DIALOG_STATUS
+printf preserved-data > "$temporary/source/item"
+ln -s item "$temporary/source/link"
+export CHOICE=copy
+bash "$source_dir/debian/linsoft-native-file-action" drop "$temporary/target" \
+    "$temporary/source/item" "$temporary/source/link"
+cmp "$temporary/source/item" "$temporary/target/item"
+test -L "$temporary/target/link"
+test "$(readlink "$temporary/target/link")" == item
+printf collision-guard > "$temporary/target/item"
+if bash "$source_dir/debian/linsoft-native-file-action" drop "$temporary/target" \
+    "$temporary/source/item" 2>"$temporary/error"; then exit 1; fi
+grep -qx collision-guard "$temporary/target/item"
+rm -- "$temporary/target/item" "$temporary/target/link"
+export CHOICE=move
+bash "$source_dir/debian/linsoft-native-file-action" drop "$temporary/target" "$temporary/source/item"
+test ! -e "$temporary/source/item"
+grep -qx preserved-data "$temporary/target/item"
+export DIALOG_STATUS=1
+result=0
+bash "$source_dir/debian/linsoft-native-file-action" drop "$temporary/source" "$temporary/target/item" || result=$?
+test "$result" == 2
+test -f "$temporary/target/item"
+unset DIALOG_STATUS
+
+mkdir -p "$temporary/transaction/source" "$temporary/transaction/copy-target" \
+    "$temporary/transaction/commit-target" "$temporary/transaction/move-source" \
+    "$temporary/transaction/move-target"
+printf first > "$temporary/transaction/source/first"
+printf second > "$temporary/transaction/source/second"
+printf move-first > "$temporary/transaction/move-source/first"
+printf move-second > "$temporary/transaction/move-source/second"
+REAL_CP=$(command -v cp)
+REAL_MV=$(command -v mv)
+cat > "$temporary/cp" <<'MOCK'
+#!/bin/bash
+count=0
+[[ ! -f $CP_COUNT_FILE ]] || read -r count < "$CP_COUNT_FILE"
+count=$((count + 1))
+printf '%s\n' "$count" > "$CP_COUNT_FILE"
+[[ ${CP_FAIL_ON:-0} != "$count" ]] || exit 1
+if [[ ${CP_DELAY_ON:-0} == "$count" ]]; then
+    printf started > "$CP_STARTED_FILE"
+    sleep .3
+fi
+exec "$REAL_CP" "$@"
+MOCK
+cat > "$temporary/mv" <<'MOCK'
+#!/bin/bash
+count=0
+[[ ! -f $MV_COUNT_FILE ]] || read -r count < "$MV_COUNT_FILE"
+count=$((count + 1))
+printf '%s\n' "$count" > "$MV_COUNT_FILE"
+[[ ${MV_FAIL_ON:-0} != "$count" ]] || exit 1
+if [[ ${MV_DELAY_ON:-0} == "$count" ]]; then
+    printf started > "$MV_STARTED_FILE"
+    sleep .3
+fi
+exec "$REAL_MV" "$@"
+MOCK
+chmod 0755 "$temporary/cp" "$temporary/mv"
+export REAL_CP REAL_MV CP_COUNT_FILE="$temporary/cp-count" MV_COUNT_FILE="$temporary/mv-count"
+export PATH="$temporary:$PATH"
+export CP_FAIL_ON=2
+if bash "$source_dir/debian/linsoft-native-file-action" copy \
+    "$temporary/transaction/copy-target" "$temporary/transaction/source/first" \
+    "$temporary/transaction/source/second" 2>"$temporary/error"; then exit 1; fi
+test "$(cat "$temporary/transaction/source/first")" == first
+test "$(cat "$temporary/transaction/source/second")" == second
+test -z "$(find "$temporary/transaction/copy-target" -mindepth 1 -print -quit)"
+
+unset CP_FAIL_ON
+rm -f -- "$CP_COUNT_FILE" "$MV_COUNT_FILE"
+export MV_FAIL_ON=2
+if bash "$source_dir/debian/linsoft-native-file-action" copy \
+    "$temporary/transaction/commit-target" "$temporary/transaction/source/first" \
+    "$temporary/transaction/source/second" 2>"$temporary/error"; then exit 1; fi
+test "$(cat "$temporary/transaction/source/first")" == first
+test "$(cat "$temporary/transaction/source/second")" == second
+test -z "$(find "$temporary/transaction/commit-target" -mindepth 1 -print -quit)"
+
+rm -f -- "$MV_COUNT_FILE"
+export MV_FAIL_ON=4
+if bash "$source_dir/debian/linsoft-native-file-action" move \
+    "$temporary/transaction/move-target" "$temporary/transaction/move-source/first" \
+    "$temporary/transaction/move-source/second" 2>"$temporary/error"; then exit 1; fi
+test "$(cat "$temporary/transaction/move-source/first")" == move-first
+test "$(cat "$temporary/transaction/move-source/second")" == move-second
+test -z "$(find "$temporary/transaction/move-target" -mindepth 1 -print -quit)"
+unset MV_FAIL_ON
+
+wait_for_marker() {
+    local marker=$1
+    for ((attempt=0;attempt<100;attempt++)); do
+        [[ -f $marker ]] && return 0
+        sleep .02
+    done
+    echo "Timed out waiting for operation marker: $marker" >&2
+    return 1
+}
+mkdir "$temporary/transaction/cancel-copy-target" "$temporary/transaction/cancel-move-target"
+rm -f -- "$CP_COUNT_FILE" "$MV_COUNT_FILE"
+export CP_DELAY_ON=1 CP_STARTED_FILE="$temporary/cp-started"
+bash "$source_dir/debian/linsoft-native-file-action" copy \
+    "$temporary/transaction/cancel-copy-target" "$temporary/transaction/source/first" &
+job=$!
+wait_for_marker "$CP_STARTED_FILE"
+kill -TERM "$job"
+result=0
+wait "$job" || result=$?
+test "$result" == 2
+test "$(cat "$temporary/transaction/source/first")" == first
+test -z "$(find "$temporary/transaction/cancel-copy-target" -mindepth 1 -print -quit)"
+unset CP_DELAY_ON
+
+rm -f -- "$MV_COUNT_FILE" "$temporary/mv-started"
+export MV_DELAY_ON=1 MV_STARTED_FILE="$temporary/mv-started"
+bash "$source_dir/debian/linsoft-native-file-action" move \
+    "$temporary/transaction/cancel-move-target" "$temporary/transaction/move-source/first" &
+job=$!
+wait_for_marker "$MV_STARTED_FILE"
+kill -TERM "$job"
+result=0
+wait "$job" || result=$?
+test "$result" == 2
+test "$(cat "$temporary/transaction/move-source/first")" == move-first
+test -z "$(find "$temporary/transaction/cancel-move-target" -mindepth 1 -print -quit)"
+unset MV_DELAY_ON
+
+rm -f -- "$MV_COUNT_FILE" "$temporary/mv-started"
+export MV_DELAY_ON=2 MV_STARTED_FILE="$temporary/mv-started"
+bash "$source_dir/debian/linsoft-native-file-action" move \
+    "$temporary/transaction/cancel-move-target" "$temporary/transaction/move-source/first" &
+job=$!
+wait_for_marker "$MV_STARTED_FILE"
+kill -TERM "$job"
+result=0
+wait "$job" || result=$?
+test "$result" == 2
+test "$(cat "$temporary/transaction/move-source/first")" == move-first
+test -z "$(find "$temporary/transaction/cancel-move-target" -mindepth 1 -print -quit)"
+unset MV_DELAY_ON
+echo 'PASS: cancellation during staging and commit restores original files'
+export PATH=${PATH#"$temporary:"}
+
+export LINSOFT_NATIVE=1 QUESTION_STATUS=1
+: > "$EVENTS"
+bash "$source_dir/debian/linsoft-app-center" upgrade
+grep -q -- '--default-cancel' "$EVENTS"
+! grep -q '^xterm ' "$EVENTS"
+unset QUESTION_STATUS
+bash "$source_dir/debian/linsoft-app-center" backup
+echo 'PASS: center routes/calendar/cancel/errors, confirmed drop copy/move/symlink/no-overwrite, transactional rollback and safe cancellation, Native pre-update default-cancel'

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Install Debian package
+Exec=/usr/local/bin/linsoft-install-package %f
+Icon=system-software-install
+Terminal=false
+Categories=System;PackageManager;
+MimeType=application/vnd.debian.binary-package;application/x-deb;

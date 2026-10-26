@@ -1,0 +1,18 @@
+#!/bin/bash
+set -euo pipefail
+if [[ $# == 1 ]]; then
+    exec /usr/local/bin/linsoft-session-action install "$1"
+elif [[ $# != 0 ]]; then
+    echo 'Linsoft Desktop: select exactly one Debian package.' >&2
+    exit 2
+fi
+if package=$(zenity --file-selection --title='Linsoft - install trusted Debian package' \
+    --filename="$HOME/Downloads/" --file-filter='Debian package | *.deb'); then
+    :
+else
+    result=$?
+    if (( result == 1 )); then exit 0; fi
+    echo "Linsoft Desktop: package selector failed (status $result)." >&2
+    exit "$result"
+fi
+exec /usr/local/bin/linsoft-session-action install "$package"

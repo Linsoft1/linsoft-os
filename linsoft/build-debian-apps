@@ -1,0 +1,71 @@
+#!/bin/bash
+set -euo pipefail
+if [[ $EUID != 0 || ${LINSOFT_LFS_BUILD:-} != 1 ]]; then
+    echo "Use root and LINSOFT_LFS_BUILD=1. This builds an isolated app root only." >&2
+    exit 2
+fi
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cache=/mnt/lfs/sources/linsoft-debian
+root="$cache/rootfs"
+mkdir -p "$cache"
+command -v debootstrap
+if [[ ! -f $cache/archive-key-13.gpg ]]; then
+    curl -fL --retry 2 https://ftp-master.debian.org/keys/archive-key-13.asc \
+        -o "$cache/archive-key-13.asc"
+    fingerprint=$(gpg --batch --show-keys --with-colons "$cache/archive-key-13.asc" |
+        awk -F: '$1=="fpr" {print $10; exit}')
+    [[ $fingerprint == 04B54C3CDCA79751B16BC6B5225629DF75B188BD ]]
+    gpg --batch --yes --dearmor --output "$cache/archive-key-13.gpg" \
+        "$cache/archive-key-13.asc"
+fi
+if [[ ! -f $root/etc/debian_version ]]; then
+    debootstrap --arch=amd64 --variant=minbase --keyring="$cache/archive-key-13.gpg" \
+        --include=ca-certificates trixie "$root" https://deb.debian.org/debian
+fi
+extras=${LINSOFT_DESKTOP_EXTRAS:-0}
+professional=${LINSOFT_DESKTOP_PROFESSIONAL:-0}
+if [[ $professional == 1 ]]; then extras=1; fi
+exec unshare --mount --propagation private /bin/bash -s "$root" "$source_dir" "$extras" "$professional" <<'BUILD'
+set -euo pipefail
+root=$1
+source_dir=$2
+extras=$3
+professional=$4
+mount -t proc proc "$root/proc"
+mount --rbind /dev "$root/dev"
+mount --make-rslave "$root/dev"
+mount --rbind /sys "$root/sys"
+mount --make-rslave "$root/sys"
+cp -L /etc/resolv.conf "$root/etc/resolv.conf"
+cat > "$root/etc/apt/sources.list" <<'SOURCES'
+deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://deb.debian.org/debian trixie main
+deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://deb.debian.org/debian trixie-updates main
+deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://security.debian.org/debian-security trixie-security main
+SOURCES
+printf '#!/bin/sh\nexit 101\n' > "$root/usr/sbin/policy-rc.d"
+chmod 0755 "$root/usr/sbin/policy-rc.d"
+chroot "$root" apt-get update
+DEBIAN_FRONTEND=noninteractive chroot "$root" apt-get upgrade -y
+mapfile -t packages < "$source_dir/debian/packages"
+if [[ $extras == 1 ]]; then
+    mapfile -t extra_packages < "$source_dir/debian/packages-desktop-extras"
+    packages+=("${extra_packages[@]}")
+fi
+if [[ $professional == 1 ]]; then
+    mapfile -t professional_packages < "$source_dir/debian/packages-professional"
+    packages+=("${professional_packages[@]}")
+fi
+DEBIAN_FRONTEND=noninteractive chroot "$root" apt-get install -y --no-install-recommends "${packages[@]}"
+if [[ $extras == 1 ]]; then
+    sed -i 's/^# *sk_SK.UTF-8 UTF-8/sk_SK.UTF-8 UTF-8/' "$root/etc/locale.gen"
+    chroot "$root" locale-gen
+fi
+chroot "$root" dpkg --audit
+if ! chroot "$root" id linsoft >/dev/null 2>&1; then
+    chroot "$root" useradd --create-home --uid 1000 --shell /bin/bash linsoft
+fi
+chroot "$root" passwd -l linsoft
+chroot "$root" apt-get clean
+chroot "$root" dpkg-query -W -f='${Package}\t${Version}\n' > "$root/linsoft-debian-packages.txt"
+echo "Debian app root built; no VM image or LFS system library replaced."
+BUILD

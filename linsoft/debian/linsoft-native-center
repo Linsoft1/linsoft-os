@@ -1,0 +1,34 @@
+#!/bin/bash
+set -euo pipefail
+fail() {
+    printf 'Linsoft center: %s\n' "$*" >&2
+    zenity --error --title='Centrum Linsoft' --text="$*"
+    exit 1
+}
+action=${1:-}
+[[ $# -le 1 ]] || fail 'Neplatne argumenty centra.'
+if [[ -z $action ]]; then
+    if action=$(zenity --list --title='Centrum Linsoft' --width=620 --height=380 \
+        --text='Oznamenia, kalendar a pripojene zariadenia.' \
+        --column=ID --column=Zobrazit --hide-column=1 --print-column=1 \
+        notifications 'Oznamenia, historia a ich nastavenia' calendar Kalendar \
+        devices 'Pripojene disky a USB' mount 'Pripojit USB disk' unmount 'Bezpecne odpojit USB disk'); then :
+    else
+        result=$?
+        [[ $result == 1 ]] && exit 0
+        fail "Vyber centra zlyhal: $result"
+    fi
+fi
+case "$action" in
+    notifications|devices|mount|unmount) exec linsoft-settings "$action" ;;
+    calendar)
+        if date=$(zenity --calendar --title='Kalendar Linsoft' --width=430 --height=360 \
+            --text='Vyber datumu (nemeni systemovy cas).' --date-format='%d.%m.%Y'); then
+            zenity --info --title='Kalendar Linsoft' --text="Vybrany datum: $date"
+        else
+            result=$?
+            [[ $result == 1 ]] || fail "Kalendar zlyhal: $result"
+        fi
+        ;;
+    *) fail 'Neznama akcia centra.' ;;
+esac

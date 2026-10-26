@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Linsoft Desktop
+Comment=Linsoft Desktop based on Openbox and LXDE components
+Exec=linsoft-session
+TryExec=linsoft-session
+Type=Application
+DesktopNames=Linsoft

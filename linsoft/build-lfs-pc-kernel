@@ -1,0 +1,30 @@
+#!/bin/bash
+set -euo pipefail
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Run as root with LINSOFT_LFS_BUILD=1 for offline Linsoft." >&2
+    exit 2
+fi
+grep -qx 'ID=linsoft' /mnt/lfs/etc/os-release
+if findmnt -rn -o TARGET | grep -qE '^/mnt/lfs(/|$)'; then
+    echo "Finish other chroot work before rebuilding the kernel." >&2
+    exit 1
+fi
+bash /mnt/lfs/sources/.chroot-wrapper.sh -c '
+set -euo pipefail
+cd /sources/ch10-linux-build
+if [[ ! -f .config.before-pc-audio ]]; then
+    cp .config .config.before-pc-audio
+fi
+scripts/config --enable R8169 --enable SND_USB_AUDIO \
+    --enable SND_HDA_INTEL --enable SND_HDA_GENERIC \
+    --enable SND_HDA_CODEC_HDMI --enable SND_HDA_CODEC_REALTEK \
+    --enable DRM_FBDEV_EMULATION --enable FRAMEBUFFER_CONSOLE
+make olddefconfig
+make -j2
+make modules_install
+install -m 0644 arch/x86/boot/bzImage /boot/linsoft-kernel-pc
+install -m 0644 System.map /boot/System.map-linsoft-kernel-pc
+install -m 0644 .config /boot/config-linsoft-kernel-pc
+grep -E "^CONFIG_(R8169|SND_USB_AUDIO|SND_HDA_GENERIC|SND_HDA_CODEC_HDMI|SND_HDA_CODEC_REALTEK)=y" \
+    /boot/config-linsoft-kernel-pc
+'

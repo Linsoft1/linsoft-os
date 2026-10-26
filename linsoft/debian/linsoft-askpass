@@ -1,0 +1,3 @@
+#!/bin/bash
+set -euo pipefail
+exec zenity --password --title='Linsoft OS - overenie hesla'

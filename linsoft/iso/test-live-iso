@@ -1,0 +1,117 @@
+#!/bin/bash
+# QEMU smoke test for the Linsoft live/installer ISO:
+#   1. live boot (BIOS) reaches runlevel 3,
+#   2. the installer GRUB entry installs to an empty virtual disk,
+#   3. the installed disk boots on BIOS and on UEFI (OVMF).
+set -euo pipefail
+[[ $EUID == 0 ]] || { echo 'Run as root.' >&2; exit 2; }
+iso=$(realpath "${1:?Usage: test-live-iso ISO [WORKDIR]}")
+work=${2:-/var/tmp/linsoft-iso-test}
+ovmf_code=/usr/share/OVMF/OVMF_CODE_4M.fd
+ovmf_vars=/usr/share/OVMF/OVMF_VARS_4M.fd
+mkdir -p "$work"
+cd "$work"
+rm -f disk.qcow2 ./*.log ./*.png mon.sock
+qemu-img create -f qcow2 disk.qcow2 20G >/dev/null
+qemu_pid=''
+stop_qemu() {
+    [[ -n $qemu_pid ]] && kill "$qemu_pid" 2>/dev/null && wait "$qemu_pid" 2>/dev/null
+    qemu_pid=''
+    return 0
+}
+trap stop_qemu EXIT
+monitor() { printf '%s\n' "$1" | nc -U -q1 "$work/mon.sock" >/dev/null 2>&1 || true; }
+keys() { for key in "$@"; do monitor "sendkey $key"; sleep .3; done; }
+start_qemu() {
+    local log=$1; shift
+    rm -f mon.sock
+    qemu-system-x86_64 -enable-kvm -cpu host -m 3G -smp 2 \
+        -drive file=disk.qcow2,format=qcow2,if=virtio \
+        -device virtio-vga,xres=1280,yres=800 -device qemu-xhci -device usb-tablet \
+        -netdev user,id=n -device virtio-net-pci,netdev=n \
+        -display none -serial "file:$log" \
+        -monitor "unix:$work/mon.sock,server,nowait" "$@" > "$log.qemu" 2>&1 &
+    qemu_pid=$!
+    for attempt in $(seq 1 50); do [[ -S mon.sock ]] && break; sleep .2; done
+}
+wait_serial() {
+    local log=$1 pattern=$2 timeout=$3
+    for attempt in $(seq 1 "$timeout"); do
+        tr -d '\r' < "$log" 2>/dev/null | grep -qE "$pattern" && return 0
+        kill -0 "$qemu_pid" 2>/dev/null || return 1
+        sleep 1
+    done
+    return 1
+}
+pass() { echo "PASS: $*"; }
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+echo '--- 1. Live boot (BIOS)'
+start_qemu live.log -cdrom "$iso" -boot d
+wait_serial live.log 'linsoft login:' 180 || fail 'live system did not reach login prompt'
+sleep 25
+monitor "screendump $work/live.png -f png"
+grep -q 'SQUASHFS error' "$work/live.log" && fail 'squashfs xattr error in live boot'
+pass 'live system booted'
+stop_qemu
+
+echo '--- 1b. Live boot (UEFI)'
+cp "$ovmf_vars" vars.fd
+start_qemu live-uefi.log -machine q35 -cdrom "$iso" \
+    -drive if=pflash,format=raw,readonly=on,file="$ovmf_code" \
+    -drive if=pflash,format=raw,file=vars.fd
+wait_serial live-uefi.log 'linsoft login:' 240 || fail 'live system did not boot on UEFI'
+pass 'live system booted on UEFI'
+stop_qemu
+
+echo '--- 2. Installer entry'
+start_qemu install.log -cdrom "$iso" -boot d
+wait_serial install.log 'executed automatically' 60 || fail 'GRUB menu not shown'
+keys down ret
+wait_serial install.log 'linsoft login:' 180 ||
+    fail 'installer boot did not start'
+sleep 20
+monitor "screendump $work/installer-start.png -f png"
+keys 1 ret
+sleep 3
+keys shift-a shift-n shift-o ret
+previous=0; stable=0
+for attempt in $(seq 1 180); do
+    sleep 5
+    size=$(stat -c %s disk.qcow2)
+    if (( size == previous && size > 3000000000 )); then
+        stable=$((stable + 1))
+        (( stable >= 6 )) && break
+    else
+        stable=0
+    fi
+    previous=$size
+done
+monitor "screendump $work/installer-done.png -f png"
+keys v ret
+for attempt in $(seq 1 60); do kill -0 "$qemu_pid" 2>/dev/null || break; sleep 1; done
+stop_qemu
+(( $(stat -c %s disk.qcow2) > 3000000000 )) || fail 'installer did not write the system'
+pass 'installer wrote the disk'
+
+echo '--- 3. Installed disk (BIOS)'
+start_qemu bios.log -boot c
+wait_serial bios.log 'linsoft login:' 180 || fail 'installed system did not boot on BIOS'
+grep -q 'FAILED' "$work/bios.log" &&
+    echo 'WARN: boot log contains FAILED lines' >&2
+sleep 25
+monitor "screendump $work/installed-bios.png -f png"
+pass 'installed system boots on BIOS'
+stop_qemu
+
+echo '--- 4. Installed disk (UEFI)'
+cp "$ovmf_vars" vars.fd
+start_qemu uefi.log -machine q35 \
+    -drive if=pflash,format=raw,readonly=on,file="$ovmf_code" \
+    -drive if=pflash,format=raw,file=vars.fd
+wait_serial uefi.log 'linsoft login:' 240 || fail 'installed system did not boot on UEFI'
+sleep 25
+monitor "screendump $work/installed-uefi.png -f png"
+pass 'installed system boots on UEFI'
+stop_qemu
+echo 'All Linsoft ISO tests passed.'

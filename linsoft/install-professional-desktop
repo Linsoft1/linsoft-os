@@ -1,0 +1,80 @@
+#!/bin/bash
+set -euo pipefail
+target=/mnt/linsoft-debian-image
+[[ $EUID == 0 && ${LINSOFT_LFS_BUILD:-} == 1 ]] || {
+    echo 'Use root and LINSOFT_LFS_BUILD=1 on a closed, mounted Professional image.' >&2; exit 2;
+}
+mountpoint -q "$target"
+grep -qx ID=linsoft "$target/etc/os-release"
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root="$target/opt/linsoft-debian"
+while IFS= read -r package; do
+    [[ $(chroot "$root" dpkg-query -W -f='${Status}' "$package") == 'install ok installed' ]]
+done < "$source_dir/debian/packages-professional"
+LINSOFT_LFS_BUILD=1 bash "$source_dir/install-desktop-extras"
+LINSOFT_LFS_BUILD=1 bash "$source_dir/install-boot-splash"
+for program in linsoft-askpass linsoft-login linsoft-app-center linsoft-package-window linsoft-quick-settings linsoft-update-notice; do
+    install -m0755 "$source_dir/debian/$program" "$root/usr/local/bin/"
+done
+install -d "$root/usr/local/sbin" "$root/etc/sudoers.d"
+for program in linsoft-authorize linsoft-package-admin; do
+    install -m0755 "$source_dir/debian/$program" "$root/usr/local/sbin/"
+done
+sudo_policy=professional-sudoers
+if [[ -f $root/etc/linsoft-apps/passwordless ]]; then
+    [[ -f $root/etc/linsoft-apps/autologin ]] || {
+        echo 'Passwordless administration requires explicit desktop autologin.' >&2; exit 2;
+    }
+    sudo_policy=professional-sudoers-passwordless
+fi
+install -m0440 "$source_dir/debian/$sudo_policy" "$root/etc/sudoers.d/linsoft"
+chroot "$root" visudo -c
+if ! grep -Eq '(^|[[:space:]])linsoft([[:space:]]|$)' "$root/etc/hosts"; then
+    printf '\n127.0.1.1 linsoft\n' >> "$root/etc/hosts"
+fi
+install -m0755 "$source_dir/debian/linsoft-login-session" "$target/usr/bin/"
+install -m0644 "$source_dir/debian/linsoft-app-center.desktop" "$root/usr/share/applications/"
+install -m0644 "$source_dir/debian/login-rc.xml" "$root/etc/linsoft-apps/"
+chroot "$root" update-desktop-database /usr/share/applications
+if [[ ! -f $target/etc/inittab.before-professional ]]; then
+    cp -a "$target/etc/inittab" "$target/etc/inittab.before-professional"
+fi
+sed -i 's|^1:2345:respawn:.*|1:2345:respawn:/usr/bin/openvt -c 1 -f -w -- /usr/bin/linsoft-login-session|' \
+    "$target/etc/inittab"
+chroot "$target" passwd -l root
+if [[ ! -f $root/etc/linsoft-apps/professional ]]; then
+    chroot "$root" passwd -l linsoft
+    touch "$root/etc/linsoft-apps/first-login"
+fi
+touch "$root/etc/linsoft-apps/professional"
+cat "$source_dir/debian/packages" "$source_dir/debian/packages-desktop-extras" \
+    "$source_dir/debian/packages-professional" > "$target/usr/share/doc/linsoft-debian/requested-packages"
+grep -Ev '^(firefox-esr|libreoffice-writer|libreoffice-calc|firefox-esr-l10n-sk|libreoffice-l10n-sk|xvfb)$' \
+    "$target/usr/share/doc/linsoft-debian/requested-packages" \
+    > "$root/etc/linsoft-apps/protected-packages"
+printf '%s\n' libc6 libpam0g libpam-modules libpam-runtime passwd login bash coreutils \
+    xserver-xorg-core xinit xterm sudo xscreensaver > "$root/etc/linsoft-apps/protected-extra"
+cat "$root/etc/linsoft-apps/protected-extra" >> "$root/etc/linsoft-apps/protected-packages"
+sed -i '\|<item label="Nastavenia">|i \
+    <item label="Rychle ovladanie"><action name="Execute"><command>/usr/local/bin/linsoft-quick-settings</command></action></item>\
+    <item label="Aplikacie a aktualizacie"><action name="Execute"><command>/usr/local/bin/linsoft-app-center</command></action></item>\
+    <item label="Zamknut obrazovku"><action name="Execute"><command>xscreensaver-command -lock</command></action></item>' \
+    "$root/etc/linsoft-apps/menu.xml"
+sed -i '\|<keyboard>|a \
+    <keybind key="W-l"><action name="Execute"><command>xscreensaver-command -lock</command></action></keybind>\
+    <keybind key="W-a"><action name="Execute"><command>/usr/local/bin/linsoft-app-center</command></action></keybind>' \
+    "$root/etc/linsoft-apps/rc.xml"
+cat >> "$root/etc/linsoft-apps/tint2rc" <<'PANEL'
+button = new
+button_text = Ovladanie
+button_font = DejaVu Sans 10
+button_font_color = #e3effb 100
+button_padding = 8 0
+button_lclick_command = /usr/local/bin/linsoft-quick-settings
+clock_lclick_command = gsimplecal
+clock_rclick_command = /usr/local/bin/linsoft-settings clock
+PANEL
+sed -i 's/^panel_items = .*/panel_items = LTSEPPBC/' "$root/etc/linsoft-apps/tint2rc"
+chroot "$root" dpkg-query -W -f='${binary:Package}\t${Version}\n' > "$root/linsoft-debian-packages.txt"
+install -m0644 "$root/linsoft-debian-packages.txt" "$target/usr/share/doc/linsoft-debian/installed-packages"
+echo 'Professional integration installed; first boot requires setting a personal password. Verify QEMU before promotion.'

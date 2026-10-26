@@ -1,0 +1,32 @@
+#!/bin/bash
+set -euo pipefail
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Use root and LINSOFT_LFS_BUILD=1 with the offline LFS tree." >&2
+    exit 2
+fi
+target=/mnt/lfs
+grep -qx 'ID=linsoft' "$target/etc/os-release"
+cache="$target/sources/linsoft-terminal"
+mkdir -p "$cache"
+cd "$cache"
+archive=libvterm-0.3.3.tar.gz
+if [[ ! -f $archive ]]; then
+    curl -fL --retry 2 -o "$archive.download" \
+        "https://www.leonerd.org.uk/code/libvterm/$archive"
+    mv "$archive.download" "$archive"
+fi
+echo "09156f43dd2128bd347cbeebe50d9a571d32c64e0cf18d211197946aff7226e0  $archive" |
+    sha256sum -c -
+if [[ ! -d libvterm-0.3.3 ]]; then
+    tar xf "$archive"
+fi
+/usr/sbin/chroot "$target" /bin/bash -c '
+    set -e
+    cd /sources/linsoft-terminal/libvterm-0.3.3
+    make -j2 libvterm.la
+    make test
+    make PREFIX=/usr install-inc
+    install -m 0644 .libs/libvterm.a /usr/lib/libvterm.a
+    install -Dm644 LICENSE /usr/share/doc/libvterm/LICENSE
+'
+echo "libvterm static library installed only in offline LFS; VM disks unchanged."

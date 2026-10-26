@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Linsoft Terminal
+Exec=xterm -fa "DejaVu Sans Mono" -fs 11 -bg "#111d30" -fg "#e3effb"
+Icon=/usr/share/linsoft-apps/terminal.png
+Terminal=false
+Categories=System;TerminalEmulator;

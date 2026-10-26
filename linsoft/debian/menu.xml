@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+  <menu id="root-menu" label="Linsoft - Debian applications">
+    <item label="Linsoft Browser (Firefox ESR)"><action name="Execute"><command>/usr/local/bin/linsoft-browser</command></action></item>
+    <item label="LibreOffice Writer"><action name="Execute"><command>libreoffice --writer</command></action></item>
+    <item label="LibreOffice Calc"><action name="Execute"><command>libreoffice --calc</command></action></item>
+    <separator/>
+    <item label="Installed applications"><action name="Execute"><command>pcmanfm /usr/share/applications</command></action></item>
+    <item label="Files (Documents and Downloads)"><action name="Execute"><command>pcmanfm /home/linsoft</command></action></item>
+    <item label="Terminal (Debian user)"><action name="Execute"><command>xterm -fa 'DejaVu Sans Mono' -fs 11</command></action></item>
+    <separator/>
+    <item label="Return to Linsoft desktop"><action name="Exit"><prompt>yes</prompt></action></item>
+  </menu>
+</openbox_menu>

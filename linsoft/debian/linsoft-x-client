@@ -1,0 +1,41 @@
+#!/bin/sh
+if [ "${LINSOFT_PRIMARY:-0}" = 1 ] && [ -f /etc/linsoft-apps/desktop-extras ]; then
+    export LANG=sk_SK.UTF-8 LANGUAGE=sk:en
+fi
+if [ "${LINSOFT_PRIMARY:-0}" = 1 ] && [ -f /etc/linsoft-apps/professional ] &&
+    [ ! -f /etc/linsoft-apps/autologin ]; then
+    export LANG=sk_SK.UTF-8 LANGUAGE=sk:en GSK_RENDERER=cairo
+    xsetroot -solid '#0b1020'
+    openbox --config-file /etc/linsoft-apps/login-rc.xml &
+    login_wm=$!
+    trap 'kill "$login_wm"; wait "$login_wm"' EXIT
+    if [ -f /etc/linsoft-apps/first-login ]; then
+        /usr/bin/zenity --info --title='Linsoft OS - prve spustenie' \
+            --width=620 --text='Nastavte vlastne heslo pouzivatela linsoft v nasledujucom okne. Heslo sa pri pisani nezobrazuje. Zapamatajte si ho: bude potrebne na prihlasenie, odomknutie a systemove zmeny.' || exit 1
+        /usr/bin/xterm -T 'Linsoft OS - nastavenie vlastneho hesla' \
+            -fa 'DejaVu Sans Mono' -fs 13 -bg '#111d30' -fg '#e3effb' \
+            -e /usr/bin/passwd linsoft || exit 1
+        status=$(/usr/bin/passwd -S linsoft) || exit 1
+        case "$status" in
+            "linsoft P "*) rm -f -- /etc/linsoft-apps/first-login ;;
+            *) echo 'Linsoft: no usable password was set.' >&2; exit 1 ;;
+        esac
+    fi
+    /usr/sbin/runuser -u linsoft -- env HOME=/home/linsoft USER=linsoft \
+        LOGNAME=linsoft XDG_RUNTIME_DIR=/run/user/1000 PATH=/usr/local/bin:/usr/bin:/bin \
+        GSK_RENDERER=cairo LINSOFT_PRIMARY=1 /usr/local/bin/linsoft-login || exit 1
+    kill "$login_wm"
+    wait "$login_wm"
+    trap - EXIT
+    exec /usr/sbin/runuser -u linsoft -- env HOME=/home/linsoft USER=linsoft \
+        LOGNAME=linsoft XDG_RUNTIME_DIR=/run/user/1000 PATH=/usr/local/bin:/usr/bin:/bin \
+        GSK_RENDERER=cairo SUDO_ASKPASS=/usr/local/bin/linsoft-askpass LINSOFT_PRIMARY=1 \
+        /usr/bin/dbus-run-session -- /usr/local/bin/linsoft-app-session
+fi
+exec /usr/sbin/runuser -u linsoft -- env HOME=/home/linsoft USER=linsoft \
+    LOGNAME=linsoft XDG_RUNTIME_DIR=/run/user/1000 \
+    PATH=/usr/local/bin:/usr/bin:/bin \
+    GSK_RENDERER=cairo \
+    SUDO_ASKPASS=/usr/local/bin/linsoft-askpass \
+    LINSOFT_PRIMARY="${LINSOFT_PRIMARY:-0}" \
+    /usr/bin/dbus-run-session -- /usr/local/bin/linsoft-app-session

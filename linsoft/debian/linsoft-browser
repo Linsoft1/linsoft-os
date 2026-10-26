@@ -1,0 +1,5 @@
+#!/bin/sh
+if [ "$#" -eq 0 ]; then
+    set -- file:///usr/share/linsoft-apps/start.html
+fi
+exec /usr/bin/firefox-esr "$@"

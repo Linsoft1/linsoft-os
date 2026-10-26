@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+export LC_ALL=C
+if plan=$(apt-get -s --no-remove upgrade 2>&1); then
+    count=$(awk '$1=="Inst" {count++} END {print count+0}' <<< "$plan")
+    if (( count > 0 )); then
+        notify-send 'Linsoft OS - aktualizacie aplikacii' \
+            "$count aktualizacii podla ulozenych indexov. Otvorte Aplikacie a aktualizacie; obnovte indexy pre aktualny stav."
+    fi
+else
+    printf 'Linsoft update check failed:\n%s\n' "$plan" >&2
+    notify-send -u critical 'Linsoft OS' 'Kontrola aktualizacii zlyhala. Otvorte Aplikacie a aktualizacie.'
+    exit 1
+fi

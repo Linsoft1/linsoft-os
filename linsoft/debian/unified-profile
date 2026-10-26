@@ -1,0 +1,7 @@
+if [ "$(tty 2>/dev/null)" = /dev/tty1 ] &&
+   ! grep -qw 'linsoft.console=1' /proc/cmdline; then
+    if grep -qw 'linsoft.drm=1' /proc/cmdline; then
+        exec /usr/bin/linsoft-desktop
+    fi
+    exec /usr/bin/linsoft-unified-desktop
+fi

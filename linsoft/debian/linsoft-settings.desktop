@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Linsoft Settings
+Name[sk]=Nastavenia Linsoft OS
+Exec=/usr/local/bin/linsoft-settings
+Icon=preferences-system
+Terminal=false
+Categories=Settings;

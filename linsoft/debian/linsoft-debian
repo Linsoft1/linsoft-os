@@ -1,0 +1,147 @@
+#!/bin/bash
+set -euo pipefail
+root=/opt/linsoft-debian
+fail() { printf 'Linsoft Debian: %s\n' "$*" >&2; exit 1; }
+[[ $EUID == 0 ]] || fail "Run this integration command as root."
+[[ -f $root/etc/debian_version && -x $root/usr/bin/apt-get ]] ||
+    fail "The separate Debian app environment is not installed."
+if [[ ${1:-} != --mounted ]]; then
+    [[ $# -gt 0 ]] || fail "Usage: linsoft-debian {desktop|primary|shell|install FILE.deb|update|status}"
+    install -d -m 0755 /run/lock
+    if flock --nonblock --conflict-exit-code 75 --close \
+        /run/lock/linsoft-debian.lock \
+        unshare --mount --propagation private "$0" --mounted "$@"; then
+        exit 0
+    else
+        result=$?
+        if (( result == 75 )); then
+            fail "Debian environment is already in use. Close its session first."
+        fi
+        exit "$result"
+    fi
+fi
+shift
+action=${1:-}
+shift
+mountpoint -q "$root" && fail "App root is unexpectedly mounted."
+mount --bind "$root" "$root"
+mount --rbind /dev "$root/dev"
+mount --make-rslave "$root/dev"
+mount -t proc proc "$root/proc"
+mount --rbind /sys "$root/sys"
+mount --make-rslave "$root/sys"
+mount -t tmpfs -o mode=0755,nosuid,nodev tmpfs "$root/run"
+mount -t tmpfs -o mode=1777,nosuid,nodev tmpfs "$root/tmp"
+if [[ -d /run/udev ]]; then
+    mkdir -p "$root/run/udev"
+    mount --bind /run/udev "$root/run/udev"
+    mount -o remount,bind,ro "$root/run/udev"
+fi
+cp -L /etc/resolv.conf "$root/etc/resolv.conf"
+mkdir -p "$root/run/user/1000"
+chown 1000:1000 "$root/run/user/1000"
+chmod 0700 "$root/run/user/1000"
+case "$action" in
+    status)
+        chroot "$root" dpkg-query -W firefox-esr libreoffice-writer libreoffice-calc
+        chroot "$root" dpkg --audit
+        ;;
+    shell)
+        echo "Separate Debian root shell. Changes affect /opt/linsoft-debian, not LFS libraries."
+        chroot "$root" /bin/bash --login
+        ;;
+    install)
+        [[ $# == 1 && -f $1 && $1 == *.deb ]] || fail "Choose one existing .deb file."
+        source=$(readlink -f -- "$1")
+        package=$(mktemp "$root/var/tmp/linsoft-package-XXXXXX.deb")
+        trap 'rm -f -- "$package"' EXIT
+        cp -- "$source" "$package"
+        chmod 0644 "$package"
+        relative=${package#"$root"}
+        echo "Package metadata (not a signature or proof of trust):"
+        chroot "$root" dpkg-deb --info "$relative"
+        echo
+        echo "Install only a package from a trusted source. Its scripts run as root in"
+        echo "the Debian environment. A chroot is NOT a security sandbox."
+        read -r -p 'Type INSTALL to continue, or Enter to cancel: ' answer
+        [[ $answer == INSTALL ]] || { echo "Cancelled; nothing installed."; exit 0; }
+        chroot "$root" apt-get update
+        chroot "$root" apt-get install -- "$relative"
+        chroot "$root" dpkg --audit
+        ;;
+    update)
+        chroot "$root" apt-get update
+        chroot "$root" apt-get upgrade
+        ;;
+    desktop|primary)
+        [[ $# == 0 ]] || fail "Unexpected desktop arguments."
+        export LINSOFT_PRIMARY=0
+        if [[ $action == primary ]]; then
+            [[ -d /run/linsoft-unified && ! -L /run/linsoft-unified ]] ||
+                fail "Start primary mode with linsoft-unified-desktop."
+            mkdir -p "$root/run/linsoft-session"
+            mount --bind /run/linsoft-unified "$root/run/linsoft-session"
+            mkdir -p "$root/run/linsoft-host"
+            touch "$root/run/linsoft-host/os-release"
+            mount --bind /etc/os-release "$root/run/linsoft-host/os-release"
+            mount -o remount,bind,ro "$root/run/linsoft-host/os-release"
+            export LINSOFT_PRIMARY=1
+        fi
+        if [[ -e $root/tmp/.X1-lock || -e $root/tmp/.X11-unix/X1 ]]; then
+            fail "Display :1 is already in use."
+        fi
+        mkdir -p "$root/run/dbus"
+        chroot "$root" dbus-uuidgen --ensure
+        bus_pid=$(chroot "$root" dbus-daemon --system --fork --print-pid)
+        (
+            trap 'exit 0' TERM
+            while sleep 3; do
+                if ! cmp -s /etc/resolv.conf "$root/etc/resolv.conf"; then
+                    cp -L /etc/resolv.conf "$root/etc/resolv.conf" || {
+                        echo "Linsoft Debian: cannot refresh application DNS configuration." >&2
+                        exit 1
+                    }
+                fi
+            done
+        ) &
+        resolver_pid=$!
+        cleanup_desktop() {
+            if [[ -n ${host_pid:-} ]] && kill -0 "$host_pid" 2>/dev/null; then
+                kill "$host_pid"
+                wait "$host_pid" || [[ $? == 143 ]]
+            fi
+            if kill -0 "$resolver_pid" 2>/dev/null; then
+                kill "$resolver_pid"
+                wait "$resolver_pid" || [[ $? == 143 ]]
+            fi
+            if kill -0 "$bus_pid" 2>/dev/null; then kill "$bus_pid"; fi
+        }
+        trap cleanup_desktop EXIT
+        host_pid=''
+        if [[ $action == primary && -f $root/etc/linsoft-apps/desktop-extras ]]; then
+            if [[ -f $root/etc/linsoft-apps/professional ]]; then
+                install -d -o 0 -g 0 -m 0700 "$root/run/linsoft-host/inbox"
+            else
+                install -d -o 1000 -g 1000 -m 0700 "$root/run/linsoft-host/inbox"
+            fi
+            install -d -o 0 -g 0 -m 0755 "$root/media"
+            for node in /dev/snd/*; do
+                [[ -c $node ]] || continue
+                gid=$(stat -c %g "$node")
+                if group=$(chroot "$root" getent group "$gid"); then
+                    group=${group%%:*}
+                else
+                    status=$?
+                    [[ $status == 2 ]] || fail "Cannot look up audio device group $gid."
+                    group="linsoft-audio-$gid"
+                    chroot "$root" groupadd -g "$gid" "$group"
+                fi
+                chroot "$root" usermod -a -G "$group" linsoft
+            done
+            /usr/bin/linsoft-host-service &
+            host_pid=$!
+        fi
+        chroot "$root" /usr/local/bin/linsoft-start-x
+        ;;
+    *) fail "Unknown action: $action" ;;
+esac

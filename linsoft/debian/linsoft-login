@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+export PATH=/usr/local/bin:/usr/bin:/bin GSK_RENDERER=cairo LANG=sk_SK.UTF-8 LANGUAGE=sk:en
+export SUDO_ASKPASS=/usr/local/bin/linsoft-askpass
+if ! zenity --info --title='Vitajte v Linsoft OS' \
+    --text='Prihlaste sa ako linsoft. Pouzite svoje heslo; pri prvom starte ho najprv nastavite.' \
+    --width=520; then
+    exit 1
+fi
+while :; do
+    if sudo -A -k -- /usr/bin/true; then
+        exit 0
+    fi
+    echo 'Linsoft login: authentication failed or cancelled.' >&2
+    if ! zenity --question --title='Linsoft OS - prihlasenie' \
+        --text='Prihlasenie nebolo uspesne. Skusit znova?' --width=480; then
+        exit 1
+    fi
+done

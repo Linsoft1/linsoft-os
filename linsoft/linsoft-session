@@ -1,0 +1,32 @@
+#!/bin/sh
+
+if [ -z "${DISPLAY:-}" ]; then
+    printf '%s\n' "Linsoft Desktop needs an X11 display (DISPLAY is not set)." >&2
+    exit 1
+fi
+
+for program in openbox-session lxpanel pcmanfm xterm; do
+    if ! command -v "$program" >/dev/null 2>&1; then
+        printf 'Linsoft Desktop: required program is missing: %s\n' "$program" >&2
+        exit 127
+    fi
+done
+
+lxpanel --profile=Linsoft &
+panel_pid=$!
+pcmanfm --desktop --profile=Linsoft &
+desktop_pid=$!
+
+cleanup()
+{
+    kill "$panel_pid" "$desktop_pid" 2>/dev/null || :
+    wait "$panel_pid" "$desktop_pid" 2>/dev/null || :
+}
+
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+openbox-session
+status=$?
+exit "$status"

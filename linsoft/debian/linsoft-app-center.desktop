@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Linsoft Applications
+Name[sk]=Aplikacie a aktualizacie
+Exec=/usr/local/bin/linsoft-app-center
+Icon=system-software-install
+Terminal=false
+Categories=System;PackageManager;

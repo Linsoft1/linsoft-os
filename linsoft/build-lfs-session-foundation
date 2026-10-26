@@ -1,0 +1,97 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Run as root with LINSOFT_LFS_BUILD=1 for the offline /mnt/lfs build tree." >&2
+    exit 2
+fi
+if [[ ! -f /mnt/lfs/etc/os-release ]] ||
+   ! grep -qx 'ID=linsoft' /mnt/lfs/etc/os-release; then
+    echo "Expected the Linsoft LFS build tree at /mnt/lfs." >&2
+    exit 1
+fi
+if findmnt -rn -o TARGET | grep -qE '^/mnt/lfs(/|$)'; then
+    echo "Finish existing chroot work before building session dependencies." >&2
+    exit 1
+fi
+
+cache=/mnt/lfs/sources/linsoft-plasma-foundation
+mkdir -p "$cache"
+download()
+{
+    local url=$1 digest=$2 file=$cache/${1##*/}
+    if [[ ! -f $file ]]; then
+        curl --fail --location --retry 3 --output "$file.part" "$url"
+        mv "$file.part" "$file"
+    fi
+    printf '%s  %s\n' "$digest" "$file" | md5sum --check --status || {
+        echo "BLFS 12.4 archive checksum mismatch: $file" >&2
+        exit 1
+    }
+    sha256sum "$file"
+}
+
+download https://download.gnome.org/sources/libxml2/2.14/libxml2-2.14.5.tar.xz \
+    59aac4e5d1d350ba2c4bddf1f7bc5098
+download https://dbus.freedesktop.org/releases/dbus/dbus-1.16.2.tar.xz \
+    97832e6f0a260936d28536e5349c22e5
+download https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.24.0/downloads/wayland-1.24.0.tar.xz \
+    fda0b2a73ea2716f61d75767e02008e1
+download https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.45/downloads/wayland-protocols-1.45.tar.xz \
+    a235baeab3f1c6d57ac4c7c00ecd7e48
+download https://www.cairographics.org/releases/pixman-0.46.4.tar.gz \
+    c08173c8e1d2cc79428d931c13ffda59
+
+bash /mnt/lfs/sources/.chroot-wrapper.sh -c '
+set -euo pipefail
+cd /sources/linsoft-plasma-foundation
+
+extract()
+{
+    if [[ ! -d $1 ]]; then
+        tar -xf "$1.$2"
+    fi
+}
+meson_build()
+{
+    local name=$1
+    shift
+    (
+        cd "$name"
+        options=(--prefix=/usr --libdir=lib --buildtype=release --wrap-mode=nofallback)
+        if [[ -f build/build.ninja ]]; then
+            meson setup --reconfigure build "${options[@]}" "$@"
+        else
+            meson setup build "${options[@]}" "$@"
+        fi
+        ninja -C build -j2
+        ninja -C build install
+    )
+}
+
+extract libxml2-2.14.5 tar.xz
+(
+    cd libxml2-2.14.5
+    ./configure --prefix=/usr --sysconfdir=/etc --disable-static \
+        --without-python --without-icu --docdir=/usr/share/doc/libxml2-2.14.5
+    make -j2
+    make install
+)
+extract dbus-1.16.2 tar.xz
+meson_build dbus-1.16.2 -Dsystemd=disabled
+dbus-uuidgen --ensure
+
+extract wayland-1.24.0 tar.xz
+meson_build wayland-1.24.0 -Ddocumentation=false
+extract wayland-protocols-1.45 tar.xz
+meson_build wayland-protocols-1.45
+extract pixman-0.46.4 tar.gz
+meson_build pixman-0.46.4
+
+ldconfig
+pkg-config --modversion libxml-2.0 dbus-1 wayland-client wayland-server wayland-protocols pixman-1
+'
+/usr/sbin/chroot /mnt/lfs /usr/bin/env -i PATH=/usr/bin:/usr/sbin \
+    /usr/bin/dbus-run-session -- /bin/sh -c 'test -n "$DBUS_SESSION_BUS_ADDRESS"'
+echo "Session foundation installed in the offline LFS tree, not in a VM image."
+echo "The system D-Bus boot service, seat management, Mesa, Qt and KDE remain to be installed."

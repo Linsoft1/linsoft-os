@@ -1,0 +1,170 @@
+#!/bin/bash
+set -euo pipefail
+fail() {
+    printf 'Linsoft files: %s\n' "$*" >&2
+    zenity --error --title='Linsoft Subory' --text="$*"
+    exit 1
+}
+staging=
+pending_commit=
+operation_complete=false
+rollback() {
+    trap '' TERM INT
+    local preserve=false
+    local index name source target
+    for ((index=${#committed[@]}-1; index>=0; --index)); do
+        name=${names[index]}
+        target="$destination/$name"
+        if [[ $action == trash ]]; then
+            continue
+        fi
+        if [[ $action == copy || $action == drop_copy ]]; then
+            if ! mv --no-target-directory -- "$target" "$staging/$name"; then
+                printf 'Linsoft files: rollback failed; recover %s manually from %s\n' \
+                    "$target" "$staging/$name" >&2
+                preserve=true
+            fi
+        elif [[ -e $target || -L $target ]]; then
+            if ! mv --no-target-directory -- "$target" "$staging/$name"; then
+                printf 'Linsoft files: rollback failed; recover %s manually from %s\n' \
+                    "$target" "$staging/$name" >&2
+                preserve=true
+            fi
+        fi
+    done
+    if [[ $action == move || $action == drop_move ]]; then
+        for ((index=${#staged[@]}-1; index>=0; --index)); do
+            source=${sources[index]}
+            name=${names[index]}
+            if [[ -e $staging/$name || -L $staging/$name ]]; then
+                if [[ -e $source || -L $source ]]; then
+                    printf 'Linsoft files: source still exists; inspect recovery data at %s\n' \
+                        "$staging/$name" >&2
+                    preserve=true
+                elif ! mv --no-target-directory -- "$staging/$name" "$source"; then
+                    printf 'Linsoft files: rollback failed; recover %s manually from %s\n' \
+                        "$staging/$name" "$source" >&2
+                    preserve=true
+                fi
+            fi
+        done
+    fi
+    if [[ $preserve == true ]]; then
+        printf 'Linsoft files: temporary recovery data retained at %s\n' "$staging" >&2
+    else
+        rm -rf -- "$staging"
+        staging=
+    fi
+}
+operation_failed() {
+    local reason=$1
+    if [[ -n $staging && -d $staging ]]; then rollback; fi
+    fail "$reason"
+}
+cancel_operation() {
+    trap - TERM INT
+    if [[ $operation_complete == true ]]; then exit 0; fi
+    if [[ -n $pending_commit && ! -e $staging/$pending_commit &&
+          ( -e $destination/$pending_commit || -L $destination/$pending_commit ) ]]; then
+        committed+=("$pending_commit")
+    fi
+    if [[ -n $staging && -d $staging ]]; then rollback; fi
+    exit 2
+}
+trap cancel_operation TERM INT
+[[ $# -ge 3 ]] || fail 'Chybaju argumenty operacie.'
+action=$1
+destination=$2
+shift 2
+[[ $destination == /* && -d $destination ]] || fail 'Neplatny cielovy priecinok.'
+case "$action" in copy|move|trash|drop) ;; *) fail 'Neznama operacia.' ;; esac
+if [[ $action == drop ]]; then
+    if action=$(zenity --list --title='Linsoft - pustene subory' --width=620 --height=300 \
+        --text="Ciel: $destination\nVyber operaciu. Existujuce polozky sa neprepisu." \
+        --column=ID --column=Operacia --hide-column=1 --print-column=1 \
+        copy Kopirovat move Presunut); then :
+    else
+        result=$?
+        [[ $result == 1 ]] && exit 2
+        fail "Vyber operacie zlyhal: $result"
+    fi
+    [[ $action == copy || $action == move ]] || fail 'Neplatna operacia pustenia.'
+    action="drop_$action"
+fi
+sources=()
+names=()
+staged=()
+committed=()
+for source in "$@"; do
+    [[ $source == /* && ( -e $source || -L $source ) ]] || fail "Polozka neexistuje: $source"
+    name=${source##*/}
+    if [[ $action != trash ]]; then
+        target="$destination/$name"
+        [[ ! -e $target && ! -L $target ]] || fail "Ciel uz existuje; nic nebude prepisane: $target"
+        for existing in "${names[@]}"; do
+            [[ $existing != "$name" ]] || fail "Vybrane polozky maju rovnaky nazov: $name"
+        done
+        source_real=$(realpath -m -- "$source")
+        destination_real=$(realpath -m -- "$destination")
+        if [[ -d $source && ( $destination_real == "$source_real" || $destination_real == "$source_real/"* ) ]]; then
+            fail "Cielovy priecinok nemoze byt zdrojom ani jeho podpriecinok: $source"
+        fi
+        sources+=("$source")
+        names+=("$name")
+    fi
+done
+if [[ $action == trash ]]; then
+    if zenity --question --title='Linsoft Subory' \
+        --text="Presunut do kosa vybrane polozky ($#)? Mozno ich obnovit cez tlacidlo Kos."; then :
+    else
+        result=$?
+        [[ $result == 1 ]] && exit 2
+        fail "Potvrdzovaci dialog zlyhal: $result"
+    fi
+fi
+if [[ $action == trash ]]; then
+    for source in "$@"; do
+        gio trash -- "$source" || fail "Presun do kosa zlyhal: $source"
+    done
+    exit 0
+fi
+
+staging=$(mktemp -d -- "$destination/.linsoft-native-operation.XXXXXX") ||
+    fail 'Nepodarilo sa pripravit bezpecny docasny priecinok.'
+for index in "${!sources[@]}"; do
+    source=${sources[index]}
+    name=${names[index]}
+    if [[ $action == move || $action == drop_move ]]; then
+        staged+=("$name")
+        if ! mv --no-target-directory -- "$source" "$staging/$name"; then
+            operation_failed "Presun zlyhal; povodne polozky sa obnovuju: $source"
+        fi
+    else
+        if ! cp --recursive --no-dereference --no-target-directory -- "$source" "$staging/$name"; then
+            operation_failed "Kopirovanie zlyhalo; cielove polozky neboli zmenene: $source"
+        fi
+        staged+=("$name")
+    fi
+done
+
+for index in "${!names[@]}"; do
+    name=${names[index]}
+    target="$destination/$name"
+    pending_commit=$name
+    if ! mv --no-target-directory --no-clobber -- "$staging/$name" "$target" ||
+       [[ -e $staging/$name || -L $staging/$name ]]; then
+        if [[ ! -e $staging/$name && ! -L $staging/$name && ( -e $target || -L $target ) ]]; then
+            committed+=("$name")
+        fi
+        pending_commit=
+        operation_failed "Potvrdenie operacie zlyhalo; zmeny sa vracaju spat: $target"
+    fi
+    committed+=("$name")
+    pending_commit=
+done
+operation_complete=true
+if ! rmdir -- "$staging"; then
+    warning="Operacia je dokoncena, ale docasny priecinok sa nepodarilo odstranit: $staging"
+    printf 'Linsoft files: %s\n' "$warning" >&2
+    zenity --warning --title='Linsoft Subory' --text="$warning"
+fi

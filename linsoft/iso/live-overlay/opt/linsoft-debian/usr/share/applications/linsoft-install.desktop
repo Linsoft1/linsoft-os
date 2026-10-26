@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Instalovat Linsoft OS
+Name[sk]=Inštalovať Linsoft OS
+Comment=Install Linsoft OS from the live medium to a disk
+Comment[sk]=Nainštaluje Linsoft OS z Live média na disk
+Exec=/usr/local/bin/linsoft-live-install-request
+Icon=drive-harddisk
+Terminal=false
+Categories=System;

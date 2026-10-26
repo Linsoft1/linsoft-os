@@ -1,0 +1,13 @@
+[Default Applications]
+text/html=linsoft-browser.desktop
+x-scheme-handler/http=linsoft-browser.desktop
+x-scheme-handler/https=linsoft-browser.desktop
+application/vnd.oasis.opendocument.text=libreoffice-writer.desktop
+application/vnd.openxmlformats-officedocument.wordprocessingml.document=libreoffice-writer.desktop
+application/msword=libreoffice-writer.desktop
+application/vnd.oasis.opendocument.spreadsheet=libreoffice-calc.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=libreoffice-calc.desktop
+application/vnd.ms-excel=libreoffice-calc.desktop
+application/vnd.debian.binary-package=linsoft-install-package.desktop
+application/x-deb=linsoft-install-package.desktop
+inode/directory=pcmanfm.desktop

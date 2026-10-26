@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Linsoft Browser (Firefox ESR)
+Comment=Firefox ESR in the separate Debian app environment
+Exec=/usr/local/bin/linsoft-browser %u
+Icon=firefox-esr
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;

@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+[[ $EUID == 0 ]] || { echo 'Run this test as root in the build environment.' >&2; exit 2; }
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+temporary=$(mktemp -d)
+cleanup() { rm -f -- "$temporary/date" "$temporary/hwclock" "$temporary/events" "$temporary/errors"; rmdir "$temporary"; }
+trap cleanup EXIT
+cat > "$temporary/date" <<'MOCK'
+#!/bin/bash
+echo 'date validation failure' >&2
+exit 7
+MOCK
+cat > "$temporary/hwclock" <<'MOCK'
+#!/bin/bash
+echo 'unexpected RTC write' >> "$EVENTS"
+exit 0
+MOCK
+chmod 0755 "$temporary/date" "$temporary/hwclock"
+export PATH="$temporary:$PATH" EVENTS="$temporary/events"
+service="$source_dir/debian/linsoft-host-service"
+for pair in 'timezone:../etc/passwd' 'clock:not-a-date' 'mount:/etc/passwd' \
+    'unmount:/etc/passwd' 'arbitrary-command:echo'; do
+    if bash "$service" --operate "${pair%%:*}" "${pair#*:}" >"$temporary/errors" 2>&1; then
+        echo "Invalid host action accepted: $pair" >&2
+        exit 1
+    fi
+    test -s "$temporary/errors"
+done
+if bash "$service" --operate clock '2026-10-21 16:20:00' >"$temporary/errors" 2>&1; then
+    echo 'Failed clock validation was ignored.' >&2
+    exit 1
+else
+    [[ $? == 7 ]]
+fi
+grep -q 'date validation failure' "$temporary/errors"
+test ! -e "$EVENTS"
+echo 'PASS: invalid host actions rejected; failed date validation stops before clock/RTC changes'

@@ -1,0 +1,13 @@
+{
+    "KPlugin": {
+        "Id": "org.linsoft.night",
+        "Name": "Linsoft Night",
+        "Description": "Original navy and cyan artwork for Linsoft Desktop",
+        "Authors": [
+            {
+                "Name": "Linsoft"
+            }
+        ],
+        "License": "CC0-1.0"
+    }
+}

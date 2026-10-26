@@ -1,0 +1,15 @@
+[submodule "libfm"]
+	path = libfm
+	url = https://github.com/lxde/libfm.git
+[submodule "lxpanel"]
+	path = lxpanel
+	url = https://github.com/lxde/lxpanel.git
+[submodule "menu-cache"]
+	path = menu-cache
+	url = https://github.com/lxde/menu-cache.git
+[submodule "openbox"]
+	path = openbox
+	url = https://github.com/danakj/openbox.git
+[submodule "pcmanfm"]
+	path = pcmanfm
+	url = https://github.com/lxde/pcmanfm.git

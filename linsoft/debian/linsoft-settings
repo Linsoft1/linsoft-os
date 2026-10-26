@@ -1,0 +1,125 @@
+#!/bin/bash
+set -euo pipefail
+fail() {
+    printf 'Linsoft Settings: %s\n' "$*" >&2
+    zenity --error --title='Linsoft OS' --text="$*"
+    exit 1
+}
+run() {
+    command -v "$1" >/dev/null || fail "Chyba program: $1"
+    "$@" || fail "Program zlyhal: $*"
+}
+show_report() {
+    if zenity --text-info --title="$1" --filename="$report" --width=760 --height=520; then
+        return
+    else
+        result=$?
+        [[ $result == 1 ]] && return
+        fail "Zobrazenie informacii zlyhalo (status $result)."
+    fi
+}
+action=${1:-}
+if [[ -z $action ]]; then
+    professional_options=()
+    if [[ -f /etc/linsoft-apps/professional ]]; then
+        professional_options=(center 'Aplikacie a aktualizacie' quick 'Rychle ovladanie a zamknutie')
+    fi
+    if action=$(zenity --list --title='Nastavenia Linsoft OS' --width=720 --height=560 \
+        --column=ID --column=Nastavenie --hide-column=1 --print-column=1 \
+        display 'Displej a rozlisenie' appearance 'Vzhlad a pismo' \
+        mouse 'Mys a kurzor' keyboard 'Klavesnica' wallpaper 'Pozadie a ikony plochy' \
+        files 'Subory, kos a predvolene aplikacie' sound 'Zvukove zariadenia a hlasitost' \
+        network 'Stav siete LAN / Wi-Fi' tasks 'Spravca uloh' \
+        renew 'Obnovit LAN (DHCP)' clock 'Nastavit datum a cas' timezone 'Casove pasmo' \
+        devices 'USB a disky - prehlad' mount 'Pripojit USB disk' unmount 'Bezpecne odpojit USB disk' \
+        applications 'Vyhladavanie aplikacii' notifications 'Oznamenia' \
+        "${professional_options[@]}" \
+        system 'Systemove nastroje: datum, cas, siet a disky' about 'O Linsoft OS'); then
+        :
+    else
+        result=$?
+        [[ $result == 1 ]] && exit 0
+        fail "Vyber nastavenia zlyhal (status $result)."
+    fi
+fi
+case "$action" in
+    display) run xfce4-display-settings ;;
+    appearance) run xfce4-appearance-settings ;;
+    mouse) run xfce4-mouse-settings ;;
+    keyboard) run xfce4-keyboard-settings ;;
+    wallpaper)
+        if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
+            run linsoft-native-preferences
+        else
+            run pcmanfm --desktop-pref --profile=Linsoft
+        fi
+        ;;
+    files)
+        if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
+            run linsoft-native --files
+        else
+            run pcmanfm /home/linsoft
+        fi
+        ;;
+    sound) run pavucontrol ;;
+    tasks) run xfce4-taskmanager ;;
+    applications) run xfce4-appfinder --disable-server ;;
+    notifications) run xfce4-notifyd-config ;;
+    center) run linsoft-app-center ;;
+    quick) run linsoft-quick-settings ;;
+    system) run linsoft-session-action drm ;;
+    devices|renew) run linsoft-host-control "$action" ;;
+    clock|timezone|mount|unmount)
+        case "$action" in
+            clock) prompt='Datum a cas: YYYY-MM-DD HH:MM:SS'; initial=$(date '+%F %T') ;;
+            timezone) prompt='Casove pasmo, napr. Europe/Bratislava'; initial='Europe/Bratislava' ;;
+            mount|unmount) prompt='USB oddiel, napr. /dev/sda1 (pozri prehlad diskov)'; initial='' ;;
+        esac
+        if value=$(zenity --entry --title='Linsoft OS' --text="$prompt" --entry-text="$initial"); then
+            run linsoft-host-control "$action" "$value"
+        else
+            status=$?
+            [[ $status == 1 ]] && exit 0
+            fail "Input dialog failed: $status"
+        fi
+        ;;
+    network)
+        report=$(mktemp)
+        trap 'rm -f -- "$report"' EXIT
+        {
+            printf 'Siet Linsoft OS (spolocny sietovy priestor LFS)\n\n'
+            ip -brief address
+            printf '\nSmerovanie:\n'
+            ip route
+            printf '\nDNS:\n'
+            cat /etc/resolv.conf
+            printf '\nPripojenie spravuje hostitelsky LFS, nie Debian.\n'
+            printf 'Obnovu DHCP najdes v Nastaveniach. Wi-Fi vyzaduje realny adapter;\n'
+            printf 'virtualny QEMU pocitac poskytuje kabelove pripojenie, nie Wi-Fi.\n'
+        } > "$report"
+        show_report 'Siet Linsoft OS'
+        ;;
+    about)
+        [[ -r /run/linsoft-host/os-release ]] || fail 'Informacie o zakladnom LFS nie su pripojene.'
+        report=$(mktemp)
+        trap 'rm -f -- "$report"' EXIT
+        {
+            printf 'Linsoft OS\n\nZakladny operacny system:\n'
+            cat /run/linsoft-host/os-release
+            printf '\nJadro: '
+            uname -r
+            if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
+                printf '\nGraficka plocha: Xorg / Linsoft Native (vlastne okna, panel a subory)\n'
+            else
+                printf '\nGraficka plocha: Xorg / Openbox / PCManFM / tint2\n'
+            fi
+            printf 'Aplikacie: oddelene prostredie Debian '
+            cat /etc/debian_version
+            printf '\nPrihlaseny pouzivatel:\n'
+            id
+            printf '\nToto prostredie nie je bezpecnostny sandbox.\n'
+        } > "$report"
+        show_report 'O Linsoft OS'
+        ;;
+    *) fail "Nezname nastavenie: $action" ;;
+esac

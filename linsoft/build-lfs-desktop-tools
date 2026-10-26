@@ -1,0 +1,87 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ ${LINSOFT_LFS_BUILD:-} != 1 || $EUID != 0 ]]; then
+    echo "Run as root with LINSOFT_LFS_BUILD=1 for the offline /mnt/lfs build tree." >&2
+    exit 2
+fi
+if [[ ! -f /mnt/lfs/etc/os-release ]] ||
+   ! grep -qx 'ID=linsoft' /mnt/lfs/etc/os-release; then
+    echo "Expected the Linsoft LFS build tree at /mnt/lfs." >&2
+    exit 1
+fi
+if findmnt -rn -o TARGET | grep -qE '^/mnt/lfs(/|$)'; then
+    echo "Finish existing chroot work before building desktop tools." >&2
+    exit 1
+fi
+
+cache=/mnt/lfs/sources/linsoft-plasma-foundation
+mkdir -p "$cache"
+download()
+{
+    local url=$1 digest=$2 file=$cache/${1##*/}
+    if [[ ! -f $file ]]; then
+        curl --fail --location --retry 3 --output "$file.part" "$url"
+        mv "$file.part" "$file"
+    fi
+    printf '%s  %s\n' "$digest" "$file" | md5sum --check --status || {
+        echo "BLFS 12.4 archive checksum mismatch: $file" >&2
+        exit 1
+    }
+    sha256sum "$file"
+}
+
+download https://cmake.org/files/v4.1/cmake-4.1.0.tar.gz \
+    80ae27faba5068c8ec12c77bf00e6db3
+download https://www.x.org/pub/individual/data/xkeyboard-config/xkeyboard-config-2.45.tar.xz \
+    cebc84ec99d3273e07aee8ecff3e3519
+download https://github.com/lfs-book/libxkbcommon/archive/v1.11.0/libxkbcommon-1.11.0.tar.gz \
+    28be5e49d8aa19e20fd7acd4b24e19be
+
+bash /mnt/lfs/sources/.chroot-wrapper.sh -c '
+set -euo pipefail
+cd /sources/linsoft-plasma-foundation
+
+meson_build()
+{
+    local name=$1
+    shift
+    (
+        cd "$name"
+        options=(--prefix=/usr --libdir=lib --buildtype=release --wrap-mode=nofallback)
+        if [[ -f build/build.ninja ]]; then
+            meson setup --reconfigure build "${options[@]}" "$@"
+        else
+            meson setup build "${options[@]}" "$@"
+        fi
+        ninja -C build -j2
+        ninja -C build install
+    )
+}
+
+if [[ ! -d xkeyboard-config-2.45 ]]; then
+    tar -xf xkeyboard-config-2.45.tar.xz
+fi
+meson_build xkeyboard-config-2.45
+if [[ ! -d libxkbcommon-1.11.0 ]]; then
+    tar -xf libxkbcommon-1.11.0.tar.gz
+fi
+meson_build libxkbcommon-1.11.0 -Denable-docs=false -Denable-x11=false
+
+if [[ ! -d cmake-4.1.0 ]]; then
+    tar -xf cmake-4.1.0.tar.gz
+fi
+(
+    cd cmake-4.1.0
+    ./bootstrap --prefix=/usr --parallel=2 -- \
+        -DCMAKE_USE_OPENSSL=ON -DBUILD_TESTING=OFF
+    make -j2
+    make install
+)
+
+ldconfig
+pkg-config --modversion xkeyboard-config xkbcommon
+cmake --version
+'
+echo "Keyboard layouts, libxkbcommon and CMake installed in offline LFS."
+echo "X11 support in libxkbcommon must be enabled after XCB libraries are installed."

@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+if [[ ${LINSOFT_PRIMARY:-0} == 1 ]] &&
+    ! grep -qw 'linsoft.console=1' /proc/cmdline; then
+    log=/var/log/linsoft-desktop-session.log
+    if [[ -e $log ]]; then
+        mv -f -- "$log" "$log.previous"
+    fi
+    install -o root -g root -m0600 /dev/null "$log"
+    exec >> "$log" 2>&1
+fi
+cd /home/linsoft
+export XAUTHORITY=/run/linsoft-debian.Xauthority
+cookie=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
+touch "$XAUTHORITY"
+chmod 0600 "$XAUTHORITY"
+xauth -f "$XAUTHORITY" add :1 . "$cookie"
+chown linsoft:linsoft "$XAUTHORITY"
+exec /usr/bin/xinit /usr/local/bin/linsoft-x-client -- \
+    /usr/lib/xorg/Xorg :1 vt8 -keeptty -nolisten tcp -noreset \
+    -auth "$XAUTHORITY" -logfile /var/log/Xorg.linsoft.log

@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+if grep -qw 'linsoft.console=1' /proc/cmdline; then
+    exec /usr/sbin/chroot /opt/linsoft-debian /bin/login
+fi
+if grep -qw 'linsoft.drm=1' /proc/cmdline; then
+    echo 'Professional edition: use authenticated graphical System Tools to open the privileged DRM desktop.'
+    exec /usr/sbin/chroot /opt/linsoft-debian /bin/login
+fi
+if /usr/bin/linsoft-unified-desktop; then
+    exit 0
+fi
+echo 'Linsoft: graphical login stopped. Retrying in five seconds; diagnostic GRUB entry remains available.' >&2
+sleep 5

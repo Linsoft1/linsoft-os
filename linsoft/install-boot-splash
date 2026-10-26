@@ -1,0 +1,44 @@
+#!/bin/bash
+set -euo pipefail
+target=/mnt/linsoft-debian-image
+[[ $EUID == 0 && ${LINSOFT_LFS_BUILD:-} == 1 ]] || {
+    echo 'Use root and LINSOFT_LFS_BUILD=1 on a closed, mounted Linsoft image.' >&2; exit 2;
+}
+mountpoint -q "$target"
+grep -qx ID=linsoft "$target/etc/os-release"
+source_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+build=/mnt/lfs/tmp/linsoft-splash-build
+install -d "$build"
+install -m0644 "$source_dir/boot/linsoft-splash.c" "$build/source.c"
+chroot /mnt/lfs /usr/bin/gcc -std=c11 -O2 -Wall -Wextra -Werror \
+    -I/usr/include/libdrm /tmp/linsoft-splash-build/source.c -ldrm -lm \
+    -o /tmp/linsoft-splash-build/linsoft-splash
+install -m0755 "$build/linsoft-splash" "$target/usr/bin/"
+install -m0755 /mnt/lfs/usr/lib/libdrm.so.2.125.0 "$target/usr/lib/"
+ln -sfn libdrm.so.2.125.0 "$target/usr/lib/libdrm.so.2"
+install -d "$target/usr/share/doc/linsoft-boot/libdrm"
+for notice in README.rst xf86drm.c xf86drmMode.c xf86drm.h xf86drmMode.h; do
+    install -m0644 "/mnt/lfs/sources/linsoft-plasma-foundation/libdrm-2.4.125/$notice" \
+        "$target/usr/share/doc/linsoft-boot/libdrm/"
+done
+chroot "$target" /usr/sbin/ldconfig
+chroot "$target" /usr/bin/ldd /usr/bin/linsoft-splash
+install -Dm0644 "$source_dir/boot/splash.ppm" "$target/usr/share/linsoft-boot/splash.ppm"
+install -m0755 "$source_dir/boot/linsoft-splash" "$target/etc/rc.d/init.d/linsoft-splash"
+install -m0755 "$source_dir/debian/linsoft-unified-desktop" "$target/usr/bin/"
+ln -sfn ../init.d/linsoft-splash "$target/etc/rc.d/rcS.d/S01linsoft-splash"
+if [[ ! -f $target/boot/grub/grub.cfg.before-linsoft-splash ]]; then
+    cp -a "$target/boot/grub/grub.cfg" "$target/boot/grub/grub.cfg.before-linsoft-splash"
+fi
+awk '
+    /menuentry / { primary = ($0 ~ /--id linsoft-desktop/) }
+    primary && /^[[:space:]]*echo / { next }
+    primary && /^[[:space:]]*linux / && !/linsoft.splash=1/ {
+        sub(/ console=tty1/, "")
+        $0 = $0 " quiet loglevel=0 logo.nologo vt.global_cursor_default=0 linsoft.splash=1"
+    }
+    { print }
+' "$target/boot/grub/grub.cfg" > "$target/boot/grub/grub.cfg.new"
+mv "$target/boot/grub/grub.cfg.new" "$target/boot/grub/grub.cfg"
+chroot "$target" /usr/bin/grub-script-check /boot/grub/grub.cfg
+echo 'Animated Linsoft boot installed; diagnostic/recovery/DRM entries unchanged.'
