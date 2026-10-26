@@ -43,6 +43,12 @@ code { background:var(--panel); padding:.1rem .4rem; border-radius:.3rem; overfl
 .ver { border-collapse:collapse; background:var(--panel); width:100%; }
 .ver th, .ver td { text-align:left; padding:.55rem 1.1rem; border-bottom:1px solid #2a3f63; }
 .ver th { color:var(--muted); font-weight:600; }
+.support thead th { color:var(--ink); background:#1a2b47; }
+.support tbody th { font-weight:500; color:var(--ink); }
+.support td.ok { color:#5fd38d; font-weight:700; white-space:nowrap; }
+.support td.mid { color:#f0b43c; font-weight:700; }
+.support td.no { color:#ff7a7a; font-weight:700; white-space:nowrap; }
+#podpora { margin-top:1rem; }
 .release-note, .step-card, .compatibility, .verify { background:var(--panel); border-radius:.6rem; padding:1rem 1.2rem; }
 .release-note ul, .compatibility ul { padding-left:1.35rem; }
 .download-meta { color:var(--muted); }

@@ -38,6 +38,20 @@ log in automatically without a password. Secure Boot can stay enabled: the
 first start asks once to enroll the Linsoft key in MokManager (see
 [linsoft/iso](linsoft/iso/README.md#secure-boot)).
 
+### Supported computers
+
+| Computer / firmware setting | Status |
+| --- | --- |
+| x86-64, legacy BIOS (CSM) | Works |
+| x86-64, UEFI, Secure Boot off | Works |
+| x86-64, UEFI, Secure Boot on (most Windows 10/11 PCs) | Works after enrolling the Linsoft key once |
+| Secured-core PCs / firmware with "Microsoft third-party UEFI CA" disabled | Needs that option enabled (or Secure Boot off) – same as Ubuntu, Fedora or Ventoy |
+| 32-bit CPUs, 32-bit UEFI, ARM, Apple Mac | Not supported |
+
+The shim is signed with Microsoft UEFI CA 2011. Firmware that trusts only
+Windows-signed loaders cannot start any third-party OS until the third-party CA
+is enabled; Linsoft OS cannot work around this itself.
+
 ## Licenses
 
 Linsoft OS bundles Linux, GNU, Debian and other open-source software under

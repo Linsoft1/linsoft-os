@@ -42,7 +42,7 @@
   <h2>Funkcie</h2>
   <div class="grid">
     <div><h3>Live režim</h3><p>Spustite systém priamo z USB alebo DVD. Nič sa nezapisuje na disk – zmeny sú iba v pamäti.</p></div>
-    <div><h3>Inštalátor</h3><p>Jedným krokom nainštalujete Linsoft OS na disk. Funguje na počítačoch s BIOS aj UEFI, aj so zapnutým Secure Boot.</p></div>
+    <div><h3>Inštalátor</h3><p>Jedným krokom nainštalujete Linsoft OS na disk. Podporuje BIOS aj UEFI vrátane bežného Secure Boot (pozri <a href="#podpora">podporované počítače</a>).</p></div>
     <div><h3>Vlastná plocha</h3><p>Originálny správca okien, panel, Štart s vyhľadávaním, 4 pracovné plochy a správca súborov s kartami.</p></div>
     <div><h3>Aplikácie</h3><p>Firefox, LibreOffice Writer a Calc, terminál, nastavenia a inštalácia dôveryhodných .deb balíkov.</p></div>
   </div>
@@ -147,15 +147,31 @@
         <li>Vyberte <b>Enroll key from disk</b> → <b>LINSOFT_EFI</b> (pri USB z Rufusu v režime ISO <b>LINSOFT_OS</b>) → <b>linsoft-secureboot.cer</b>.</li>
         <li>Zvoľte <b>Continue</b> → <b>Yes</b> → <b>Reboot</b> a znova spustite USB.</li>
       </ol>
-      <p class="small">Kľúč zostane uložený vo firmvéri, takže Live USB aj nainštalovaný systém sa potom spúšťajú bez otázok. Ak počítač zavádzač stále odmietne (niektoré Secured-core PC), povoľte vo firmvéri „Microsoft third-party UEFI CA“ alebo vypnite Secure Boot.</p>
+      <p class="small">Kľúč zostane uložený vo firmvéri, takže Live USB aj nainštalovaný systém sa potom spúšťajú       bez otázok. Ak sa namiesto modrej obrazovky stále zobrazí „Secure Boot Violation“, ide o počítač zo štvrtého riadka tabuľky <a href="#podpora">podporovaných počítačov</a>.</p>
     </article>
   </div>
+        <section class="compatibility" id="podpora" aria-labelledby="podpora-nadpis">
+          <h3 id="podpora-nadpis">Na ktorých počítačoch Linsoft OS štartuje</h3>
+          <div class="table-wrap">
+            <table class="ver support">
+              <thead><tr><th scope="col">Počítač / nastavenie</th><th scope="col">Stav</th><th scope="col">Čo treba urobiť</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">x86-64 PC so starším BIOS-om (Legacy / CSM)</th><td class="ok">Funguje</td><td>Nič</td></tr>
+                <tr><th scope="row">x86-64 PC s UEFI, Secure Boot vypnutý</th><td class="ok">Funguje</td><td>Nič</td></tr>
+                <tr><th scope="row">x86-64 PC s UEFI a zapnutým Secure Boot (väčšina PC s Windows 10/11)</th><td class="ok">Funguje</td><td>Raz zaregistrovať kľúč Linsoft (<a href="#secure-boot">postup</a>)</td></tr>
+                <tr><th scope="row">Secured-core PC alebo PC, ktoré dôveruje iba Windows (vypnutá voľba „Microsoft third-party UEFI CA“ / „Allow 3rd party UEFI CA“)</th><td class="mid">Funguje po zmene nastavenia</td><td>Vo firmvéri zapnúť „Microsoft third-party UEFI CA“ alebo vypnúť Secure Boot. Rovnako to vyžadujú aj Ubuntu, Fedora či Ventoy.</td></tr>
+                <tr><th scope="row">32-bitové PC, 32-bitové UEFI, ARM (napr. Snapdragon), Apple Mac</th><td class="no">Nepodporované</td><td>Systém je zostavený iba pre 64-bitové x86 procesory.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="small">Prekážku zo štvrtého riadka nemožno obísť na strane Linsoft OS: takéto počítače spustia iba zavádzače podpísané pre Windows, preto treba jeden prepínač vo firmvéri.</p>
+        </section>
   <section class="compatibility" aria-labelledby="kompatibilita">
     <h3 id="kompatibilita">Požiadavky a testovanie</h3>
     <ul>
       <li>64-bitový procesor (x86-64), BIOS alebo UEFI.</li>
       <li>Odporúčaná pamäť: aspoň 3 GB RAM; režim „načítať do RAM“ potrebuje aspoň 8 GB.</li>
-      <li>Na inštaláciu treba disk s kapacitou aspoň 12 GiB. Secure Boot môže zostať zapnutý.</li>
+      <li>Na inštaláciu treba disk s kapacitou aspoň 12 GiB. Secure Boot môže zostať zapnutý (okrem počítačov zo štvrtého riadka tabuľky vyššie).</li>
       <li>Live štart z DVD aj USB, inštalácia a štart nainštalovaného systému boli otestované v QEMU v režimoch BIOS, UEFI aj UEFI so Secure Boot.</li>
       <li>Fyzický hardvér vrátane grafiky, Wi-Fi a špecifických nastavení firmvéru nebol testovaný.</li>
     </ul>
