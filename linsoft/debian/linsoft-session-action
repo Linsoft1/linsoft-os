@@ -3,13 +3,16 @@ set -euo pipefail
 fail() { zenity --error --title='Linsoft Desktop' --text="$*"; exit 1; }
 action=${1:-}
 exit_desktop() {
-    if [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
+    if [[ ${LINSOFT_DESKTOP:-} == xfce ]]; then
+        xfce4-session-logout --logout --fast
+    elif [[ ${LINSOFT_NATIVE:-0} == 1 ]]; then
         linsoft-native --quit
     else
         openbox --exit
     fi
 }
 case "$action" in
+    logout) question='Uložte si prácu. Odhlásiť sa z Linsoft OS?' ;;
     drm) question='Save your work. Open the original Linsoft DRM desktop?' ;;
     restart) question='Save your work. Restart Linsoft OS?' ;;
     poweroff) question='Save your work. Shut down Linsoft OS?' ;;
@@ -34,6 +37,16 @@ else
     exit "$result"
 fi
 control=/run/linsoft-session
+if [[ $action == logout ]]; then
+    # Professional sessions return to the login on a plain exit.
+    if [[ ! -f /etc/linsoft-apps/professional ]]; then
+        request=$(mktemp "$control/request.XXXXXX")
+        printf 'logout\n\n' > "$request"
+        mv -f -- "$request" "$control/request"
+    fi
+    exit_desktop
+    exit
+fi
 if [[ -f /etc/linsoft-apps/professional ]]; then
     export SUDO_ASKPASS=/usr/local/bin/linsoft-askpass
     sudo -A -k -- /usr/local/sbin/linsoft-authorize session "$action" "${2:-}" || {

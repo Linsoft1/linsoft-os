@@ -3,6 +3,17 @@
 All notable changes to Linsoft OS. Versions follow the GitHub releases
 (https://github.com/Linsoft1/linsoft-os/releases).
 
+## 1.4 – XFCE desktop by default
+
+* **XFCE 4.20 is the default desktop**: bottom taskbar with the Linsoft menu,
+  browser, files, terminal, open windows, volume, clock and a power button;
+  Linsoft wallpaper and dark theme, no drive icons on the desktop.
+* **Linsoft Native stays available**: *Zmenit pracovne prostredie* (in both
+  desktops and in the power menu) chooses XFCE or Linsoft Native for the next
+  login, per user.
+* New power menu (lock, log out, restart, shut down) using the authorized
+  Linsoft session requests.
+
 ## 1.3 – Kernel updates in the system
 
 * **In-system kernel updates**: Aktualizacie downloads a newer Linsoft Kernel

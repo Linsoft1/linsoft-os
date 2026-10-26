@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Vypnúť alebo odhlásiť
+Comment=Zamknúť, odhlásiť, reštartovať alebo vypnúť Linsoft OS
+Exec=/usr/local/bin/linsoft-power
+Icon=system-shutdown
+Categories=System;
+Terminal=false

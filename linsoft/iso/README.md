@@ -120,6 +120,18 @@ password on a shared computer and review
   SSH directories, logs and downloaded APT packages; the Debian machine IDs
   are regenerated.
 
+## Desktop
+
+`install-hardware-support` installs XFCE 4.20 in the Debian chroot and makes it
+the default (`/etc/linsoft-apps/default-desktop`). The Linsoft panel
+(`debian/xfce-panel.xml`), desktop settings (`debian/xfce-desktop.xml`) and
+the Linsoft wallpaper replace the XFCE defaults through `dpkg-divert`.
+`linsoft-app-session` reads the per-user choice from
+`~/.config/linsoft/desktop` (`xfce` or `native`), set with
+`linsoft-power desktop` (*Zmenit pracovne prostredie*). Power actions go through
+`linsoft-power` / `linsoft-session-action` because XFCE's own shutdown
+buttons need logind.
+
 ## Building
 
 Run as root in WSL/Linux (Ubuntu 24.04 packages: `qemu-utils squashfs-tools

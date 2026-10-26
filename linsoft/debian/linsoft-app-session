@@ -24,6 +24,30 @@ if [[ ${LINSOFT_PRIMARY:-0} == 1 && -f /etc/linsoft-apps/native ]]; then
     export LINSOFT_NATIVE=1
     export XDG_CURRENT_DESKTOP=X-Generic XDG_SESSION_DESKTOP=linsoft-native DESKTOP_SESSION=linsoft-native
 fi
+# Desktop choice: ~/.config/linsoft/desktop (native|xfce), else the system
+# default /etc/linsoft-apps/default-desktop; XFCE only when it is installed.
+xfce=false
+if $native; then
+    choice=''
+    if [[ -r $HOME/.config/linsoft/desktop ]]; then read -r choice < "$HOME/.config/linsoft/desktop" || true; fi
+    if [[ $choice != native && $choice != xfce && -r /etc/linsoft-apps/default-desktop ]]; then
+        read -r choice < /etc/linsoft-apps/default-desktop || true
+    fi
+    if [[ $choice == xfce ]] && command -v startxfce4 >/dev/null; then
+        xfce=true
+        unset LINSOFT_NATIVE
+        export LINSOFT_DESKTOP=xfce XDG_CURRENT_DESKTOP=XFCE XDG_SESSION_DESKTOP=xfce DESKTOP_SESSION=xfce
+        # A power loss right after the first login can leave empty launcher
+        # files, and the panel then saves empty launchers: start from the defaults.
+        panel_dir=$HOME/.config/xfce4/panel
+        panel_xml=$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+        if find "$panel_dir" -name '*.desktop' -empty 2>/dev/null | grep -q . ||
+            { [[ -f $panel_xml ]] && { [[ ! -s $panel_xml ]] ||
+                tr -d ' \n' < "$panel_xml" | grep -q 'name="items"type="array"></property>'; }; }; then
+            rm -rf "$panel_dir" "$panel_xml"
+        fi
+    fi
+fi
 if ! $native; then mkdir -p .config/openbox .config/tint2; fi
 if [[ ${LINSOFT_PRIMARY:-0} == 1 && -f /etc/linsoft-apps/desktop-extras ]]; then
     export LANG=sk_SK.UTF-8
@@ -142,7 +166,11 @@ if $native; then
     linsoft-native-system --watch &
     extras+=("$!")
 fi
-if $native; then
+if $xfce; then
+    # The panel copies its launchers on the first login; write them to disk early.
+    (sleep 30; sync -f "$HOME/.config") &
+    startxfce4
+elif $native; then
     linsoft-native
 else
     openbox --config-file /etc/linsoft-apps/rc.xml

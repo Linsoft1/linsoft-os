@@ -4,7 +4,7 @@
 from scratch on Linux From Scratch 12.4, with an original C/Xlib desktop
 (window manager, panel, Start menu and file manager).
 
-**Version:** Linsoft OS 1.3 (26 Oct 2026) · Linsoft Kernel 6.18 LTS · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI/Secure Boot
+**Version:** Linsoft OS 1.4 (26 Oct 2026) · Linsoft Kernel 6.18 LTS · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI/Secure Boot
 
 **Author:** Martin Pastorek – Native desktop programmed in C (Xlib/Xft) and the
 customized **Linsoft Kernel** (Linux 6.18 LTS: Wi-Fi, AMD/NVIDIA/Intel graphics,
@@ -45,6 +45,13 @@ first start asks once to enroll the Linsoft key in MokManager (see
 
 Known limits: Bluetooth has kernel drivers but no pairing UI yet, enterprise
 (802.1X) Wi-Fi is not supported, and NVIDIA uses the open nouveau driver.
+
+### Desktop
+
+Since 1.4 the default desktop is **XFCE** with a Linsoft taskbar, menu and
+wallpaper. The own **Linsoft Native** desktop (C/Xlib) is still included: open
+**Zmenit pracovne prostredie** (or the power button > *Zmenit pracovne
+prostredie*) and choose it for the next login.
 
 ### Kernel updates
 

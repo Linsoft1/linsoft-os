@@ -374,9 +374,13 @@ keys shift
 sleep 3
 monitor "screendump $work/kupdate-lock.png -f png"
 keys t e s t 1 2 3 4 ret
-sleep 10
-monitor "screendump $work/kupdate-desktop.png -f png"
-(( $(stat -c %s kupdate-lock.png) > 15000 && $(stat -c %s kupdate-desktop.png) > 30000 )) ||
+# XFCE draws the wallpaper and icons a little later than the panel.
+for attempt in $(seq 1 12); do
+    sleep 5
+    monitor "screendump $work/kupdate-desktop.png -f png"
+    (( $(stat -c %s kupdate-desktop.png) > 100000 )) && break
+done
+(( $(stat -c %s kupdate-lock.png) > 15000 && $(stat -c %s kupdate-desktop.png) > 100000 )) ||
     fail 'desktop with the updated kernel is not drawn'
 pass 'desktop unlocks and runs with the updated kernel'
 stop_qemu

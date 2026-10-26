@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Zmeniť pracovné prostredie
+Comment=Vybrať XFCE alebo Linsoft Native pre ďalšie prihlásenie
+Exec=/usr/local/bin/linsoft-power desktop
+Icon=preferences-desktop
+Categories=Settings;DesktopSettings;
+Terminal=false

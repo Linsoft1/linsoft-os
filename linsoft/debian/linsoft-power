@@ -1,0 +1,35 @@
+#!/bin/bash
+# Linsoft OS power and desktop menu: lock, log out, restart, shut down and
+# choose the desktop (XFCE or Linsoft Native) for the next login.
+set -euo pipefail
+title='Linsoft OS'
+choose_desktop() {
+    local current=xfce file=$HOME/.config/linsoft/desktop choice
+    [[ ${LINSOFT_DESKTOP:-} == xfce ]] || current=native
+    choice=$(zenity --list --radiolist --title="$title" --width=460 --height=260 \
+        --text='Pracovné prostredie pre ďalšie prihlásenie:' \
+        --column='' --column=id --column='Prostredie' --hide-column=2 \
+        "$([[ $current == xfce ]] && echo TRUE || echo FALSE)" xfce 'XFCE (predvolené)' \
+        "$([[ $current == native ]] && echo TRUE || echo FALSE)" native 'Linsoft Native') || return 0
+    [[ $choice == xfce || $choice == native ]] || return 0
+    mkdir -p "${file%/*}"
+    printf '%s\n' "$choice" > "$file"
+    if [[ $choice != "$current" ]]; then
+        exec linsoft-session-action logout
+    fi
+}
+case ${1:-} in
+    desktop) choose_desktop; exit 0 ;;
+    '') ;;
+    *) echo 'Usage: linsoft-power [desktop]' >&2; exit 2 ;;
+esac
+items=()
+if xscreensaver-command -time >/dev/null 2>&1; then items+=(lock 'Zamknúť obrazovku'); fi
+items+=(logout 'Odhlásiť sa' restart 'Reštartovať' poweroff 'Vypnúť' desktop 'Zmeniť pracovné prostredie')
+action=$(zenity --list --title="$title" --width=380 --height=380 --text='Čo chcete urobiť?' \
+    --column=id --column='Akcia' --hide-column=1 "${items[@]}") || exit 0
+case $action in
+    lock) xscreensaver-command -lock ;;
+    logout|restart|poweroff) exec linsoft-session-action "$action" ;;
+    desktop) choose_desktop ;;
+esac

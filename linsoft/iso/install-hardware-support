@@ -20,6 +20,7 @@ packages=(
     firmware-brcm80211 firmware-libertas firmware-amd-graphics
     firmware-intel-graphics firmware-intel-misc firmware-nvidia-graphics
     firmware-intel-sound firmware-sof-signed firmware-cirrus firmware-misc-nonfree
+    xfce4 xfce4-pulseaudio-plugin
 )
 
 echo '==> Debian: firmware, Wi-Fi and diagnostic packages'
@@ -88,7 +89,8 @@ done
 
 echo '==> Debian: Linsoft desktop helpers'
 for program in linsoft-host-control linsoft-settings linsoft-quick-settings \
-    linsoft-native-system linsoft-app-session linsoft-x-client; do
+    linsoft-native-system linsoft-app-session linsoft-x-client \
+    linsoft-session-action linsoft-power; do
     install -m 0755 "$linsoft/debian/$program" "$debian/usr/local/bin/$program"
 done
 for program in linsoft-wifi-ui linsoft-diag linsoft-update-check; do
@@ -98,7 +100,30 @@ install -m 0755 "$linsoft/debian/linsoft-authorize" "$debian/usr/local/sbin/lins
 for entry in linsoft-wifi linsoft-diag linsoft-update; do
     install -m 0644 "$linsoft/hardware/$entry.desktop" "$debian/usr/share/applications/$entry.desktop"
 done
+for entry in linsoft-power linsoft-desktop-choice; do
+    install -m 0644 "$linsoft/debian/$entry.desktop" "$debian/usr/share/applications/$entry.desktop"
+done
 chroot "$debian" update-desktop-database /usr/share/applications
+
+echo '==> Debian: XFCE as the default desktop (Linsoft Native stays selectable)'
+# Package defaults are diverted so APT upgrades keep the Linsoft versions.
+divert() {
+    local path=$1 source=$2
+    if ! chroot "$debian" dpkg-divert --list "$path" | grep -q .; then
+        chroot "$debian" dpkg-divert --local --rename --add "$path" >/dev/null
+    fi
+    install -D -m 0644 "$source" "$debian$path"
+}
+divert /etc/xdg/xfce4/panel/default.xml "$linsoft/debian/xfce-panel.xml"
+divert /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml "$linsoft/debian/xfce-desktop.xml"
+backdrop=$(grep -aoE '/usr/share/backgrounds/xfce/[A-Za-z0-9_.-]+\.(svg|png|jpg)' \
+    "$debian/usr/bin/xfdesktop" | head -n 1 || true)
+[[ -n $backdrop && -f $debian$backdrop ]] ||
+    { echo 'Cannot find the XFCE default wallpaper.' >&2; exit 1; }
+wallpaper=$linsoft/plasma/wallpaper/contents/images/3840x2160.svg
+[[ $backdrop == *.svg ]] || wallpaper=$debian/usr/share/linsoft-apps/wallpaper.png
+divert "$backdrop" "$wallpaper"
+printf 'xfce\n' > "$debian/etc/linsoft-apps/default-desktop"
 # Password policy used by the installer when the owner sets a password.
 install -m 0440 "$linsoft/debian/professional-sudoers" "$debian/etc/linsoft-apps/sudoers-password"
 chroot "$debian" visudo -c -f /etc/linsoft-apps/sudoers-password >/dev/null
