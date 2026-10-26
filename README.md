@@ -4,6 +4,8 @@
 from scratch on Linux From Scratch 12.4, with an original C/Xlib desktop
 (window manager, panel, Start menu and file manager).
 
+**Version:** Linsoft OS 1.0 (26 Oct 2026) · Linsoft Kernel 6.16.1 · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI
+
 **Author:** Martin Pastorek – Native desktop programmed in C (Xlib/Xft) and the
 customized **Linsoft Kernel** (Linux 6.16.1: audio, network, graphics, Live
 USB/DVD boot, NVMe and SD card support).

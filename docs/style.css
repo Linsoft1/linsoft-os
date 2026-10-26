@@ -28,6 +28,10 @@ h2 { font-weight:400; border-bottom:1px solid #2a3f63; padding-bottom:.4rem; }
 figcaption { color:var(--muted); text-align:center; font-size:.9rem; }
 ol li { margin:.5rem 0; }
 code { background:var(--panel); padding:.1rem .4rem; border-radius:.3rem; }
+.version { display:inline-block; margin:.3rem 0 0; padding:.2rem .9rem; border:1px solid var(--cyan); border-radius:1rem; color:var(--cyan); font-size:.95rem; }
+.ver { border-collapse:collapse; background:var(--panel); border-radius:.6rem; overflow:hidden; min-width:min(100%,560px); }
+.ver th, .ver td { text-align:left; padding:.55rem 1.1rem; border-bottom:1px solid #2a3f63; }
+.ver th { color:var(--muted); font-weight:600; }
 .warn { background:#3a2a10; border-left:4px solid #f0b43c; padding:1rem; border-radius:.4rem; }
 .author { display:flex; gap:1.5rem; align-items:center; background:var(--panel); border-radius:.6rem; padding:1.2rem 1.5rem; }
 .author h3 { color:var(--cyan); margin:0; font-size:1.4rem; }
