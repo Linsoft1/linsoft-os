@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pôvodný Linsoft OS a Linsoft Kernel – Linsoft OS</title>
+<meta name="description" content="Príbeh pôvodného Linsoft OS (verzie 1.0–1.4): vlastný systém postavený od základov, desktop písaný v C a vlastné jadro Linsoft Kernel.">
+<meta name="theme-color" content="#0b1426">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Pôvodný Linsoft OS a Linsoft Kernel">
+<meta property="og:image" content="https://linsoft1.github.io/linsoft-os/img/linsoft15-desktop.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css?v=1.5.4">
+</head>
+<body>
+<a class="skip-link" href="#obsah">Preskočiť na obsah</a>
+<header class="hero article-hero" id="top">
+  <nav aria-label="Hlavná navigácia">
+    <a class="brand" href="index.html" aria-label="Linsoft OS – domov"><img class="mark" src="favicon.svg" width="36" height="36" alt=""><span>Linsoft OS</span></a>
+    <div class="nav-links">
+      <a href="index.html#funkcie">Funkcie</a><a href="index.html#stiahnut">Stiahnuť</a><a href="index.html#navod">Návod</a>
+      <a href="https://github.com/Linsoft1/linsoft-os">GitHub</a>
+    </div>
+  </nav>
+  <div class="hero-text">
+    <h1>Pôvodný Linsoft OS a Linsoft Kernel</h1>
+    <p class="tag">Ako vznikal vlastný systém Linsoft, verzie 1.0 – 1.4</p>
+  </div>
+</header>
+<main id="obsah">
+<article class="article">
+  <p class="lead">Pred Linsoft OS 1.5, ktorý stojí na Debiane, existovala samostatná vetva systému, ktorú Martin Pastorek budoval od základov: vlastný live systém a inštalátor, desktop napísaný v jazyku C a upravené jadro Linux pod názvom <b>Linsoft Kernel</b>. Tento článok zhŕňa, čo ten pôvodný Linsoft OS bol a čo priniesol.</p>
+
+  <h2>Čo bol pôvodný Linsoft OS</h2>
+  <p>Vetva 1.0–1.4 nebola odvodená od hotovej distribúcie. Systém sa skladal z vlastných skriptov v štýle Linux From Scratch (zostavenie grafického základu, Mesa, terminálu a nástrojov), vlastného štartovacieho prostredia (initramfs), bootloadera GRUB s témou Linsoft a vlastného inštalátora. Súčasťou bolo aj vlastné bootovacie logo a štartovacia obrazovka.</p>
+  <ul>
+    <li><b>Linsoft Native</b> – desktop napísaný v C so správcom súborov, nastaveniami, správcom balíkov, zmiešavačom zvuku a nástrojmi pre sieť a hardvér.</li>
+    <li><b>Live systém a inštalátor</b> pre BIOS aj UEFI, štart z USB (hybridné ISO) aj z DVD.</li>
+    <li><b>Vlastné aktualizácie</b> – kontrola nového vydania a aktualizácia jadra priamo v nainštalovanom systéme.</li>
+    <li><b>XFCE 4.20</b> od verzie 1.4 ako predvolená plocha; Linsoft Native zostal ako voliteľné prostredie.</li>
+  </ul>
+
+  <h2>Linsoft Kernel</h2>
+  <p>Linsoft Kernel je Linux zostavený a udržiavaný pre Linsoft OS. Verzia 1.0 používala jadro 6.16.1, od verzie 1.2 prešla vetva na dlhodobo podporované jadro <b>6.18 LTS</b> (vo vydaní 1.3 6.18.58).</p>
+  <h3>Podpora hardvéru</h3>
+  <ul>
+    <li><b>Wi-Fi:</b> Intel (iwlwifi), Realtek (rtw88, rtw89, rtl8xxxu), MediaTek (mt7921, mt7925), Qualcomm Atheros (ath9k–ath12k), Broadcom (brcmfmac).</li>
+    <li><b>Grafika:</b> AMD (amdgpu, radeon), NVIDIA (nouveau), Intel (i915, xe).</li>
+    <li><b>Notebooky:</b> I2C touchpady a dotykové displeje, zvuk Intel/AMD (SOF, ACP), NVMe za Intel VMD/RST, USB Ethernet, klávesové skratky.</li>
+    <li><b>Firmvér</b> pre Wi-Fi, grafiku, zvuk a Bluetooth z Debianu (non-free-firmware).</li>
+  </ul>
+  <h3>Aktualizácia jadra priamo v systéme</h3>
+  <p>Od verzie 1.3 vedelo okno <i>Aktualizácie</i> stiahnuť novšie jadro Linsoft Kernel z vydaní na GitHube a nainštalovať ho bez nového ISO. Balík jadra bol podpísaný kľúčom Linsoft; podvrhnutý alebo poškodený balík sa odmietol ešte pred akoukoľvek zmenou. Predchádzajúce jadro zostalo ako záloha a v ponuke GRUB bola položka na jeho spustenie. Live režim jadro nikdy nemenil.</p>
+  <h3>Secure Boot</h3>
+  <p>Vo verzii 1.1 pribudla podpora Secure Boot: shim podpísaný Microsoftom a GRUB aj jadro podpísané kľúčom Linsoft. Kľúč bolo potrebné raz zaregistrovať v MokManageri.</p>
+
+  <h2>Vývoj verzií</h2>
+  <div class="table-wrap">
+    <table class="ver"><thead><tr><th scope="col">Verzia</th><th scope="col">Čo priniesla</th></tr></thead><tbody>
+      <tr><th scope="row">1.0</th><td>Prvé vydanie: live systém, inštalátor BIOS/UEFI, desktop Linsoft Native a Linsoft Kernel 6.16.1.</td></tr>
+      <tr><th scope="row">1.1</th><td>Secure Boot (shim, podpísaný GRUB a jadro), spoľahlivejší štart z USB.</td></tr>
+      <tr><th scope="row">1.2</th><td>Linsoft Kernel 6.18 LTS, ovládače pre Wi-Fi, grafiku a notebooky, firmvér, Wi-Fi s heslom, diagnostika hardvéru, heslo používateľa, dual boot s Windows, kontrola aktualizácií.</td></tr>
+      <tr><th scope="row">1.3</th><td>Podpísané aktualizácie jadra priamo v systéme so zálohou predchádzajúceho jadra.</td></tr>
+      <tr><th scope="row">1.4</th><td>XFCE 4.20 ako predvolená plocha, nové okno Vypnúť alebo odhlásiť, Linsoft Native ostáva na výber.</td></tr>
+    </tbody></table>
+  </div>
+
+  <h2>Čo je teraz</h2>
+  <p>Verzia 1.5 je iná vetva: používa Debian 13, jeho podpísané jadro, Openbox a Tint2, vďaka čomu funguje so zapnutým Secure Boot bez registrácie kľúča. Vlastné jadro Linsoft Kernel sa v nej nepoužíva: nepodpísané vlastné jadro vo vývojovej zostave 1.5 neprešlo Secure Boot (HP hlásilo „Secure Boot Violation“), preto sme prešli na podpísané jadro Debianu. Vetva 1.0–1.4 zostáva dostupná na GitHube, no nie je s verziou 1.5 priamo kompatibilná a aktualizácia z nej nie je podporovaná.</p>
+  <p><a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.4">Vydanie 1.4 (pôvodná vetva)</a> <a class="btn ghost" href="https://github.com/Linsoft1/linsoft-os/releases">Všetky vydania</a> <a class="btn ghost" href="index.html#stiahnut">Stiahnuť 1.5</a></p>
+  <p class="small">Autor: Martin Pastorek. Linux, Debian, XFCE a ďalší open-source softvér patria ich pôvodným autorom.</p>
+</article>
+</main>
+<footer>
+  <p>Linsoft OS · autor <b>Martin Pastorek</b> · <a href="index.html">Späť na hlavnú stránku</a></p>
+</footer>
+</body>
+</html>
