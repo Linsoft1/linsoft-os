@@ -5,8 +5,10 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
-* Publishes the updated Debian 13 live image with the custom
-  `6.12.113-linsoft-amd64` kernel, Openbox, Tint2 and Linsoft Hub.
+* Publishes the updated Debian 13 live image with the Debian-signed
+  `6.12.113+deb13-amd64` kernel, Openbox, Tint2 and Linsoft Hub.
+* Boots with Secure Boot enabled (signed shim, GRUB and kernel); fixes the
+  "Secure Boot Violation" seen with the earlier unsigned custom kernel.
 * Fixes CRLF shebangs preventing Linsoft Store and its privileged helper from
   launching.
 * Plymouth keeps the Linsoft logo and selects startup, shutdown and restart
@@ -15,7 +17,7 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
   SK/US keyboard indicator (Alt+Shift).
 * Branded wallpaper, login screen and user image.
 * This is a different image lineage from the 1.4 LFS/XFCE edition, not an
-  in-place upgrade. Secure Boot must be disabled. Clean installation, full
+  in-place upgrade. Clean installation, full
   BIOS/UEFI boot paths and physical hardware are not certified.
 
 ## 1.4 – XFCE desktop by default

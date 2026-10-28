@@ -17,9 +17,8 @@ lb config \
     --debian-installer live \
     --debian-installer-gui true \
     --win32-loader false \
-    --uefi-secure-boot disable \
+    --uefi-secure-boot enable \
     --linux-flavours amd64 \
-    --linux-packages linux-image-linsoft \
     --iso-application "Linsoft OS 1.5" \
     --iso-publisher "Linsoft" \
     --iso-volume "LINSOFT" \
@@ -36,7 +35,5 @@ chmod +x "$openbox_defaults/autostart"
 
 chmod +x config/hooks/normal/9000-linsoft-branding.hook.binary
 chmod +x config/hooks/normal/7000-linsoft-plymouth.hook.chroot
-chmod +x build-kernel.sh
-./build-kernel.sh
 lb clean --all
 MKSQUASHFS_OPTIONS="${MKSQUASHFS_OPTIONS:-} -b 1048576" lb build

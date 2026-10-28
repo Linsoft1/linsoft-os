@@ -24,6 +24,6 @@
     <path d="M373 68c-12-12-27-18-49-18h-12c-44 0-70 24-70 59 0 30 17 49 51 59l51 16c17 5 26 15 26 29 0 16-13 26-34 26h-32c-21 0-37-8-50-25l-48 48c23 28 54 42 97 42h38c67 0 108-34 108-88 0-41-26-69-74-85l-49-15c-10-3-14-7-14-13 0-7 5-11 16-11h12c16 0 28 5 40 17z" fill="#f3f8ff"/>
   </g>
   <text x="1200" y="820" fill="#f1f6ff" font-family="sans-serif" font-size="78" font-weight="600" letter-spacing="8">LINSOFT OS</text>
-  <text x="1205" y="880" fill="#91a9ca" font-family="sans-serif" font-size="24" letter-spacing="5">LINSOFT OS 1.1</text>
+  <text x="1205" y="880" fill="#91a9ca" font-family="sans-serif" font-size="24" letter-spacing="5">LINSOFT OS 1.5</text>
   <path d="M1205 925h486" stroke="#398dff" stroke-opacity=".7" stroke-width="3"/>
 </svg>

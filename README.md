@@ -22,8 +22,9 @@ indicator (Alt+Shift), hidden workspace labels and an aligned Start menu.
 The wallpaper and login screen use Linsoft branding.
 
 This image is the **Debian/Openbox edition**, not the LFS/XFCE/Native image
-published as 1.4. It does not contain the previous edition's signed kernel
-updater or Secure Boot support. It is not an in-place upgrade of 1.4.
+published as 1.4. It uses the Debian-signed kernel and a Microsoft-signed
+shim, so it boots with Secure Boot enabled; the 1.4 in-system kernel updater is
+not included. It is not an in-place upgrade of 1.4.
 Older releases and their source remain available.
 
 ## Status and warnings
@@ -33,7 +34,8 @@ before installation. The image contains BIOS and UEFI boot catalog entries,
 but full boot paths, a clean installation and physical hardware are not
 certified for this release.
 
-**Disable Secure Boot**: this edition's custom kernel is unsigned. Recommended
+**Secure Boot**: the image boots through Microsoft-signed shim, Debian GRUB and
+the Debian kernel (tested in QEMU/OVMF with Secure Boot on). Recommended
 memory for initial testing: 4 GB. Back up your files before installation;
 automatic partitioning can erase the selected disk. Changes made in a live
 session are lost at reboot.

@@ -28,10 +28,10 @@
     <h1>Linsoft OS 1.5</h1>
     <p class="version">Verzia 1.5 · vydané 28. 10. 2026</p>
     <p class="tag">Váš priestor. Váš systém.</p>
-    <p>Slovenský live systém postavený na Debiane 13 s vlastným jadrom, pracovnou plochou Openbox, panelom Tint2 a ponukou Linsoft Hub.</p>
+    <p>Slovenský live systém postavený na Debiane 13 s podpísaným jadrom Debianu, pracovnou plochou Openbox, panelom Tint2 a ponukou Linsoft Hub.</p>
     <a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso">⬇ Stiahnuť Live ISO 1.5</a>
     <a class="btn ghost" href="#navod">Ako začať</a>
-    <p class="small">x86-64 · BIOS aj UEFI · Secure Boot musí byť vypnutý</p>
+    <p class="small">x86-64 · BIOS aj UEFI · funguje so zapnutým Secure Boot</p>
   </div>
 </header>
 <main id="obsah">
@@ -52,10 +52,10 @@
     <table class="ver"><tbody>
       <tr><th scope="row">Linsoft OS</th><td>1.5 · 28. 10. 2026</td></tr>
       <tr><th scope="row">Základ systému</th><td>Debian 13 (trixie)</td></tr>
-      <tr><th scope="row">Jadro</th><td>Linux 6.12.113 · <code>6.12.113-linsoft-amd64</code></td></tr>
+      <tr><th scope="row">Jadro</th><td>Linux 6.12.113 · <code>6.12.113+deb13-amd64</code> (podpísané Debianom)</td></tr>
       <tr><th scope="row">Pracovná plocha</th><td>Openbox · Tint2 · Linsoft Hub</td></tr>
       <tr><th scope="row">Architektúra</th><td>x86-64 · bootovacie položky BIOS a UEFI</td></tr>
-      <tr><th scope="row">Secure Boot</th><td>Vypnúť; vlastné jadro tejto zostavy nie je podpísané</td></tr>
+      <tr><th scope="row">Secure Boot</th><td>Podporovaný (Microsoft-podpísaný shim, Debian GRUB a jadro); vypnúť netreba</td></tr>
       <tr><th scope="row">ISO súbor</th><td>Linsoft-OS-Live.iso · <span data-iso-size>2,07 GB (1,93 GiB)</span></td></tr>
     </tbody></table>
   </div>
@@ -93,7 +93,7 @@
       <ol>
         <li>Overte SHA-256 stiahnutého ISO.</li>
         <li>Zapíšte ho cez <a href="https://rufus.ie">Rufus</a> v režime DD alebo <a href="https://etcher.balena.io">balenaEtcher</a>. Obsah vybraného USB sa vymaže.</li>
-        <li>V nastaveniach UEFI vypnite Secure Boot, otvorte boot menu a vyberte USB.</li>
+        <li>Otvorte boot menu (na HP F9) a vyberte USB; Secure Boot môže ostať zapnutý.</li>
         <li>Vyberte položku Linsoft OS 1.5 (Live).</li>
       </ol>
       <p>Na prvé vyskúšanie odporúčame QEMU alebo VirtualBox, 64-bitový procesor a aspoň 4 GB RAM.</p>
