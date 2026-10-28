@@ -14,6 +14,9 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 * Plymouth keeps the Linsoft logo and selects startup, shutdown and restart
   messages according to the actual mode.
 * Graphical installer uses the Linsoft banner and the dark Linsoft Blue colours.
+* XFCE screensaver reads its own desktop background settings, independently of
+  Nitrogen. Sets its monitor-independent fallback to the Linsoft wallpaper so
+  locking the Openbox session no longer shows the Debian background.
 * Compact rounded taskbar, aligned Start menu, hidden workspace labels and
   SK/US keyboard indicator (Alt+Shift).
 * Branded wallpaper, login screen and user image.

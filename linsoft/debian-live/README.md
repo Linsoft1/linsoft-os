@@ -10,6 +10,12 @@ Okná zatvoríš kliknutím na tlačidlo `X` v titulkovom paneli alebo pomocou `
 
 Pri vypínaní zostáva zobrazené logo Linsoft a téma Plymouth používa text „VYPÍNAM SYSTÉM“. Pri reštarte zobrazuje „REŠTARTUJEM SYSTÉM“ a pri štarte „SPÚŠŤAM SYSTÉM“.
 
+Pozadie zamknutej obrazovky nastavuje XFCE Screensaver nezávisle od Nitrogenu.
+Systémová konfigurácia `config/includes.chroot/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml`
+preto určuje tapetu `linsoft-blue.svg` aj pre predvolený monitor a pracovnú plochu,
+na ktoré zamykač prejde, ak nenájde nastavenie konkrétneho monitora. Samotná
+zmena pozadia cez Nitrogen alebo LightDM toto nastavenie nenahrádza.
+
 ## Čo potrebuješ
 
 - Počítač s Debianom 13 alebo kompatibilnou distribúciou založenou na Debiane
