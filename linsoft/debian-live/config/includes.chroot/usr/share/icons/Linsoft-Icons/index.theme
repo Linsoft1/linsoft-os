@@ -1,0 +1,26 @@
+[Icon Theme]
+Name=Linsoft Icons
+Comment=Original Linsoft desktop icons
+Inherits=Papirus,Adwaita,hicolor
+Directories=scalable/apps,scalable/places,scalable/panel
+
+[scalable/apps]
+Size=24
+Type=Scalable
+MinSize=16
+MaxSize=512
+Context=Applications
+
+[scalable/places]
+Size=24
+Type=Scalable
+MinSize=16
+MaxSize=512
+Context=Places
+
+[scalable/panel]
+Size=24
+Type=Scalable
+MinSize=16
+MaxSize=512
+Context=Panel

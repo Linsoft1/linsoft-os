@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Linsoft</vendor>
+  <action id="org.linsoft.store.manage">
+    <description>Správa aplikácií a aktualizácií v Linsoft Store</description>
+    <message>Na správu aplikácií a aktualizácií je potrebné overenie.</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/linsoft/store-helper</annotate>
+  </action>
+</policyconfig>

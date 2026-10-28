@@ -1,87 +1,63 @@
 # Linsoft OS
 
-**Váš priestor. Váš systém.** Linsoft OS is an experimental operating system built
-from scratch on Linux From Scratch 12.4, with an original C/Xlib desktop
-(window manager, panel, Start menu and file manager).
+**Váš priestor. Váš systém.**
 
-**Version:** Linsoft OS 1.4 (26 Oct 2026) · Linsoft Kernel 6.18 LTS · LFS 12.4 · Debian 13 apps · x86-64 BIOS/UEFI/Secure Boot
-
-**Author:** Martin Pastorek – Native desktop programmed in C (Xlib/Xft) and the
-customized **Linsoft Kernel** (Linux 6.18 LTS: Wi-Fi, AMD/NVIDIA/Intel graphics,
-laptop touchpads and audio, Live USB/DVD boot, NVMe and SD card support).
-
-What is new: [CHANGELOG.md](CHANGELOG.md).
+**Current release: Linsoft OS 1.5 (28 Oct 2026)** — Debian 13 (trixie),
+custom Linux `6.12.113-linsoft-amd64`, Openbox, Tint2 and Linsoft Hub.
+Author: Martin Pastorek.
 
 * Website: https://linsoft1.github.io/linsoft-os/
-* Download: [Linsoft-OS-Live.iso](https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso)
-  (BIOS + UEFI, Live system and disk installer)
+* [Download Linsoft OS 1.5](https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso)
+* [SHA-256 checksum](https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso.sha256)
+* [Release notes](https://github.com/Linsoft1/linsoft-os/releases/tag/v1.5)
+* [Changelog](CHANGELOG.md)
+* [Version 1.5 build configuration](linsoft/debian-live/)
 
-![Linsoft OS desktop](docs/img/desktop.png)
+## What changed in 1.5
+
+The Store application and privileged helper now have Linux LF shebangs and
+can launch. Plymouth retains the Linsoft logo and shows the appropriate
+startup, shutdown or restart text. The rounded taskbar has an SK/US keyboard
+indicator (Alt+Shift), hidden workspace labels and an aligned Start menu.
+The wallpaper and login screen use Linsoft branding.
+
+This image is the **Debian/Openbox edition**, not the LFS/XFCE/Native image
+published as 1.4. It does not contain the previous edition's signed kernel
+updater or Secure Boot support. It is not an in-place upgrade of 1.4.
+Older releases and their source remain available.
+
+## Status and warnings
+
+Experimental. Verify the checksum and try live mode in a virtual machine
+before installation. The image contains BIOS and UEFI boot catalog entries,
+but full boot paths, a clean installation and physical hardware are not
+certified for this release.
+
+**Disable Secure Boot**: this edition's custom kernel is unsigned. Recommended
+memory for initial testing: 4 GB. Back up your files before installation;
+automatic partitioning can erase the selected disk. Changes made in a live
+session are lost at reboot.
 
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
-| [linsoft/](linsoft/README.md) | Linsoft desktop integration, Native desktop source, installers and tests |
-| [linsoft/native/](linsoft/native/README.md) | Native C/Xlib/Xft desktop shell |
-| [linsoft/iso/](linsoft/iso/README.md) | Live/installer ISO build, installer and QEMU test |
-| [README-desktop.md](README-desktop.md) | Detailed edition history and build notes |
-| `libfm`, `lxpanel`, `menu-cache`, `openbox`, `pcmanfm` | Unmodified upstream LXDE/Openbox sources (git submodules) |
+| [linsoft/debian-live/](linsoft/debian-live/) | Version 1.5 live-build scripts, kernel configuration and system customizations |
+| [linsoft/](linsoft/README.md) | Earlier LFS/Native/XFCE integration and tools |
+| [linsoft/native/](linsoft/native/README.md) | Earlier C/Xlib desktop source |
+| [linsoft/iso/](linsoft/iso/README.md) | Earlier image lineage and its installer/tests |
+| [README-desktop.md](README-desktop.md) | Earlier edition history and build notes |
+| `libfm`, `lxpanel`, `menu-cache`, `openbox`, `pcmanfm` | Upstream source submodules |
 | [docs/](docs/index.html) | GitHub Pages website |
 
-Prebuilt QCOW2 disk images are not stored in this repository; the ISO is
-published as a GitHub Release asset.
+ISO images are published as GitHub Release assets, not committed to Git.
 
-## Status and warnings
+## Licenses and source
 
-Experimental. Automated tests run in QEMU (BIOS, UEFI, Secure Boot); use the
-built-in **Diagnostika hardveru** tool and report problems on real computers in
-[Issues](https://github.com/Linsoft1/linsoft-os/issues). The installer either
-erases the whole selected disk or (UEFI + GPT) installs into free space created
-in Windows, keeping Windows bootable. The installer can set a user password;
-without it the system logs in automatically. Secure Boot can stay enabled: the
-first start asks once to enroll the Linsoft key in MokManager (see
-[linsoft/iso](linsoft/iso/README.md#secure-boot)).
-
-Known limits: Bluetooth has kernel drivers but no pairing UI yet, enterprise
-(802.1X) Wi-Fi is not supported, and NVIDIA uses the open nouveau driver.
-
-### Desktop
-
-Since 1.4 the default desktop is **XFCE** with a Linsoft taskbar, menu and
-wallpaper. The own **Linsoft Native** desktop (C/Xlib) is still included: open
-**Zmenit pracovne prostredie** (or the power button > *Zmenit pracovne
-prostredie*) and choose it for the next login.
-
-### Kernel updates
-
-Since 1.3 an installed system updates its kernel itself: **Aktualizacie**
-finds a signed kernel package attached to the latest release, downloads it,
-and the system service checks its Linsoft signature before installing it.
-The previous kernel and its modules stay on disk and GRUB gets the entry
-"Linsoft OS - predchadzajuce jadro" to start it if the new kernel does not
-work on that PC. Live mode never changes the kernel. Systems installed from
-1.0–1.2 need a one-time reinstall from the 1.3 ISO to get the updater.
-Publishing an update is described in
-[linsoft/iso](linsoft/iso/README.md#kernel-updates).
-
-### Supported computers
-
-| Computer / firmware setting | Status |
-| --- | --- |
-| x86-64, legacy BIOS (CSM) | Works |
-| x86-64, UEFI, Secure Boot off | Works |
-| x86-64, UEFI, Secure Boot on (most Windows 10/11 PCs) | Works after enrolling the Linsoft key once |
-| Secured-core PCs / firmware with "Microsoft third-party UEFI CA" disabled | Needs that option enabled (or Secure Boot off) – same as Ubuntu, Fedora or Ventoy |
-| 32-bit CPUs, 32-bit UEFI, ARM, Apple Mac | Not supported |
-
-The shim is signed with Microsoft UEFI CA 2011. Firmware that trusts only
-Windows-signed loaders cannot start any third-party OS until the third-party CA
-is enabled; Linsoft OS cannot work around this itself.
-
-## Licenses
-
-Linsoft OS bundles Linux, GNU, Debian and other open-source software under
-their own licenses (GPL, LGPL, MIT, ...). The upstream submodules keep their
-original licenses. Source for bundled third-party packages is available from
-their upstream projects (Linux From Scratch 12.4 and Debian 13 archives).
+Linux, GNU, Debian, Openbox and other included software retain their original
+licenses (GPL, LGPL, MIT and others). Upstream submodules retain their licenses.
+The 1.5 build downloads the upstream Linux 6.12.113 source from kernel.org and
+builds it using the included configuration and script. Debian package source
+is available from the Debian 13 archives using the matching package versions
+in the release's `filesystem.packages` manifest. The earlier LFS edition's
+source and build information remain in their original directories.

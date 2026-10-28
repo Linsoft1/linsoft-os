@@ -1,0 +1,356 @@
+#!/usr/bin/python3
+
+import json
+import re
+import subprocess
+import sys
+import threading
+
+import gi
+
+gi.require_version("Gdk", "3.0")
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gdk, Gio, GLib, Gtk
+
+CATALOG = "/usr/share/linsoft/store/catalog.json"
+APP_CSS = "/usr/share/linsoft/linsoft-store.css"
+HELPER = "/usr/lib/linsoft/store-helper"
+ALL = "Všetko"
+INSTALLED = "Nainštalované"
+
+
+def load_catalog():
+    try:
+        with open(CATALOG, encoding="utf-8") as handle:
+            catalog = json.load(handle)
+        if not isinstance(catalog, list) or not catalog:
+            raise ValueError("Katalóg musí obsahovať zoznam aplikácií.")
+        packages = set()
+        for index, app in enumerate(catalog, start=1):
+            if not isinstance(app, dict):
+                raise ValueError("Položka katalógu %d nie je platný záznam." % index)
+            for field in ("package", "name", "category", "description", "icon"):
+                if not isinstance(app.get(field), str) or not app[field].strip():
+                    raise ValueError(
+                        "Položke katalógu %d chýba platné pole %s." % (index, field)
+                    )
+            package = app["package"]
+            if not re.fullmatch(r"[a-z0-9][a-z0-9+.-]*", package):
+                raise ValueError("Neplatný názov balíka v položke %d." % index)
+            if package in packages:
+                raise ValueError("Balík %s sa v katalógu nachádza viackrát." % package)
+            packages.add(package)
+        return catalog, None
+    except (OSError, ValueError) as error:
+        return [], str(error)
+
+
+def is_installed(package):
+    result = subprocess.run(
+        ["dpkg-query", "-W", "-f=${Status}", package],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+    return result.returncode == 0 and result.stdout.startswith("install ok installed")
+
+
+class LinsoftStore(Gtk.Application):
+    def __init__(self):
+        super().__init__(application_id="org.linsoft.Store")
+        self.catalog, self.catalog_error = load_catalog()
+        self.installed = set()
+        self.category = ALL
+        self.query = ""
+        self.busy = False
+        self.window = None
+
+    def do_activate(self):
+        if self.window is not None:
+            self.window.present()
+            return
+        self.load_css()
+        self.create_window()
+        if self.catalog_error:
+            self.status.set_text("Katalóg aplikácií sa nepodarilo načítať.")
+            dialog = Gtk.MessageDialog(
+                transient_for=self.window,
+                flags=Gtk.DialogFlags.MODAL,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.CLOSE,
+                text="Linsoft Store nemôže načítať katalóg aplikácií.",
+            )
+            dialog.format_secondary_text(self.catalog_error)
+            dialog.run()
+            dialog.destroy()
+        self.refresh_installed()
+
+    def load_css(self):
+        provider = Gtk.CssProvider()
+        try:
+            provider.load_from_path(APP_CSS)
+        except GLib.Error as error:
+            print(
+                "Linsoft Store: motív sa nepodarilo načítať: %s" % error,
+                file=sys.stderr,
+            )
+            return
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    def create_window(self):
+        self.window = Gtk.ApplicationWindow(application=self, title="Linsoft Store")
+        self.window.set_default_size(980, 640)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
+        self.window.set_icon_name("org.linsoft.Store")
+        self.window.get_style_context().add_class("store-window")
+
+        root = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.window.add(root)
+
+        side = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        side.get_style_context().add_class("store-side")
+        side.set_size_request(210, -1)
+        root.pack_start(side, False, False, 0)
+
+        brand = Gtk.Label(label="Linsoft Store")
+        brand.set_xalign(0)
+        brand.get_style_context().add_class("store-brand")
+        side.pack_start(brand, False, False, 0)
+        tagline = Gtk.Label(label="Centrum aplikácií")
+        tagline.set_xalign(0)
+        tagline.get_style_context().add_class("store-muted")
+        side.pack_start(tagline, False, False, 10)
+
+        categories = [ALL, INSTALLED] + sorted({a["category"] for a in self.catalog})
+        self.category_buttons = {}
+        for name in categories:
+            button = Gtk.Button(label=name)
+            button.set_relief(Gtk.ReliefStyle.NONE)
+            button.get_child().set_xalign(0)
+            button.get_style_context().add_class("store-category")
+            button.connect("clicked", self.on_category, name)
+            side.pack_start(button, False, False, 0)
+            self.category_buttons[name] = button
+
+        side.pack_end(Gtk.Box(), False, False, 0)
+        upgrade = Gtk.Button(label="Nainštalovať aktualizácie")
+        upgrade.get_style_context().add_class("store-install")
+        upgrade.connect("clicked", self.on_upgrade)
+        side.pack_end(upgrade, False, False, 6)
+        update = Gtk.Button(label="Obnoviť zoznam balíkov")
+        update.get_style_context().add_class("store-secondary")
+        update.connect("clicked", self.on_update)
+        side.pack_end(update, False, False, 0)
+
+        main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        main.get_style_context().add_class("store-main")
+        root.pack_start(main, True, True, 0)
+
+        self.search = Gtk.SearchEntry()
+        self.search.set_placeholder_text("Hľadaj aplikácie")
+        self.search.get_style_context().add_class("store-search")
+        self.search.connect("search-changed", self.on_search)
+        main.pack_start(self.search, False, False, 0)
+
+        self.heading = Gtk.Label()
+        self.heading.set_xalign(0)
+        self.heading.get_style_context().add_class("store-heading")
+        main.pack_start(self.heading, False, False, 0)
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.list_box = Gtk.ListBox()
+        self.list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.list_box.get_style_context().add_class("store-list")
+        scroll.add(self.list_box)
+        main.pack_start(scroll, True, True, 0)
+
+        self.status = Gtk.Label(label="Pripravené")
+        self.status.set_xalign(0)
+        self.status.set_ellipsize(3)
+        self.status.get_style_context().add_class("store-muted")
+        main.pack_start(self.status, False, False, 0)
+
+        self.window.connect("key-press-event", self.on_key_press)
+        self.window.show_all()
+        self.render()
+
+    def refresh_installed(self):
+        def work():
+            found = {a["package"] for a in self.catalog if is_installed(a["package"])}
+            GLib.idle_add(self.set_installed, found)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def set_installed(self, found):
+        self.installed = found
+        self.render()
+
+    def matches(self, app):
+        if self.category == INSTALLED and app["package"] not in self.installed:
+            return False
+        if self.category not in (ALL, INSTALLED) and app["category"] != self.category:
+            return False
+        text = " ".join((app["name"], app["package"], app["description"])).lower()
+        return self.query in text
+
+    def render(self):
+        for child in self.list_box.get_children():
+            self.list_box.remove(child)
+        for name, button in self.category_buttons.items():
+            context = button.get_style_context()
+            if name == self.category:
+                context.add_class("active")
+            else:
+                context.remove_class("active")
+
+        apps = [a for a in self.catalog if self.matches(a)]
+        self.heading.set_text("%s · %d" % (self.category, len(apps)))
+        if not apps:
+            empty = Gtk.Label(label="Nenašli sa žiadne aplikácie.")
+            empty.get_style_context().add_class("store-muted")
+            empty.set_margin_top(40)
+            self.list_box.add(empty)
+        for app in apps:
+            self.list_box.add(self.create_row(app))
+        self.list_box.show_all()
+
+    def create_row(self, app):
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+        row.get_style_context().add_class("store-row")
+
+        icon = Gtk.Image.new_from_icon_name(app["icon"], Gtk.IconSize.DIALOG)
+        icon.set_pixel_size(48)
+        row.pack_start(icon, False, False, 0)
+
+        text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        title = Gtk.Label(label=app["name"])
+        title.set_xalign(0)
+        title.get_style_context().add_class("store-app-name")
+        description = Gtk.Label(label=app["description"])
+        description.set_xalign(0)
+        description.set_ellipsize(3)
+        description.get_style_context().add_class("store-muted")
+        text.pack_start(title, False, False, 0)
+        text.pack_start(description, False, False, 0)
+        row.pack_start(text, True, True, 0)
+
+        installed = app["package"] in self.installed
+        button = Gtk.Button(label="Odstrániť" if installed else "Inštalovať")
+        button.set_valign(Gtk.Align.CENTER)
+        button.set_size_request(110, -1)
+        button.get_style_context().add_class("store-remove" if installed else "store-install")
+        button.set_sensitive(not self.busy)
+        button.connect("clicked", self.on_action, app, "remove" if installed else "install")
+        row.pack_end(button, False, False, 0)
+        return row
+
+    def on_category(self, _button, name):
+        self.category = name
+        self.render()
+
+    def on_search(self, entry):
+        self.query = entry.get_text().strip().lower()
+        self.render()
+
+    def on_action(self, _button, app, action):
+        if action == "remove":
+            dialog = Gtk.MessageDialog(
+                transient_for=self.window,
+                flags=Gtk.DialogFlags.MODAL,
+                message_type=Gtk.MessageType.WARNING,
+                buttons=Gtk.ButtonsType.CANCEL,
+                text="Naozaj chcete odstrániť aplikáciu %s?" % app["name"],
+            )
+            dialog.add_button("Odstrániť", Gtk.ResponseType.ACCEPT)
+            dialog.format_secondary_text(
+                "Odstráni sa balík %s. Zmeny potvrdíte systémovým overením."
+                % app["package"]
+            )
+            response = dialog.run()
+            dialog.destroy()
+            if response != Gtk.ResponseType.ACCEPT:
+                return
+        verb = "Inštalujem" if action == "install" else "Odstraňujem"
+        self.run_helper([action, app["package"]], "%s %s…" % (verb, app["name"]))
+
+    def on_update(self, _button):
+        self.run_helper(["update"], "Obnovujem zoznam balíkov…")
+
+    def on_upgrade(self, _button):
+        dialog = Gtk.MessageDialog(
+            transient_for=self.window,
+            flags=Gtk.DialogFlags.MODAL,
+            message_type=Gtk.MessageType.WARNING,
+            buttons=Gtk.ButtonsType.CANCEL,
+            text="Nainštalovať dostupné aktualizácie systému?",
+        )
+        dialog.add_button("Aktualizovať", Gtk.ResponseType.ACCEPT)
+        dialog.format_secondary_text(
+            "Aktualizujú sa nainštalované balíky z nakonfigurovaných Debian repozitárov. "
+            "V live relácii sa zmeny po reštarte stratia."
+        )
+        response = dialog.run()
+        dialog.destroy()
+        if response == Gtk.ResponseType.ACCEPT:
+            self.run_helper(["upgrade"], "Inštalujem aktualizácie systému…")
+
+    def run_helper(self, args, message):
+        if self.busy:
+            return
+        self.busy = True
+        self.status.set_text(message)
+        self.render()
+
+        def work():
+            output = []
+            try:
+                process = subprocess.Popen(
+                    ["pkexec", HELPER] + args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                for line in process.stdout:
+                    line = line.strip()
+                    if line:
+                        output.append(line)
+                        del output[:-8]
+                        GLib.idle_add(self.status.set_text, "%s  %s" % (message, line))
+                code = process.wait()
+                detail = "\n".join(output)
+            except OSError as error:
+                code = 127
+                detail = str(error)
+            GLib.idle_add(self.finish, code, detail)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def finish(self, code, detail):
+        self.busy = False
+        if code == 0:
+            self.status.set_text("Hotovo")
+        elif code == 126:
+            self.status.set_text("Overenie bolo zrušené alebo zamietnuté.")
+        elif code == 127:
+            summary = detail or "príkaz pkexec alebo pomocník sa nenašiel"
+            self.status.set_text(
+                "Linsoft Store nemohol spustiť systémového pomocníka: %s" % summary
+            )
+        else:
+            summary = detail or "Systémový správca balíkov neuviedol podrobnosti."
+            self.status.set_text("Operácia zlyhala (kód %d): %s" % (code, summary))
+            self.status.set_tooltip_text(summary)
+        self.refresh_installed()
+
+    def on_key_press(self, _window, event):
+        if event.keyval == Gdk.KEY_Escape:
+            self.window.close()
+            return True
+        return False
+
+
+if __name__ == "__main__":
+    sys.exit(LinsoftStore().run(sys.argv))

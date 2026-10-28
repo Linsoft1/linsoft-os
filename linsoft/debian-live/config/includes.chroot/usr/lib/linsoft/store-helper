@@ -1,0 +1,47 @@
+#!/usr/bin/python3
+"""Privilegovaný pomocník Linsoft Store na správu aplikácií a aktualizácií."""
+
+import json
+import os
+import subprocess
+import sys
+
+CATALOG = "/usr/share/linsoft/store/catalog.json"
+
+
+def allowed_packages():
+    with open(CATALOG, encoding="utf-8") as handle:
+        return {item["package"] for item in json.load(handle)}
+
+
+def main():
+    if len(sys.argv) < 2:
+        return 2
+
+    action = sys.argv[1]
+    env = dict(os.environ, DEBIAN_FRONTEND="noninteractive", LANG="C")
+
+    if action == "update" and len(sys.argv) == 2:
+        command = ["apt-get", "update"]
+    elif action == "upgrade" and len(sys.argv) == 2:
+        result = subprocess.call(["apt-get", "update"], env=env)
+        if result != 0:
+            return result
+        command = ["apt-get", "upgrade", "-y"]
+    elif action in ("install", "remove") and len(sys.argv) == 3:
+        package = sys.argv[2]
+        if package not in allowed_packages():
+            print("Balík nie je v katalógu Linsoft Store.", file=sys.stderr)
+            return 3
+        if action == "install":
+            command = ["apt-get", "install", "-y", "--no-install-recommends", package]
+        else:
+            command = ["apt-get", "remove", "-y", package]
+    else:
+        return 2
+
+    return subprocess.call(command, env=env)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+
+plymouth_defaults=/usr/share/plymouth/plymouthd.defaults
+if [ -f "$plymouth_defaults" ]; then
+    if grep -q '^Theme=' "$plymouth_defaults"; then
+        sed -i 's/^Theme=.*/Theme=linsoft/' "$plymouth_defaults"
+    else
+        sed -i '/^\[Daemon\]/a Theme=linsoft' "$plymouth_defaults"
+    fi
+fi
+
+set -- /boot/initrd.img-*
+if [ ! -e "$1" ]; then
+    update-initramfs -c -k all
+fi
+
+plymouth-set-default-theme --rebuild-initrd linsoft
+
+if ! grep -q '^Theme=linsoft$' /etc/plymouth/plymouthd.conf; then
+    printf '%s\n' "Linsoft Plymouth theme was not selected." >&2
+    exit 1
+fi
+
+if [ -f "$plymouth_defaults" ] &&
+    ! grep -q '^Theme=linsoft$' "$plymouth_defaults"; then
+    printf '%s\n' "Linsoft Plymouth fallback theme was not selected." >&2
+    exit 1
+fi

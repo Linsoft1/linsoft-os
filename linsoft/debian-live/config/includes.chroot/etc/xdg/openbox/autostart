@@ -1,0 +1,36 @@
+#!/bin/sh
+
+nitrogen --set-zoom-fill --save /usr/share/backgrounds/linsoft/linsoft-blue.svg &
+picom --config /etc/xdg/picom.conf &
+tint2 -c /etc/xdg/tint2/linsoft.tint2rc &
+conky -c /etc/xdg/conky/linsoft.conf &
+nm-applet &
+if command -v setxkbmap >/dev/null 2>&1; then
+    if ! setxkbmap -layout sk,us -option grp:alt_shift_toggle; then
+        printf '%s\n' "Linsoft: failed to configure Slovak and US keyboard layouts." >&2
+    fi
+else
+    printf '%s\n' "Linsoft: setxkbmap was not found; keyboard layouts were not configured." >&2
+fi
+if command -v gxkb >/dev/null 2>&1; then
+    gxkb &
+else
+    printf '%s\n' "Linsoft: gxkb was not found; the keyboard layout indicator is unavailable." >&2
+fi
+xfce4-power-manager &
+xfce4-screensaver &
+notifyd=
+for candidate in /usr/lib/*/xfce4/notifyd/xfce4-notifyd; do
+    if [ -x "$candidate" ]; then
+        notifyd=$candidate
+        break
+    fi
+done
+if [ -n "$notifyd" ]; then
+    "$notifyd" &
+else
+    printf '%s\n' "Linsoft: xfce4-notifyd was not found for this architecture." >&2
+fi
+blueman-applet &
+volumeicon &
+lxpolkit &

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Linsoft Blue
+Type=X-GNOME-Metatheme
+Comment=Linsoft dark theme with blue accents
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Linsoft-Blue
+IconTheme=Linsoft-Icons
+CursorTheme=Adwaita
+ButtonLayout=menu:minimize,maximize,close

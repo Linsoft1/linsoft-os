@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Linsoft Desktop
+Comment=Linsoft Openbox desktop
+Exec=openbox-session
+TryExec=openbox-session
+Type=Application
+DesktopNames=Linsoft;Openbox

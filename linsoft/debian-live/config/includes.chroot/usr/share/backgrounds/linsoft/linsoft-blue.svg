@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#08111f"/>
+      <stop offset="0.55" stop-color="#101c31"/>
+      <stop offset="1" stop-color="#07101d"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#2588ff" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#2588ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#63c7ff"/>
+      <stop offset="1" stop-color="#3478ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#background)"/>
+  <ellipse cx="1450" cy="480" rx="690" ry="590" fill="url(#glow)"/>
+  <path d="M1160 160c185 87 330 237 395 433 57 172 36 359-57 514-104-25-206-62-303-111 80-107 106-247 65-375-38-117-125-207-237-247 33-75 78-147 137-214Z" fill="#318bff" opacity=".12"/>
+  <path d="M1008 297c107-34 220-30 326 13 135 54 237 166 279 305-86 34-178 52-273 51-26-93-96-167-187-197-76-25-160-17-229 24-2-65 25-133 84-196Z" fill="#55b6ff" opacity=".12"/>
+  <g transform="translate(1180 365)">
+    <rect x="0" y="0" width="470" height="360" rx="64" fill="#0b1423" opacity=".78"/>
+    <path d="M70 55h68v156h130v68H70z" fill="url(#mark)"/>
+    <path d="M373 68c-12-12-27-18-49-18h-12c-44 0-70 24-70 59 0 30 17 49 51 59l51 16c17 5 26 15 26 29 0 16-13 26-34 26h-32c-21 0-37-8-50-25l-48 48c23 28 54 42 97 42h38c67 0 108-34 108-88 0-41-26-69-74-85l-49-15c-10-3-14-7-14-13 0-7 5-11 16-11h12c16 0 28 5 40 17z" fill="#f3f8ff"/>
+  </g>
+  <text x="1200" y="820" fill="#f1f6ff" font-family="sans-serif" font-size="78" font-weight="600" letter-spacing="8">LINSOFT OS</text>
+  <text x="1205" y="880" fill="#91a9ca" font-family="sans-serif" font-size="24" letter-spacing="5">LINSOFT OS 1.1</text>
+  <path d="M1205 925h486" stroke="#398dff" stroke-opacity=".7" stroke-width="3"/>
+</svg>

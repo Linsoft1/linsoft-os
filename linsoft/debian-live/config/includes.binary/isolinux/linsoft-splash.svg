@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#101c30"/>
+      <stop offset="1" stop-color="#070d18"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#1d3453"/>
+      <stop offset="1" stop-color="#0b1423"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#67d5ff"/>
+      <stop offset="1" stop-color="#3274ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" fill="url(#background)"/>
+  <circle cx="540" cy="85" r="190" fill="#17365b" opacity=".16"/>
+  <circle cx="40" cy="490" r="210" fill="#174d7a" opacity=".1"/>
+  <rect x="58" y="66" width="112" height="112" rx="28" fill="url(#tile)"/>
+  <path d="M79 87h19v49h42v19H79z" fill="url(#blue)"/>
+  <path d="M145 91c-4-4-9-6-16-6h-3c-11 0-18 6-18 15 0 8 5 13 14 16l13 4c4 1 6 4 6 8 0 4-3 7-9 7h-8c-6 0-10-2-13-7l-13 7c6 8 14 12 25 12h10c18 0 28-9 28-23 0-11-6-18-19-22l-13-4c-2-1-4-2-4-4 0-2 2-3 4-3h3c4 0 8 1 10 4z" fill="#f2f7ff"/>
+  <text x="197" y="127" fill="#f2f7ff" font-family="sans-serif" font-size="38" font-weight="700" letter-spacing="2">LINSOFT</text>
+  <text x="201" y="154" fill="#91a9ca" font-family="sans-serif" font-size="12" letter-spacing="3">OPERATING SYSTEM</text>
+  <text x="320" y="398" fill="#f2f7ff" font-family="sans-serif" font-size="18" font-weight="600" letter-spacing="2.5" text-anchor="middle">LINUX. JEDNODUCHO. PO SVOJOM.</text>
+  <circle cx="58" cy="445" r="3" fill="#67d5ff" opacity=".7"/>
+  <circle cx="78" cy="445" r="3" fill="#67d5ff" opacity=".4"/>
+  <circle cx="98" cy="445" r="3" fill="#67d5ff" opacity=".2"/>
+</svg>

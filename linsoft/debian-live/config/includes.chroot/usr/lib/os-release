@@ -1,0 +1,7 @@
+PRETTY_NAME="Linsoft OS 1.5"
+NAME="Linsoft OS"
+VERSION_ID="1.5"
+VERSION="1.5"
+VERSION_CODENAME="trixie"
+ID=linsoft
+ID_LIKE=debian

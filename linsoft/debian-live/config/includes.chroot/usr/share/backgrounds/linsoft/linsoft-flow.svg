@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#080d1b"/>
+      <stop offset=".52" stop-color="#10162c"/>
+      <stop offset="1" stop-color="#090d1c"/>
+    </linearGradient>
+    <radialGradient id="aura">
+      <stop stop-color="#236b9e" stop-opacity=".34"/>
+      <stop offset=".55" stop-color="#24356e" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#10162c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#55e0d0"/>
+      <stop offset=".48" stop-color="#4b9aff"/>
+      <stop offset="1" stop-color="#b07aff"/>
+    </linearGradient>
+    <linearGradient id="soft-line" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#58d8d0" stop-opacity="0"/>
+      <stop offset=".45" stop-color="#58d8d0" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#9f7dff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#base)"/>
+  <ellipse cx="1380" cy="525" rx="700" ry="610" fill="url(#aura)"/>
+  <path d="M790 0h1000c-198 137-293 232-289 347 4 107 118 183 288 290 168 106 256 203 261 324 2 48-8 88-27 119H1290c112-94 170-184 167-270-4-101-99-175-256-273-183-115-294-228-294-387 0-54 11-104 33-150Z" fill="#408bd5" opacity=".055"/>
+  <path d="M960 0h760c-210 105-320 211-326 326-6 110 91 190 237 284 162 103 250 202 251 326 0 53-13 101-39 144h-359c82-75 123-148 122-220-2-85-74-151-213-239-192-122-310-242-305-404 2-78 26-150 72-217Z" fill="#7c67e9" opacity=".055"/>
+  <path d="M-70 720c255-185 436-271 600-265 194 7 267 183 426 190 132 6 239-101 364-242 119-134 233-234 389-230 108 3 204 53 291 142" fill="none" stroke="url(#soft-line)" stroke-width="2"/>
+  <path d="M-60 793c274-190 458-276 624-266 184 11 269 155 418 163 133 7 247-102 372-236 134-144 251-239 407-229 94 6 174 44 247 105" fill="none" stroke="#72c9eb" stroke-opacity=".12" stroke-width="1"/>
+  <g transform="translate(1270 430)">
+    <circle cx="180" cy="120" r="205" fill="#4d82ff" opacity=".12" filter="url(#glow)"/>
+    <circle cx="180" cy="120" r="164" fill="none" stroke="#a0b5dc" stroke-opacity=".1" stroke-width="1"/>
+    <circle cx="180" cy="120" r="126" fill="none" stroke="#a0b5dc" stroke-opacity=".15" stroke-width="1"/>
+    <path d="M52 118c42-89 113-132 204-126 71 5 120 41 148 108-43 96-116 143-218 139-65-3-111-36-134-99Z" fill="none" stroke="url(#ribbon)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M130 67v113h111" fill="none" stroke="#eaf6ff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity=".94"/>
+    <circle cx="335" cy="55" r="7" fill="#6de6dc"/>
+    <circle cx="45" cy="225" r="5" fill="#9c85ff"/>
+  </g>
+  <g fill="#a6c7e7">
+    <circle cx="1020" cy="225" r="2" opacity=".52"/>
+    <circle cx="1175" cy="170" r="2" opacity=".34"/>
+    <circle cx="1620" cy="290" r="2" opacity=".46"/>
+    <circle cx="1750" cy="760" r="2" opacity=".55"/>
+    <circle cx="1110" cy="850" r="2" opacity=".3"/>
+    <circle cx="1470" cy="910" r="2" opacity=".38"/>
+  </g>
+  <text x="180" y="505" fill="#f2f7ff" font-family="sans-serif" font-size="72" font-weight="600" letter-spacing="8">LINSOFT</text>
+  <text x="185" y="557" fill="#8da8c9" font-family="sans-serif" font-size="20" letter-spacing="5">PRIESTOR PRE TVOJU PRÁCU</text>
+  <path d="M185 592h208" stroke="url(#ribbon)" stroke-width="3" stroke-linecap="round"/>
+</svg>

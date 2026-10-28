@@ -1,0 +1,65 @@
+Window.SetBackgroundTopColor(0.04, 0.08, 0.15);
+Window.SetBackgroundBottomColor(0.04, 0.08, 0.15);
+
+logo_image = Image("linsoft-logo.png");
+logo_sprite = Sprite(logo_image);
+logo_sprite.SetPosition(
+  Window.GetWidth() / 2 - logo_image.GetWidth() / 2,
+  Window.GetHeight() / 2 - logo_image.GetHeight() / 2 - 42,
+  1
+);
+
+status_text = "SPÚŠŤAM SYSTÉM";
+if (Plymouth.GetMode() == "shutdown")
+  {
+    status_text = "VYPÍNAM SYSTÉM";
+  }
+if (Plymouth.GetMode() == "reboot")
+  {
+    status_text = "REŠTARTUJEM SYSTÉM";
+  }
+
+status_image = Image.Text(status_text, 0.62, 0.75, 0.9);
+status_sprite = Sprite(status_image);
+status_sprite.SetPosition(
+  Window.GetWidth() / 2 - status_image.GetWidth() / 2,
+  Window.GetHeight() / 2 + 34,
+  1
+);
+
+progress_track_image = Image("progress-track.png");
+progress_track_sprite = Sprite(progress_track_image);
+progress_track_x = Window.GetWidth() / 2 - progress_track_image.GetWidth() / 2;
+progress_track_y = Window.GetHeight() / 2 + 68;
+progress_track_sprite.SetPosition(progress_track_x, progress_track_y, 1);
+
+progress_fill_image = Image("progress-fill.png");
+progress_fill_sprite = Sprite();
+progress_fill_sprite.SetImage(
+  progress_fill_image.Scale(1, progress_fill_image.GetHeight())
+);
+progress_fill_sprite.SetPosition(progress_track_x, progress_track_y, 2);
+
+fun progress_callback (duration, progress)
+{
+  if (progress < 0)
+    {
+      progress = 0;
+    }
+  if (progress > 1)
+    {
+      progress = 1;
+    }
+
+  progress_width = Math.Int(progress_fill_image.GetWidth() * progress);
+  if (progress_width < 1)
+    {
+      progress_width = 1;
+    }
+
+  progress_fill_sprite.SetImage(
+    progress_fill_image.Scale(progress_width, progress_fill_image.GetHeight())
+  );
+}
+
+Plymouth.SetBootProgressFunction(progress_callback);

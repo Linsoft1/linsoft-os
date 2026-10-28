@@ -1,0 +1,600 @@
+#!/usr/bin/python3
+
+import subprocess
+import sys
+
+import gi
+
+gi.require_version("Gdk", "3.0")
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gdk, Gio, GLib, Gtk, Pango
+
+
+APP_ID = "org.linsoft.Hub"
+APP_CSS = "/usr/share/linsoft/linsoft-hub.css"
+PINNED_APPS = (
+    ("linsoft-store.desktop", "org.linsoft.Store", "Linsoft Store", None),
+    ("firefox-esr.desktop", "web-browser", "Internet", None),
+    ("pcmanfm.desktop", "system-file-manager", "Súbory", None),
+    ("lxterminal.desktop", "utilities-terminal", "Terminál", None),
+    (
+        "org.pulseaudio.pavucontrol.desktop",
+        "multimedia-volume-control",
+        "Zvuk",
+        "pavucontrol",
+    ),
+    ("lxappearance.desktop", "preferences-system", "Nastavenia", "lxappearance"),
+    (
+        "xfce-display-settings.desktop",
+        "preferences-desktop-display",
+        "Displej",
+        "xfce4-display-settings",
+    ),
+    ("arandr.desktop", "video-display", "Rozšírené zobrazenie", "arandr"),
+    (
+        "nm-connection-editor.desktop",
+        "network-wireless",
+        "Sieť",
+        "nm-connection-editor",
+    ),
+    (
+        "xfce4-power-manager-settings.desktop",
+        "battery",
+        "Napájanie",
+        "xfce4-power-manager-settings",
+    ),
+    ("blueman-manager.desktop", "bluetooth-active", "Bluetooth", "blueman-manager"),
+    (
+        "linsoft-hardware-info.desktop",
+        "utilities-system-monitor",
+        "Informácie o PC",
+        "lxterminal -e inxi -Fxxx",
+    ),
+)
+APP_CATEGORIES = (
+    ("Všetky aplikácie", ()),
+    ("Príslušenstvo", ("Utility",)),
+    ("Grafika", ("Graphics",)),
+    ("Internet", ("Network",)),
+    ("Multimédiá", ("AudioVideo",)),
+    ("Office", ("Office",)),
+    ("Systém a nastavenia", ("System", "Settings")),
+)
+MENU_WIDTH = 900
+MENU_HEIGHT = 640
+WINDOW_MARGIN = 16
+PANEL_SIDE_MARGIN_PERCENT = 3
+COMPACT_LAYOUT_WIDTH = 760
+
+
+class LinsoftHub(Gtk.Application):
+    def __init__(self):
+        super().__init__(application_id=APP_ID)
+        self.window = None
+        self.desktop_apps = {}
+        self.apps = []
+        self.visible_apps = []
+        self.app_buttons = []
+        self.category_tokens = ()
+        self.content = None
+        self.monitor_index = None
+        self.window_size = (MENU_WIDTH, MENU_HEIGHT)
+        self.refresh_applications()
+
+    def refresh_applications(self):
+        applications = []
+        self.desktop_apps = {}
+        for app in Gio.AppInfo.get_all():
+            desktop_id = app.get_id()
+            if desktop_id:
+                self.desktop_apps[desktop_id] = app
+            if app.should_show() and desktop_id != "linsoft-hub.desktop":
+                applications.append(app)
+        self.apps = sorted(
+            applications,
+            key=lambda app: (app.get_display_name() or "").casefold(),
+        )
+        self.visible_apps = self.apps
+
+    def do_activate(self):
+        if self.window is None:
+            self.create_window()
+        if self.window.get_visible():
+            self.window.hide()
+        else:
+            self.refresh_applications()
+            self.category_filter.set_active(0)
+            self.search_entry.set_text("")
+            self.on_search_changed(self.search_entry)
+            self.render_pinned()
+            self.configure_for_monitor()
+            self.window.show_all()
+            self.position_window()
+            self.search_entry.grab_focus()
+            self.window.present()
+
+    def get_monitor(self):
+        screen = self.window.get_screen()
+        display = Gdk.Display.get_default()
+        if display is None:
+            return max(screen.get_primary_monitor(), 0)
+        seat = display.get_default_seat()
+        pointer = seat.get_pointer() if seat is not None else None
+        if pointer is None:
+            return max(screen.get_primary_monitor(), 0)
+        _pointer_screen, pointer_x, pointer_y = pointer.get_position()
+        monitor = screen.get_monitor_at_point(pointer_x, pointer_y)
+        if monitor < 0:
+            monitor = screen.get_primary_monitor()
+        return max(monitor, 0)
+
+    def configure_for_monitor(self):
+        screen = self.window.get_screen()
+        monitor = self.get_monitor()
+        geometry = screen.get_monitor_workarea(monitor)
+        width = max(1, min(MENU_WIDTH, geometry.width - WINDOW_MARGIN * 2))
+        height = max(1, min(MENU_HEIGHT, geometry.height - WINDOW_MARGIN * 2))
+        self.monitor_index = monitor
+        self.window_size = (width, height)
+        self.content.set_orientation(
+            Gtk.Orientation.VERTICAL
+            if width < COMPACT_LAYOUT_WIDTH
+            else Gtk.Orientation.HORIZONTAL
+        )
+        self.window.resize(width, height)
+
+    def position_window(self):
+        screen = self.window.get_screen()
+        geometry = screen.get_monitor_workarea(self.monitor_index)
+        monitor_geometry = screen.get_monitor_geometry(self.monitor_index)
+        _width, height = self.window_size
+        x = geometry.x + max(
+            WINDOW_MARGIN, monitor_geometry.width * PANEL_SIDE_MARGIN_PERCENT // 100
+        )
+        x = max(
+            geometry.x + WINDOW_MARGIN,
+            min(x, geometry.x + geometry.width - self.window_size[0] - WINDOW_MARGIN),
+        )
+        y = geometry.y + geometry.height - height
+        self.window.move(x, y)
+
+    def create_window(self):
+        self.window = Gtk.ApplicationWindow(application=self)
+        self.window.set_title("Linsoft")
+        self.window.set_default_size(MENU_WIDTH, MENU_HEIGHT)
+        self.window.set_size_request(-1, -1)
+        self.window.set_decorated(False)
+        self.window.set_resizable(False)
+        self.window.set_keep_above(True)
+        self.window.set_skip_taskbar_hint(True)
+        self.window.set_skip_pager_hint(True)
+        self.window.set_type_hint(Gdk.WindowTypeHint.UTILITY)
+        self.window.get_style_context().add_class("hub-window")
+        self.window.connect("key-press-event", self.on_key_press)
+        self.window.connect("delete-event", self.on_delete)
+
+        shell = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        shell.get_style_context().add_class("hub-shell")
+        self.window.add(shell)
+
+        search_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        search_box.get_style_context().add_class("hub-search-bar")
+        shell.pack_start(search_box, False, False, 0)
+        search_icon = Gtk.Image.new_from_icon_name(
+            "system-search-symbolic", Gtk.IconSize.BUTTON
+        )
+        search_box.pack_start(search_icon, False, False, 0)
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Hľadať aplikácie, nastavenia...")
+        self.search_entry.set_no_show_all(False)
+        self.search_entry.get_style_context().add_class("hub-search")
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        self.search_entry.connect("key-press-event", self.on_search_key_press)
+        search_box.pack_start(self.search_entry, True, True, 0)
+
+        body = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        body.get_style_context().add_class("hub-body")
+        shell.pack_start(body, True, True, 0)
+
+        nav = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
+        nav.get_style_context().add_class("hub-nav")
+        body.pack_start(nav, False, False, 0)
+
+        brand = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=9)
+        brand.get_style_context().add_class("hub-nav-brand")
+        nav.pack_start(brand, False, False, 0)
+        nav_logo = Gtk.Image.new_from_icon_name(
+            "org.linsoft.OS", Gtk.IconSize.BUTTON
+        )
+        nav_logo.set_pixel_size(30)
+        brand.pack_start(nav_logo, False, False, 0)
+        brand_name = Gtk.Label(label="LINSOFT")
+        brand_name.get_style_context().add_class("hub-brand-name")
+        brand.pack_start(brand_name, False, False, 0)
+
+        nav_separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        nav_separator.get_style_context().add_class("hub-nav-separator")
+        nav.pack_start(nav_separator, False, False, 2)
+
+        nav_spacer = Gtk.Box()
+        nav.pack_start(nav_spacer, True, True, 0)
+
+        self.add_nav_button(
+            nav, "Linsoft Store", "org.linsoft.Store", "linsoft-store.desktop"
+        )
+        self.add_nav_button(
+            nav,
+            "Nastavenia",
+            "preferences-system",
+            "xfce4-settings-manager.desktop",
+            "xfce4-settings-manager",
+        )
+        self.add_nav_button(
+            nav,
+            "Správa zvuku",
+            "multimedia-volume-control",
+            "org.pulseaudio.pavucontrol.desktop",
+            "pavucontrol",
+        )
+        self.add_nav_button(
+            nav,
+            "Zobrazenie",
+            "preferences-desktop-display",
+            "xfce-display-settings.desktop",
+            "xfce4-display-settings",
+        )
+        self.add_nav_button(
+            nav,
+            "Sieť",
+            "network-wireless",
+            "nm-connection-editor.desktop",
+            "nm-connection-editor",
+        )
+        self.add_nav_button(
+            nav,
+            "Vzhľad",
+            "preferences-desktop-theme",
+            "lxappearance.desktop",
+            "lxappearance",
+        )
+
+        lock_button = self.create_nav_button(
+            "system-lock-screen", "Zamknúť obrazovku"
+        )
+        lock_button.set_tooltip_text("Zamknúť obrazovku (Super+L)")
+        lock_button.set_relief(Gtk.ReliefStyle.NONE)
+        lock_button.connect("clicked", self.lock_screen)
+        nav.pack_start(lock_button, False, False, 0)
+
+        nav_spacer_bottom = Gtk.Box()
+        nav.pack_start(nav_spacer_bottom, True, True, 0)
+
+        power_button = self.create_nav_button("system-shutdown", "Vypnúť")
+        power_button.set_tooltip_text("Vypnúť alebo odhlásiť")
+        power_button.set_relief(Gtk.ReliefStyle.NONE)
+        power_button.connect("clicked", self.open_logout_dialog)
+        nav.pack_start(power_button, False, False, 0)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=22)
+        content.get_style_context().add_class("hub-content")
+        self.content = content
+        body.pack_start(content, True, True, 0)
+
+        all_apps_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.pack_start(all_apps_panel, True, True, 0)
+
+        all_apps_heading = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        all_apps_panel.pack_start(all_apps_heading, False, False, 0)
+        self.app_section_title = Gtk.Label(label="Všetky aplikácie")
+        self.app_section_title.set_xalign(0)
+        self.app_section_title.get_style_context().add_class("hub-section-title")
+        all_apps_heading.pack_start(self.app_section_title, True, True, 0)
+        self.app_count = Gtk.Label()
+        self.app_count.get_style_context().add_class("hub-count")
+        self.category_filter = Gtk.ComboBoxText()
+        self.category_filter.get_style_context().add_class("hub-category-filter")
+        for label, _tokens in APP_CATEGORIES:
+            self.category_filter.append_text(label)
+        self.category_filter.set_active(0)
+        self.category_filter.connect("changed", self.on_category_changed)
+        all_apps_heading.pack_end(self.app_count, False, False, 0)
+        all_apps_heading.pack_end(self.category_filter, False, False, 0)
+
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroller.set_overlay_scrolling(True)
+        scroller.get_style_context().add_class("hub-app-scroll")
+        all_apps_panel.pack_start(scroller, True, True, 0)
+        self.app_list = Gtk.ListBox()
+        self.app_list.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.app_list.get_style_context().add_class("hub-app-list")
+        scroller.add(self.app_list)
+
+        pinned_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        content.pack_start(pinned_panel, True, True, 0)
+
+        pinned_heading = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        pinned_panel.pack_start(pinned_heading, False, False, 0)
+        pinned_title = Gtk.Label(label="Pripnuté aplikácie")
+        pinned_title.set_xalign(0)
+        pinned_title.get_style_context().add_class("hub-section-title")
+        pinned_heading.pack_start(pinned_title, True, True, 0)
+
+        pinned_scroller = Gtk.ScrolledWindow()
+        pinned_scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        pinned_scroller.set_overlay_scrolling(True)
+        pinned_scroller.get_style_context().add_class("hub-app-scroll")
+        pinned_panel.pack_start(pinned_scroller, True, True, 0)
+        self.pinned_grid = Gtk.Grid()
+        self.pinned_grid.set_column_spacing(10)
+        self.pinned_grid.set_row_spacing(10)
+        self.pinned_grid.set_column_homogeneous(True)
+        pinned_scroller.add(self.pinned_grid)
+
+        footer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        footer.get_style_context().add_class("hub-footer")
+        shell.pack_end(footer, False, False, 0)
+
+        user_icon = Gtk.Image.new_from_icon_name(
+            "org.linsoft.OS", Gtk.IconSize.BUTTON
+        )
+        user_icon.set_pixel_size(26)
+        user_icon.set_size_request(28, 28)
+        footer.pack_start(user_icon, False, False, 0)
+        footer_name = Gtk.Label(label="Linsoft")
+        footer_name.set_xalign(0)
+        footer_name.get_style_context().add_class("hub-user-name")
+        footer.pack_start(footer_name, False, False, 0)
+        footer_spacer = Gtk.Box()
+        footer.pack_start(footer_spacer, True, True, 0)
+        footer_hint = Gtk.Label(label="Esc zavrie ponuku")
+        footer_hint.get_style_context().add_class("hub-footer-hint")
+        footer.pack_end(footer_hint, False, False, 0)
+
+        self.render_applications()
+        self.render_pinned()
+        self.load_css()
+        self.window.show_all()
+        self.window.hide()
+
+    def add_nav_button(self, parent, tooltip, icon_name, desktop_id, command=None):
+        button = self.create_nav_button(icon_name, tooltip)
+        button.set_tooltip_text(tooltip)
+        button.connect("clicked", self.launch_desktop_entry, desktop_id, command, tooltip)
+        parent.pack_start(button, False, False, 0)
+
+    @staticmethod
+    def create_nav_button(icon_name, label_text):
+        button = Gtk.Button()
+        button.set_relief(Gtk.ReliefStyle.NONE)
+        button.get_style_context().add_class("hub-nav-button")
+        content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        image = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.BUTTON)
+        image.set_pixel_size(19)
+        content.pack_start(image, False, False, 0)
+        label = Gtk.Label(label=label_text)
+        label.set_xalign(0)
+        label.set_ellipsize(Pango.EllipsizeMode.END)
+        label.get_style_context().add_class("hub-nav-label")
+        content.pack_start(label, True, True, 0)
+        button.add(content)
+        return button
+
+    def load_css(self):
+        provider = Gtk.CssProvider()
+        try:
+            provider.load_from_path(APP_CSS)
+        except GLib.Error as error:
+            self.show_launch_error("Linsoft Hub", str(error))
+            return
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+
+    def on_search_changed(self, entry):
+        query = entry.get_text().strip().casefold()
+        self.visible_apps = [
+            app for app in self.apps
+            if (not query or self.matches_query(app, query))
+            and self.matches_category(app)
+        ]
+        self.render_applications()
+
+    def on_category_changed(self, combo):
+        selected = combo.get_active()
+        self.category_tokens = APP_CATEGORIES[selected][1] if selected >= 0 else ()
+        self.on_search_changed(self.search_entry)
+
+    def matches_category(self, app):
+        if not self.category_tokens:
+            return True
+        categories = (app.get_categories() or "").split(";")
+        return any(token in categories for token in self.category_tokens)
+
+    @staticmethod
+    def matches_query(app, query):
+        searchable = (
+            app.get_display_name(),
+            app.get_description(),
+            app.get_executable(),
+            app.get_categories(),
+        )
+        return any(value and query in value.casefold() for value in searchable)
+
+    def render_applications(self):
+        for child in self.app_list.get_children():
+            self.app_list.remove(child)
+        self.app_buttons = []
+
+        for app in self.visible_apps:
+            row = Gtk.Button()
+            row.set_relief(Gtk.ReliefStyle.NONE)
+            row.set_tooltip_text(app.get_description() or app.get_display_name())
+            row.get_style_context().add_class("hub-app-row")
+            row.connect("clicked", self.launch_application, app)
+            row.connect("key-press-event", self.on_app_key_press)
+            self.app_buttons.append(row)
+
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            icon = app.get_icon()
+            if icon is not None:
+                image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+            else:
+                image = Gtk.Image.new_from_icon_name(
+                    "application-x-executable", Gtk.IconSize.BUTTON
+                )
+            image.set_pixel_size(26)
+            box.pack_start(image, False, False, 0)
+
+            label = Gtk.Label(label=app.get_display_name() or "Aplikácia")
+            label.set_xalign(0)
+            label.set_ellipsize(Pango.EllipsizeMode.END)
+            label.get_style_context().add_class("hub-app-name")
+            box.pack_start(label, True, True, 0)
+            row.add(box)
+            self.app_list.add(row)
+
+        count = len(self.visible_apps)
+        self.app_count.set_text(str(count))
+        if count == 0:
+            empty = Gtk.Label(label="Nenašli sa žiadne aplikácie.")
+            empty.get_style_context().add_class("hub-empty")
+            self.app_list.add(empty)
+        self.app_list.show_all()
+
+    def render_pinned(self):
+        for child in self.pinned_grid.get_children():
+            self.pinned_grid.remove(child)
+
+        card_index = 0
+        for desktop_id, fallback_icon, fallback_name, command in (
+            PINNED_APPS
+        ):
+            app = self.desktop_apps.get(desktop_id)
+            if app is None and command:
+                app = Gio.AppInfo.create_from_commandline(
+                    command, fallback_name, Gio.AppInfoCreateFlags.NONE
+                )
+            if app is None:
+                continue
+            button = Gtk.Button()
+            button.set_tooltip_text(app.get_description() or app.get_display_name())
+            button.get_style_context().add_class("hub-pinned-card")
+            button.connect("clicked", self.launch_application, app)
+
+            card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            card.set_halign(Gtk.Align.CENTER)
+            card.set_valign(Gtk.Align.CENTER)
+            icon = app.get_icon()
+            if icon is not None:
+                image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.DIALOG)
+            else:
+                image = Gtk.Image.new_from_icon_name(
+                    fallback_icon, Gtk.IconSize.DIALOG
+                )
+            image.set_pixel_size(42)
+            card.pack_start(image, False, False, 0)
+
+            label = Gtk.Label(label=app.get_display_name() or fallback_name)
+            label.set_max_width_chars(18)
+            label.set_ellipsize(Pango.EllipsizeMode.END)
+            label.get_style_context().add_class("hub-app-name")
+            card.pack_start(label, False, False, 0)
+            button.add(card)
+            self.pinned_grid.attach(button, card_index % 3, card_index // 3, 1, 1)
+            card_index += 1
+
+        if card_index == 0:
+            empty = Gtk.Label(label="Nie sú dostupné pripnuté aplikácie.")
+            empty.get_style_context().add_class("hub-empty")
+            self.pinned_grid.attach(empty, 0, 0, 3, 1)
+
+        self.pinned_grid.show_all()
+
+    def launch_application(self, _button, app):
+        self.launch_app_info(app)
+
+    def launch_desktop_entry(self, _button, desktop_id, command=None, fallback_name=None):
+        app = self.desktop_apps.get(desktop_id)
+        if app is None and command:
+            app = Gio.AppInfo.create_from_commandline(
+                command, fallback_name or desktop_id, Gio.AppInfoCreateFlags.NONE
+            )
+        if app is None:
+            self.show_launch_error(desktop_id, "Aplikácia sa v tomto systéme nenašla.")
+            return
+        self.launch_app_info(app)
+
+    def open_logout_dialog(self, _button):
+        try:
+            subprocess.Popen(["lxsession-logout"])
+        except OSError as error:
+            self.show_launch_error("Vypnutie systému", str(error))
+
+    def lock_screen(self, _button):
+        try:
+            subprocess.Popen(["xfce4-screensaver-command", "--lock"])
+        except OSError as error:
+            self.show_launch_error("Zamknutie obrazovky", str(error))
+        else:
+            self.window.hide()
+
+    def launch_app_info(self, app):
+        try:
+            app.launch([], None)
+        except GLib.Error as error:
+            self.show_launch_error(app.get_display_name(), str(error))
+            return
+        self.window.hide()
+
+    def show_launch_error(self, title, message):
+        dialog = Gtk.MessageDialog(
+            transient_for=self.window,
+            flags=Gtk.DialogFlags.MODAL,
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.CLOSE,
+            text=f"Aplikáciu „{title}“ sa nepodarilo spustiť.",
+        )
+        dialog.format_secondary_text(message)
+        dialog.run()
+        dialog.destroy()
+
+    def on_search_key_press(self, _entry, event):
+        if event.keyval == Gdk.KEY_Down and self.app_buttons:
+            self.app_buttons[0].grab_focus()
+            return True
+        if event.keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter) and self.visible_apps:
+            self.launch_app_info(self.visible_apps[0])
+            return True
+        if event.keyval == Gdk.KEY_Escape:
+            self.window.hide()
+            return True
+        return False
+
+    def on_app_key_press(self, button, event):
+        index = self.app_buttons.index(button)
+        if event.keyval == Gdk.KEY_Up:
+            if index == 0:
+                self.search_entry.grab_focus()
+            else:
+                self.app_buttons[index - 1].grab_focus()
+            return True
+        if event.keyval == Gdk.KEY_Down and index + 1 < len(self.app_buttons):
+            self.app_buttons[index + 1].grab_focus()
+            return True
+        return False
+
+    def on_key_press(self, _window, event):
+        if event.keyval == Gdk.KEY_Escape:
+            self.window.hide()
+            return True
+        return False
+
+    def on_delete(self, _window, _event):
+        self.window.hide()
+        return True
+
+if __name__ == "__main__":
+    sys.exit(LinsoftHub().run(sys.argv))

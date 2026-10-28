@@ -3,17 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Linsoft OS – Váš priestor. Váš systém.</title>
-<meta name="description" content="Linsoft OS – vlastný Linux postavený od základu (Linux From Scratch) s originálnym desktopom. Stiahnite si Live ISO a vyskúšajte ho bez inštalácie.">
+<title>Linsoft OS 1.5 – Váš priestor. Váš systém.</title>
+<meta name="description" content="Linsoft OS 1.5: slovenský live systém na Debiane 13 s Openboxom, panelom Tint2, Linsoft Hub a Linsoft Store.">
 <meta name="theme-color" content="#0b1426">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Linsoft OS – Váš priestor. Váš systém.">
-<meta property="og:description" content="Vlastný operačný systém s desktopom napísaným v C. Vyskúšajte Live ISO alebo ho nainštalujte.">
+<meta property="og:title" content="Linsoft OS 1.5">
+<meta property="og:description" content="Nové live ISO s opraveným Store, prepínaním klávesnice a logom pri štarte aj vypnutí.">
 <meta property="og:url" content="https://linsoft1.github.io/linsoft-os/">
-<meta property="og:image" content="https://linsoft1.github.io/linsoft-os/img/desktop.png">
-<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:card" content="summary">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=1.4.0">
+<link rel="stylesheet" href="style.css?v=1.5.0">
 </head>
 <body>
 <a class="skip-link" href="#obsah">Preskočiť na obsah</a>
@@ -26,209 +25,99 @@
     </div>
   </nav>
   <div class="hero-text">
-    <h1>Linsoft OS</h1>
-    <p class="version">Verzia 1.4 · vydané 26. 10. 2026</p>
+    <h1>Linsoft OS 1.5</h1>
+    <p class="version">Verzia 1.5 · vydané 28. 10. 2026</p>
     <p class="tag">Váš priestor. Váš systém.</p>
-    <p>Vlastný operačný systém postavený od základu na Linux From Scratch&nbsp;12.4 – s originálnou pracovnou plochou, správcom súborov a panelom napísanými v C.</p>
-    <a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso">⬇ Stiahnuť Live ISO</a>
+    <p>Slovenský live systém postavený na Debiane 13 s vlastným jadrom, pracovnou plochou Openbox, panelom Tint2 a ponukou Linsoft Hub.</p>
+    <a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso">⬇ Stiahnuť Live ISO 1.5</a>
     <a class="btn ghost" href="#navod">Ako začať</a>
-    <p class="small">x86-64 · BIOS aj UEFI · Wi-Fi · 1,81 GB (1,68 GiB)</p>
+    <p class="small">x86-64 · BIOS aj UEFI · Secure Boot musí byť vypnutý</p>
   </div>
-  <img class="shot" src="img/desktop.png" alt="Ukážka pracovnej plochy Linsoft OS">
 </header>
-
 <main id="obsah">
 <section id="funkcie">
   <h2>Funkcie</h2>
   <div class="grid">
-    <div><h3>Live režim</h3><p>Spustite systém priamo z USB alebo DVD. Nič sa nezapisuje na disk – zmeny sú iba v pamäti.</p></div>
-    <div><h3>Inštalátor</h3><p>Nainštalujete Linsoft OS na celý disk alebo vedľa Windows, s heslom alebo s automatickým prihlásením. Podporuje BIOS aj UEFI vrátane Secure Boot (pozri <a href="#podpora">podporované počítače</a>).</p></div>
-    <div><h3>Plocha XFCE aj vlastná plocha</h3><p>Predvolene osvedčené prostredie XFCE s panelom Linsoft. Na výber aj originálna plocha Linsoft Native napísaná v C – správca okien, panel, Štart s vyhľadávaním a správca súborov s kartami.</p></div>
-    <div><h3>Skutočný hardvér</h3><p>Jadro 6.18 LTS s ovládačmi Wi-Fi (Intel, Realtek, MediaTek, Atheros, Broadcom), grafiky AMD, NVIDIA a Intel, touchpadov a zvuku notebookov, vrátane firmvéru.</p></div>
-    <div><h3>Wi-Fi a diagnostika</h3><p>Pripojenie na Wi-Fi s heslom (WPA2/WPA3) jedným klikom a diagnostika hardvéru, ktorá ukáže chýbajúce ovládače a firmvér.</p></div>
-    <div><h3>Aplikácie</h3><p>Firefox, LibreOffice Writer a Calc, terminál, nastavenia a inštalácia dôveryhodných .deb balíkov.</p></div>
+    <div><h3>Live režim</h3><p>Vyskúšajte systém z USB alebo vo virtuálnom stroji. Zmeny live relácie sa po reštarte stratia.</p></div>
+    <div><h3>Linsoft Hub</h3><p>Ponuka Štart s vyhľadávaním a kategóriami aplikácií, zarovnaná s panelom. Otvoríte ju cez Super + Medzerník.</p></div>
+    <div><h3>Panel a klávesnica</h3><p>Zaoblený panel Tint2 s časom, zvukom a indikátorom rozloženia SK/US. Prepínanie cez Alt + Shift; názvy pracovných plôch sú skryté.</p></div>
+    <div><h3>Linsoft Store</h3><p>Katalóg aplikácií z Debianu, inštalácia, odstránenie a aktualizácie cez systémové overenie. Opravené spúšťanie aplikácie aj pomocníka.</p></div>
+    <div><h3>Logo Linsoft</h3><p>Vlastná tapeta a prihlasovacia obrazovka. Plymouth pri štarte, vypnutí a reštarte zobrazuje logo so zodpovedajúcim textom.</p></div>
+    <div><h3>Nastavenia</h3><p>Sieť cez NetworkManager, zvuk, obrazovky, Bluetooth a informácie o PC. Dostupnosť zariadení treba overiť na konkrétnom počítači.</p></div>
   </div>
 </section>
-
-<section id="autor">
-  <h2>Autor</h2>
-  <div class="author">
-    <span class="logo big">L</span>
-    <div>
-      <h3>Martin Pastorek</h3>
-      <p>Autor a vývojár Linsoft OS. Naprogramoval v jazyku <b>C</b> vlastnú pracovnú plochu Linsoft Native – správcu okien, panel, Štart s vyhľadávaním a správcu súborov (C, Xlib, Xft) – a upravil jadro <b>Linsoft Kernel</b> (Linux 6.18 LTS) pre Linsoft OS: podpora Wi-Fi, grafiky AMD/NVIDIA/Intel, touchpadov a zvuku notebookov, sieťových kariet, Live režimu z USB/DVD, NVMe diskov a SD kariet.</p>
-    </div>
-  </div>
-</section>
-
-<section class="gallery">
-  <figure><img src="img/boot-menu.png" alt="Výber Live režimu, inštalácie a diagnostiky pri štarte" loading="lazy"><figcaption>Bootovacie menu ISO</figcaption></figure>
-  <figure><img src="img/start.png" alt="Ponuka Štart s vyhľadávaním aplikácií" loading="lazy"><figcaption>Štart s vyhľadávaním</figcaption></figure>
-  <figure><img src="img/files.png" alt="Správca súborov Linsoft Súbory" loading="lazy"><figcaption>Linsoft Súbory</figcaption></figure>
-</section>
-
 <section id="verzia">
   <h2>Verzia</h2>
   <div class="table-wrap">
-    <table class="ver">
-      <tbody>
-        <tr><th scope="row">Linsoft OS</th><td>1.4 (Live + inštalátor)</td></tr>
-        <tr><th scope="row">Dátum vydania</th><td>26. 10. 2026</td></tr>
-        <tr><th scope="row">Jadro</th><td>Linsoft Kernel 6.18.58 LTS (<code>6.18.58-linsoft-kernel</code>)</td></tr>
-        <tr><th scope="row">Základ systému</th><td>Linux From Scratch 12.4</td></tr>
-        <tr><th scope="row">Firmvér</th><td>Debian non-free-firmware (Wi-Fi, grafika, zvuk, Bluetooth)</td></tr>
-        <tr><th scope="row">Aplikačné prostredie</th><td>Debian 13</td></tr>
-        <tr><th scope="row">Pracovná plocha</th><td>XFCE 4.20 (predvolená) · Linsoft Native (C, Xlib, Xft) na výber</td></tr>
-        <tr><th scope="row">Architektúra</th><td>x86-64 · BIOS aj UEFI · Secure Boot</td></tr>
-        <tr><th scope="row">ISO súbor</th><td>Linsoft-OS-Live.iso · 1,81 GB (1,68 GiB)</td></tr>
-      </tbody>
-    </table>
+    <table class="ver"><tbody>
+      <tr><th scope="row">Linsoft OS</th><td>1.5 · 28. 10. 2026</td></tr>
+      <tr><th scope="row">Základ systému</th><td>Debian 13 (trixie)</td></tr>
+      <tr><th scope="row">Jadro</th><td>Linux 6.12.113 · <code>6.12.113-linsoft-amd64</code></td></tr>
+      <tr><th scope="row">Pracovná plocha</th><td>Openbox · Tint2 · Linsoft Hub</td></tr>
+      <tr><th scope="row">Architektúra</th><td>x86-64 · bootovacie položky BIOS a UEFI</td></tr>
+      <tr><th scope="row">Secure Boot</th><td>Vypnúť; vlastné jadro tejto zostavy nie je podpísané</td></tr>
+      <tr><th scope="row">ISO súbor</th><td>Linsoft-OS-Live.iso · <span data-iso-size>2,07 GB (1,93 GiB)</span></td></tr>
+    </tbody></table>
   </div>
 </section>
-
 <section id="novinky">
-  <h2>Čo prináša verzia 1.4</h2>
+  <h2>Čo prináša verzia 1.5</h2>
   <div class="release-note">
-    <p class="version">26. 10. 2026 · plocha XFCE</p>
+    <p class="version">28. 10. 2026 · aktualizovaná Debian live zostava</p>
     <ul>
-      <li><b>XFCE ako predvolená plocha</b> – panel dole s ponukou Linsoft, prehliadačom, súbormi, terminálom, oknami, hlasitosťou, hodinami a tlačidlom vypnutia.</li>
-      <li>Tapeta Linsoft, tmavý vzhľad a čistá plocha bez ikon diskov.</li>
-      <li><b>Linsoft Native zostáva</b> – v okne <b>Zmeniť pracovné prostredie</b> si vyberiete XFCE alebo Linsoft Native pre ďalšie prihlásenie.</li>
-      <li>Nové okno <b>Vypnúť alebo odhlásiť</b>: zamknúť, odhlásiť, reštartovať, vypnúť.</li>
+      <li><b>Opravený Linsoft Store:</b> linuxové konce riadkov v spúšťacom skripte aj privilegovanom pomocníkovi.</li>
+      <li><b>Vypínacia obrazovka:</b> logo Linsoft a text VYPÍNAM SYSTÉM; pri reštarte REŠTARTUJEM SYSTÉM.</li>
+      <li>Kompaktnejší panel, zarovnaná ponuka Štart a skryté názvy pracovných plôch.</li>
+      <li>Indikátor klávesnice SK/US a jednotná tapeta a logo.</li>
     </ul>
-  </div>
-  <div class="release-note">
-    <p class="version">Verzia 1.3 · 26. 10. 2026 · aktualizácie jadra</p>
-    <ul>
-      <li><b>Aktualizácia jadra priamo v systéme</b> – okno Aktualizácie stiahne novšie jadro Linsoft Kernel z GitHubu a nainštaluje ho bez nového ISO.</li>
-      <li>Balík jadra je podpísaný kľúčom Linsoft; podvrhnutý alebo poškodený balík sa odmietne skôr, než sa čokoľvek zmení.</li>
-      <li>Predchádzajúce jadro zostáva ako záloha – v ponuke GRUB položka <b>Linsoft OS - predchadzajuce jadro</b>.</li>
-      <li>Upozornenie na nové jadro raz denne. Live režim jadro nemení. Systémy 1.0–1.2 treba raz preinštalovať z ISO 1.3.</li>
-    </ul>
-  </div>
-  <div class="release-note">
-    <p class="version">Verzia 1.2 · 26. 10. 2026 · skutočný hardvér</p>
-    <ul>
-      <li>Nové jadro <b>Linsoft Kernel 6.18 LTS</b> s dlhodobou podporou a ovládačmi pre súčasné notebooky a počítače.</li>
-      <li>Wi-Fi s heslom: zoznam sietí, WPA2/WPA3, skryté siete, automatické pripojenie po reštarte a ukazovateľ WIFI na paneli.</li>
-      <li>Grafika AMD, NVIDIA a Intel s hardvérovou akceleráciou, touchpady I2C, zvuk notebookov Intel/AMD a firmvér zariadení.</li>
-      <li>Diagnostika hardvéru – správu možno uložiť a priložiť k <a href="https://github.com/Linsoft1/linsoft-os/issues">nahláseniu problému</a>.</li>
-      <li>Inštalácia vedľa Windows (dual boot) a voliteľné heslo používateľa so zamknutou obrazovkou.</li>
-      <li>Upozornenie na novú verziu Linsoft OS a automatická kontrola kódu na GitHube. Zoznam zmien: <a href="https://github.com/Linsoft1/linsoft-os/blob/main/CHANGELOG.md">CHANGELOG</a>.</li>
-    </ul>
-  </div>
-  <div class="release-note">
-    <p class="version">Verzia 1.1 · 26. 10. 2026</p>
-    <ul>
-      <li>Podpora Secure Boot: zavádzač podpísaný Microsoftom (shim), podpísaný GRUB aj jadro. Už netreba vypínať Secure Boot – stačí raz zaregistrovať kľúč Linsoft.</li>
-      <li>Spoľahlivejší štart z USB na rôznych počítačoch; USB vytvorené v Rufuse funguje v režime DD aj ISO.</li>
-      <li>Nainštalovaný systém používa rovnaký podpísaný zavádzač.</li>
-    </ul>
-  </div>
-  <div class="release-note">
-    <p class="version">Verzia 1.0 · 26. 10. 2026 · prvé vydanie</p>
-    <ul>
-      <li>Live systém, ktorý možno spustiť z USB bez inštalácie.</li>
-      <li>Inštalátor na disk pre počítače s BIOS aj UEFI.</li>
-      <li>Vlastná pracovná plocha Linsoft Native a upravené jadro Linsoft Kernel 6.16.1.</li>
-    </ul>
-    <a href="https://github.com/Linsoft1/linsoft-os/releases">Zobraziť vydania na GitHube</a>
+    <p>Táto verzia používa Debian/Openbox, nie XFCE/LFS z vydania 1.4. Nie je priamou aktualizáciou starších inštalácií; najprv ju vyskúšajte v live režime. <a href="https://github.com/Linsoft1/linsoft-os/releases">Staršie vydania</a> zostávajú dostupné.</p>
   </div>
 </section>
-
 <section id="stiahnut">
   <h2>Stiahnuť</h2>
-  <p><a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso">⬇ Stiahnuť Linsoft-OS-Live.iso</a></p>
-  <p class="download-meta">Veľkosť: 1,81 GB (1,68 GiB). <a href="https://github.com/Linsoft1/linsoft-os/releases/latest/download/Linsoft-OS-Live.iso.sha256">Stiahnuť kontrolný súčet SHA-256</a>.</p>
+  <p><a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso">⬇ Stiahnuť Linsoft OS 1.5</a></p>
+  <p class="download-meta"><span data-iso-size>2,07 GB (1,93 GiB)</span> · <a href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso.sha256">Kontrolný súčet SHA-256</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.5">Podrobnosti vydania</a></p>
   <details class="verify">
     <summary>Ako overiť stiahnutý súbor</summary>
-    <p>Porovnajte vypočítaný SHA-256 súčet ISO s touto hodnotou:</p>
-    <p><code class="hash">c6f0a8e5431552a09eb7e56165e0cfc03f49290f1aa73689ede5301db5945e1b</code></p>
+    <p>SHA-256: <code class="hash">196279b6b1dd1c75695a83d12768dd27f1f278b03cdec62be9e4786539c14194</code></p>
     <p>Windows PowerShell: <code>Get-FileHash .\Linsoft-OS-Live.iso -Algorithm SHA256</code></p>
     <p>Linux: <code>sha256sum Linsoft-OS-Live.iso</code></p>
-    <p>Kontrolný súčet sa dá stiahnuť aj zo <a href="https://github.com/Linsoft1/linsoft-os/releases/latest">stránky vydania</a>.</p>
+    <p>Výsledok musí zodpovedať súčtu vyššie alebo v priloženom súbore.</p>
   </details>
 </section>
-
 <section id="navod">
-  <h2>Návod</h2>
+  <h2>Návod a upozornenia</h2>
   <div class="steps">
-    <article class="step-card" id="vyskusat">
+    <article class="step-card">
       <h3>Vyskúšať bez inštalácie</h3>
       <ol>
-        <li>Zapíšte ISO na USB pomocou <a href="https://rufus.ie">Rufus</a> (odporúčaný režim DD) alebo <a href="https://etcher.balena.io">balenaEtcher</a>. Obsah USB sa vymaže.</li>
-        <li>Reštartujte počítač, otvorte boot menu (často F12, F11, F9 alebo Esc) a vyberte USB. Secure Boot môže zostať zapnutý.</li>
-        <li>V menu zvoľte „Linsoft OS Live – vyskúšať bez inštalácie“. Zmeny počas Live relácie sa po vypnutí stratia.</li>
+        <li>Overte SHA-256 stiahnutého ISO.</li>
+        <li>Zapíšte ho cez <a href="https://rufus.ie">Rufus</a> v režime DD alebo <a href="https://etcher.balena.io">balenaEtcher</a>. Obsah vybraného USB sa vymaže.</li>
+        <li>V nastaveniach UEFI vypnite Secure Boot, otvorte boot menu a vyberte USB.</li>
+        <li>Vyberte položku Linsoft OS 1.5 (Live).</li>
       </ol>
-      <p>ISO možno spustiť aj vo VirtualBoxe, VMware alebo QEMU ako 64-bitový Linux s pridelenými aspoň 3 GB RAM.</p>
+      <p>Na prvé vyskúšanie odporúčame QEMU alebo VirtualBox, 64-bitový procesor a aspoň 4 GB RAM.</p>
     </article>
-    <article class="step-card" id="instalacia">
-      <h3>Nainštalovať na disk</h3>
-      <ol>
-        <li>Spustite položku „Inštalovať Linsoft OS na disk“ v boot menu alebo vyhľadajte inštalátor v ponuke Štart.</li>
-        <li>Vyberte cieľový disk a spôsob: <b>celý disk</b> alebo <b>vedľa Windows</b>.</li>
-        <li>Zadajte heslo používateľa (prázdne heslo = automatické prihlásenie) a potvrďte zadaním <code>ANO</code>.</li>
-        <li>Po dokončení reštartujte počítač. Pri inštalácii vedľa Windows ponúkne menu Linsoft OS aj Windows.</li>
-      </ol>
-      <div class="warn"><b>Pozor:</b> Voľba „celý disk“ vymaže všetko na disku. Pre inštaláciu vedľa Windows najprv vo Windows uvoľnite aspoň 12 GiB (Správa diskov → pravý klik na C: → Zmenšiť zväzok); vyžaduje UEFI. Pred inštaláciou zálohujte dôležité súbory.</div>
+    <article class="step-card">
+      <h3>Inštalácia</h3>
+      <p>ISO obsahuje položky Debian live inštalátora s označením Linsoft Installer. Pred inštaláciou zálohujte dáta a pozorne skontrolujte cieľový disk.</p>
+      <div class="warn"><b>Pozor:</b> Automatické rozdelenie môže vymazať systém aj súbory na zvolenom disku. Čistá inštalácia tejto verzie a prvý štart z disku ešte nie sú potvrdené; použite najprv prázdny virtuálny disk.</div>
     </article>
-    <article class="step-card" id="wifi">
-      <h3>Pripojenie na Wi-Fi</h3>
-      <ol>
-        <li>Kliknite na ukazovateľ siete na paneli alebo otvorte Štart a vyhľadajte <b>Wi-Fi siete</b>.</li>
-        <li>Vyberte sieť a zadajte heslo. Linsoft OS sa k nej odteraz pripojí automaticky.</li>
-      </ol>
-      <p class="small">Ak sa nezobrazí žiadna Wi-Fi karta, skontrolujte prepínač Wi-Fi (napr. Fn + F2) a spustite diagnostiku.</p>
-    </article>
-    <article class="step-card" id="diagnostika">
-      <h3>Diagnostika hardvéru</h3>
-      <p>Ak niečo na vašom počítači nefunguje (Wi-Fi, zvuk, grafika), spustite na ploche <b>Diagnostika hardveru</b>. Správa ukáže zariadenia bez ovládača a chýbajúci firmvér. V Live režime sa uloží aj na USB kľúč ako <code>linsoft-diagnostika-….txt</code>, takže ju môžete priložiť k <a href="https://github.com/Linsoft1/linsoft-os/issues">nahláseniu problému</a>.</p>
-    </article>
-    <article class="step-card wide" id="secure-boot">
-      <h3>Prvý štart so zapnutým Secure Boot</h3>
-      <p>Pri prvom štarte sa zobrazí modrá obrazovka „Verification failed“. Kľúč Linsoft treba zaregistrovať iba raz:</p>
-      <ol>
-        <li>Stlačte <b>Enter</b> (OK) a hneď potom ľubovoľnú klávesu – na „Press any key to perform MOK management“ je len 10 sekúnd.</li>
-        <li>Vyberte <b>Enroll key from disk</b> → <b>LINSOFT_EFI</b> (pri USB z Rufusu v režime ISO <b>LINSOFT_OS</b>) → <b>linsoft-secureboot.cer</b>.</li>
-        <li>Zvoľte <b>Continue</b> → <b>Yes</b> → <b>Reboot</b> a znova spustite USB.</li>
-      </ol>
-      <p class="small">Kľúč zostane uložený vo firmvéri, takže Live USB aj nainštalovaný systém sa potom spúšťajú       bez otázok. Ak sa namiesto modrej obrazovky stále zobrazí „Secure Boot Violation“, ide o počítač zo štvrtého riadka tabuľky <a href="#podpora">podporovaných počítačov</a>.</p>
+    <article class="step-card" id="podpora">
+      <h3>Stav overenia</h3>
+      <p>Overený obsah ISO, kontrolný súčet a bootovací katalóg BIOS/UEFI. Téma Plymouth prešla kontrolou syntaxe a prepínania textov. To nepotvrdzuje kompatibilitu všetkých počítačov ani vizuálny priebeh vypnutia na hardvéri.</p>
+      <p>Wi-Fi, zvuk, grafiku, Bluetooth, uspávanie a inštalátor otestujte v live relácii na svojom zariadení. Ide o experimentálnu distribúciu.</p>
     </article>
   </div>
-        <section class="compatibility" id="podpora" aria-labelledby="podpora-nadpis">
-          <h3 id="podpora-nadpis">Na ktorých počítačoch Linsoft OS štartuje</h3>
-          <div class="table-wrap">
-            <table class="ver support">
-              <thead><tr><th scope="col">Počítač / nastavenie</th><th scope="col">Stav</th><th scope="col">Čo treba urobiť</th></tr></thead>
-              <tbody>
-                <tr><th scope="row">x86-64 PC so starším BIOS-om (Legacy / CSM)</th><td class="ok">Funguje</td><td>Nič</td></tr>
-                <tr><th scope="row">x86-64 PC s UEFI, Secure Boot vypnutý</th><td class="ok">Funguje</td><td>Nič</td></tr>
-                <tr><th scope="row">x86-64 PC s UEFI a zapnutým Secure Boot (väčšina PC s Windows 10/11)</th><td class="ok">Funguje</td><td>Raz zaregistrovať kľúč Linsoft (<a href="#secure-boot">postup</a>)</td></tr>
-                <tr><th scope="row">Secured-core PC alebo PC, ktoré dôveruje iba Windows (vypnutá voľba „Microsoft third-party UEFI CA“ / „Allow 3rd party UEFI CA“)</th><td class="mid">Funguje po zmene nastavenia</td><td>Vo firmvéri zapnúť „Microsoft third-party UEFI CA“ alebo vypnúť Secure Boot. Rovnako to vyžadujú aj Ubuntu, Fedora či Ventoy.</td></tr>
-                <tr><th scope="row">32-bitové PC, 32-bitové UEFI, ARM (napr. Snapdragon), Apple Mac</th><td class="no">Nepodporované</td><td>Systém je zostavený iba pre 64-bitové x86 procesory.</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="small">Prekážku zo štvrtého riadka nemožno obísť na strane Linsoft OS: takéto počítače spustia iba zavádzače podpísané pre Windows, preto treba jeden prepínač vo firmvéri.</p>
-        </section>
-  <section class="compatibility" aria-labelledby="kompatibilita">
-    <h3 id="kompatibilita">Požiadavky a testovanie</h3>
-    <ul>
-      <li>64-bitový procesor (x86-64), BIOS alebo UEFI.</li>
-      <li>Odporúčaná pamäť: aspoň 3 GB RAM; režim „načítať do RAM“ potrebuje aspoň 8 GB.</li>
-      <li>Na inštaláciu treba disk s kapacitou aspoň 12 GiB. Secure Boot môže zostať zapnutý (okrem počítačov zo štvrtého riadka tabuľky vyššie).</li>
-      <li>Live štart z DVD aj USB, inštalácia na celý disk aj vedľa Windows a štart nainštalovaného systému sú automaticky testované v QEMU v režimoch BIOS, UEFI aj UEFI so Secure Boot.</li>
-      <li>Ovládače a firmvér pokrývajú bežné Wi-Fi, grafické a zvukové čipy; ak niečo nefunguje, pošlite výstup diagnostiky.</li>
-      <li>Zatiaľ chýba: párovanie Bluetooth v grafickom rozhraní, firemná Wi-Fi (802.1X) a proprietárny ovládač NVIDIA (používa sa otvorený nouveau).</li>
-    </ul>
-    <p class="small">Systém je experimentálny. Na zdieľanom počítači nastavte pri inštalácii heslo.</p>
-  </section>
+</section>
+<section id="autor">
+  <h2>Autor</h2>
+  <div class="author"><span class="logo big">L</span><div><h3>Martin Pastorek</h3><p>Autor projektu Linsoft OS a jeho integrácie pracovnej plochy, značky a systémových nástrojov. Systém využíva Linux, Debian, Openbox a ďalší open-source softvér ich pôvodných autorov.</p></div></div>
 </section>
 </main>
-
 <footer>
-  <p>Linsoft OS 1.4 · autor <b>Martin Pastorek</b> · postavené na <a href="https://www.linuxfromscratch.org/">Linux From Scratch</a>, Linuxe, Debiane a ďalšom open-source softvéri, ktorý patrí ich autorom.</p>
-  <p><a href="https://github.com/Linsoft1/linsoft-os">Zdrojový kód</a> · <a href="https://github.com/Linsoft1/linsoft-os/issues">Nahlásiť problém</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases">Vydania</a></p>
+  <p>Linsoft OS 1.5 · autor <b>Martin Pastorek</b> · postavené na Debiane 13 a Linuxe.</p>
+  <p><a href="https://github.com/Linsoft1/linsoft-os/tree/main/linsoft/debian-live">Zostavenie verzie 1.5</a> · <a href="https://github.com/Linsoft1/linsoft-os/issues">Nahlásiť problém</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases">Vydania</a></p>
 </footer>
 </body>
 </html>

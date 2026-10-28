@@ -1,0 +1,271 @@
+@define-color theme_bg_color #111a2a;
+@define-color theme_fg_color #e6edf7;
+@define-color theme_base_color #0b1220;
+@define-color theme_text_color #e6edf7;
+@define-color theme_selected_bg_color #287ff0;
+@define-color theme_selected_fg_color #ffffff;
+@define-color theme_unfocused_bg_color #111a2a;
+@define-color theme_unfocused_fg_color #aebbd0;
+@define-color borders #29384d;
+@define-color accent_color #4b9cff;
+@define-color insensitive_bg_color #182235;
+@define-color insensitive_fg_color #738198;
+@define-color warning_color #f3b35b;
+@define-color error_color #ff6d7a;
+@define-color success_color #55d6a2;
+
+* {
+  -gtk-secondary-caret-color: @accent_color;
+  outline-color: alpha(@accent_color, 0.55);
+}
+
+window,
+dialog,
+.background {
+  background-color: @theme_bg_color;
+  color: @theme_fg_color;
+}
+
+headerbar,
+toolbar,
+menubar,
+notebook,
+popover,
+menu,
+tooltip {
+  background-color: #172236;
+  color: @theme_fg_color;
+}
+
+headerbar {
+  background-image: linear-gradient(to bottom, #1a2940, #152238);
+  border-bottom: 1px solid #30445f;
+  box-shadow: none;
+  min-height: 40px;
+  padding: 4px 8px;
+}
+
+headerbar:backdrop {
+  background-image: none;
+  background-color: #172236;
+  border-color: #29384d;
+}
+
+headerbar button,
+toolbar button,
+menubar button {
+  background-image: none;
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+headerbar button:hover,
+toolbar button:hover,
+menubar button:hover {
+  background-color: #2a3e59;
+  border-color: #3b536f;
+}
+
+popover,
+menu {
+  border: 1px solid #344963;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px alpha(#000000, 0.32);
+}
+
+menuitem {
+  border-radius: 6px;
+  min-height: 28px;
+  padding: 3px 9px;
+}
+
+menuitem:hover {
+  background-color: #24558f;
+  color: #ffffff;
+}
+
+tooltip {
+  background-color: #17263a;
+  border: 1px solid #3a506c;
+  border-radius: 7px;
+  color: #eef4ff;
+  padding: 5px 8px;
+}
+
+button,
+combobox button,
+spinbutton button {
+  color: @theme_fg_color;
+  background-image: linear-gradient(to bottom, #223149, #19263a);
+  border: 1px solid #34465f;
+  border-radius: 7px;
+  box-shadow: none;
+  padding: 5px 11px;
+}
+
+button:hover {
+  background-image: linear-gradient(to bottom, #2b405d, #20324a);
+  border-color: @accent_color;
+}
+
+button:active,
+button:checked,
+button:focus {
+  background-color: #1d4e88;
+  background-image: none;
+  border-color: @accent_color;
+}
+
+button:disabled {
+  background-image: none;
+  background-color: @insensitive_bg_color;
+  color: @insensitive_fg_color;
+}
+
+entry,
+spinbutton,
+textview,
+treeview,
+list,
+.view,
+iconview {
+  background-color: @theme_base_color;
+  color: @theme_text_color;
+  border-color: @borders;
+  caret-color: @accent_color;
+}
+
+entry {
+  border: 1px solid @borders;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+entry:focus,
+spinbutton:focus,
+textview:focus {
+  border-color: @accent_color;
+}
+
+selection,
+treeview.view:selected,
+list row:selected,
+iconview:selected {
+  background-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
+}
+
+notebook > header > tabs > tab:checked {
+  color: #ffffff;
+  background-color: #20344f;
+  border-color: @accent_color;
+}
+
+notebook > header {
+  background-color: #142035;
+  border-color: @borders;
+}
+
+notebook > header > tabs > tab {
+  background-color: transparent;
+  border-radius: 7px 7px 0 0;
+  color: #aebbd0;
+  padding: 7px 12px;
+}
+
+notebook > header > tabs > tab:hover {
+  background-color: #1c2d45;
+  color: #ffffff;
+}
+
+scrollbar {
+  background-color: transparent;
+}
+
+scrollbar slider {
+  background-color: #34465f;
+  border-radius: 999px;
+  min-width: 8px;
+  min-height: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+scrollbar slider:hover {
+  background-color: @accent_color;
+}
+
+check,
+radio {
+  color: @theme_fg_color;
+  background-color: #1b293d;
+  border: 1px solid #52647b;
+}
+
+check:checked,
+radio:checked {
+  color: #ffffff;
+  background-color: @accent_color;
+  border-color: @accent_color;
+}
+
+switch {
+  background-color: #263750;
+  border: 1px solid #465b75;
+  border-radius: 999px;
+}
+
+switch:checked {
+  background-color: #287ff0;
+  border-color: #4b9cff;
+}
+
+switch slider {
+  background-color: #eaf2ff;
+  border: 1px solid #b8c9df;
+  border-radius: 999px;
+  margin: 2px;
+}
+
+scale trough {
+  background-color: #1c2a3e;
+  border: 1px solid #34465f;
+  border-radius: 999px;
+  min-height: 6px;
+}
+
+scale highlight {
+  background-color: @accent_color;
+  border-radius: 999px;
+}
+
+scale slider {
+  background-color: #eaf2ff;
+  border: 2px solid @accent_color;
+  border-radius: 999px;
+  min-height: 14px;
+  min-width: 14px;
+}
+
+progressbar trough {
+  background-color: #1b293d;
+  border: 1px solid #30445f;
+  border-radius: 999px;
+  min-height: 8px;
+}
+
+progressbar progress {
+  background-color: @accent_color;
+  border-radius: 999px;
+}
+
+link,
+*:link {
+  color: #73b8ff;
+}
+
+*:selected {
+  background-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
+}

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+  <menu id="root-menu" label="Linsoft">
+    <item label="Linsoft Hub">
+      <action name="Execute">
+        <command>linsoft-hub</command>
+      </action>
+    </item>
+    <item label="Linsoft Store">
+      <action name="Execute">
+        <command>linsoft-store</command>
+      </action>
+    </item>
+    <separator/>
+    <item label="Terminál">
+      <action name="Execute">
+        <command>lxterminal</command>
+      </action>
+    </item>
+    <item label="Súbory">
+      <action name="Execute">
+        <command>pcmanfm</command>
+      </action>
+    </item>
+    <item label="Internet">
+      <action name="Execute">
+        <command>firefox-esr</command>
+      </action>
+    </item>
+    <separator/>
+    <item label="Nastavenia systému">
+      <action name="Execute">
+        <command>xfce4-settings-manager</command>
+      </action>
+    </item>
+    <item label="Vzhľad a témy">
+      <action name="Execute">
+        <command>lxappearance</command>
+      </action>
+    </item>
+    <item label="Obrazovka">
+      <action name="Execute">
+        <command>xfce4-display-settings</command>
+      </action>
+    </item>
+    <item label="Rozšírené zobrazenie">
+      <action name="Execute">
+        <command>arandr</command>
+      </action>
+    </item>
+    <item label="Sieťové pripojenia">
+      <action name="Execute">
+        <command>nm-connection-editor</command>
+      </action>
+    </item>
+    <item label="Nastavenia napájania">
+      <action name="Execute">
+        <command>xfce4-power-manager-settings</command>
+      </action>
+    </item>
+    <item label="Bluetooth">
+      <action name="Execute">
+        <command>blueman-manager</command>
+      </action>
+    </item>
+    <item label="Informácie o počítači">
+      <action name="Execute">
+        <command>lxterminal -e inxi -Fxxx</command>
+      </action>
+    </item>
+    <item label="Zamknúť obrazovku">
+      <action name="Execute">
+        <command>xfce4-screensaver-command --lock</command>
+      </action>
+    </item>
+    <item label="Vybrať tapetu">
+      <action name="Execute">
+        <command>nitrogen</command>
+      </action>
+    </item>
+    <item label="Zvuk">
+      <action name="Execute">
+        <command>pavucontrol</command>
+      </action>
+    </item>
+    <menu id="client-list-combined-menu" label="Otvorené okná"/>
+    <separator/>
+    <item label="Zobraziť plochu">
+      <action name="ToggleShowDesktop"/>
+    </item>
+    <menu id="linsoft-desktops" label="Pracovné plochy">
+      <item label="Domov">
+        <action name="GoToDesktop">
+          <to>1</to>
+        </action>
+      </item>
+      <item label="Práca">
+        <action name="GoToDesktop">
+          <to>2</to>
+        </action>
+      </item>
+      <item label="Web">
+        <action name="GoToDesktop">
+          <to>3</to>
+        </action>
+      </item>
+      <item label="Voľné">
+        <action name="GoToDesktop">
+          <to>4</to>
+        </action>
+      </item>
+    </menu>
+    <separator/>
+    <item label="Odhlásiť alebo vypnúť">
+      <action name="Execute">
+        <command>lxsession-logout</command>
+      </action>
+    </item>
+    <item label="Znova načítať Openbox">
+      <action name="Reconfigure"/>
+    </item>
+  </menu>
+</openbox_menu>

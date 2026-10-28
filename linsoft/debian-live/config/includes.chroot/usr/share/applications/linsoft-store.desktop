@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Linsoft Store
+GenericName=Centrum aplikácií
+Comment=Inštaluj a odstraňuj aplikácie pre Linsoft
+Exec=linsoft-store
+Icon=org.linsoft.Store
+Terminal=false
+Categories=System;PackageManager;
+Keywords=Linsoft;store;aplikácie;inštalácia;obchod;

@@ -1,0 +1,32 @@
+title-color: "#f2f7ff"
+title-text: ""
+desktop-image: "/boot/grub/linsoft-grub.png"
+desktop-color: "#0b1423"
+message-color: "#91a9ca"
+message-font: "Unifont Regular 16"
+terminal-font: "Unifont Regular 16"
+
++ boot_menu {
+        left = 18%
+        width = 64%
+        top = 40%
+        height = 36%
+        item_color = "#91a9ca"
+        item_font = "Unifont Regular 16"
+        selected_item_color = "#ffffff"
+        selected_item_font = "Unifont Regular 16"
+        item_height = 22
+        item_padding = 4
+        item_spacing = 2
+}
+
++ label {
+        top = 100%-32
+        left = 0
+        width = 100%
+        height = 20
+        text = "@KEYMAP_SHORT@"
+        align = "center"
+        color = "#91a9ca"
+        font = "Unifont Regular 16"
+}

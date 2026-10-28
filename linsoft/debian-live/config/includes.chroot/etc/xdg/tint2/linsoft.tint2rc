@@ -1,0 +1,96 @@
+# Linsoft desktop panel
+rounded = 13
+border_width = 1
+background_color = #0a1424 92
+border_color = #395b7e 86
+
+rounded = 13
+border_width = 1
+background_color = #153b59 98
+border_color = #54c7ff 92
+
+rounded = 11
+border_width = 1
+background_color = #11243a 94
+border_color = #2c4968 84
+background_color_hover = #1b3552 98
+border_color_hover = #59baff 94
+
+rounded = 4
+border_width = 0
+background_color = #75d4ff 72
+border_color = #75d4ff 0
+
+panel_items = PL:T:SC
+panel_monitor = all
+panel_position = bottom center horizontal
+panel_size = 94% 42
+panel_margin = 0 5
+panel_padding = 10 2 10
+panel_dock = 0
+panel_layer = top
+panel_background_id = 1
+wm_menu = 1
+autohide = 0
+strut_policy = follow_size
+
+button = new
+button_icon = org.linsoft.OS
+button_tooltip = Otvoriť ponuku Linsoft
+button_background_id = 2
+button_padding = 7 2 7
+button_max_icon_size = 26
+button_lclick_command = linsoft-hub
+
+launcher_padding = 3 0 3
+launcher_background_id = 0
+launcher_icon_size = 28
+launcher_icon_theme = Linsoft-Icons
+launcher_icon_theme_override = 1
+launcher_item_app = /usr/share/applications/linsoft-store.desktop
+launcher_item_app = /usr/share/applications/lxterminal.desktop
+launcher_item_app = /usr/share/applications/pcmanfm.desktop
+launcher_item_app = /usr/share/applications/firefox-esr.desktop
+
+separator = new
+separator_style = line
+separator_size = 1
+separator_color = #55728f 72
+separator_padding = 8 12
+
+taskbar_mode = single_desktop
+taskbar_padding = 3 2 3
+taskbar_background_id = 0
+taskbar_active_background_id = 2
+taskbar_name = 0
+taskbar_name_padding = 9
+taskbar_name_background_id = 0
+taskbar_name_active_background_id = 2
+taskbar_name_font = DejaVu Sans Bold 9
+taskbar_name_font_color = #9fb4ce 100
+taskbar_name_active_font_color = #ffffff 100
+task_text = 0
+task_icon = 1
+taskbar_distribute_size = 0
+taskbar_sort_order = none
+task_tooltip = 1
+task_maximum_size = 48 40
+task_font = DejaVu Sans 9
+task_font_color = #b8c9df 100
+task_active_font_color = #ffffff 100
+task_background_id = 0
+task_active_background_id = 3
+
+systray_padding = 6 2 6
+systray_background_id = 0
+systray_icon_size = 18
+systray_icon_asb = 100 0 0
+
+clock_padding = 9 0
+clock_background_id = 0
+time1_font = DejaVu Sans Bold 11
+time2_font = DejaVu Sans 8
+clock_font_color = #e6edf7 100
+time1_format = %H:%M
+time2_format = %a %d. %b
+clock_tooltip = %A %d. %B %Y

@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Linsoft
+Description=Linsoft startup, shutdown and restart splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/linsoft
+ScriptFile=/usr/share/plymouth/themes/linsoft/linsoft.script

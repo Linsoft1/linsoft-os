@@ -1,0 +1,114 @@
+.store-window {
+  background-color: #0a1220;
+  color: #eef4ff;
+}
+
+.store-side {
+  background-color: #0d192b;
+  border-right: 1px solid #22344d;
+  padding: 22px 14px 16px;
+}
+
+.store-main {
+  padding: 22px 26px 16px;
+}
+
+.store-brand {
+  color: #f2f7ff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.store-muted {
+  color: #94a9c4;
+  font-size: 12px;
+}
+
+.store-heading {
+  color: #f2f7ff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.store-category {
+  background-image: none;
+  background-color: transparent;
+  border: none;
+  border-radius: 10px;
+  color: #b8c9df;
+  padding: 9px 12px;
+}
+
+.store-category:hover {
+  background-color: #182c46;
+}
+
+.store-category.active {
+  background-color: #1f4c8f;
+  color: white;
+}
+
+.store-search {
+  background-color: rgba(6, 13, 24, 0.82);
+  border: 1px solid #334963;
+  border-radius: 12px;
+  color: #f2f7ff;
+  min-height: 28px;
+  padding: 6px 10px;
+}
+
+.store-list,
+.store-list row {
+  background-color: transparent;
+}
+
+.store-row {
+  background-color: rgba(19, 32, 50, 0.78);
+  border: 1px solid rgba(52, 72, 99, 0.7);
+  border-radius: 13px;
+  margin: 0 0 8px;
+  padding: 12px 16px;
+}
+
+.store-app-name {
+  color: #eaf2ff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.store-install,
+.store-remove,
+.store-secondary {
+  background-image: none;
+  border-radius: 10px;
+  padding: 7px 14px;
+  color: white;
+}
+
+.store-install {
+  background-color: #2f7de1;
+  border: 1px solid #5aa1ff;
+}
+
+.store-install:hover {
+  background-color: #4b9cff;
+}
+
+.store-remove {
+  background-color: #3a2633;
+  border: 1px solid #a24d5e;
+}
+
+.store-remove:hover {
+  background-color: #5a2f3f;
+}
+
+.store-secondary {
+  background-color: #182c46;
+  border: 1px solid #355477;
+}
+
+.store-install:disabled,
+.store-remove:disabled {
+  opacity: 0.5;
+}

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Linsoft Hub
+GenericName=Spúšťač aplikácií
+Comment=Vyhľadávaj a spúšťaj aplikácie systému Linsoft
+Exec=linsoft-hub
+Icon=org.linsoft.OS
+Terminal=false
+Categories=System;Utility;
+Keywords=Linsoft;aplikácie;nastavenia;launcher;

@@ -1,0 +1,119 @@
+#!/bin/sh
+set -eu
+
+binary_root=$PWD
+
+if [ -f isolinux/linsoft-splash.png ]; then
+    cp isolinux/linsoft-splash.png isolinux/splash.png
+fi
+
+for menu in boot/grub/grub.cfg boot/grub/x86_64-efi/grub.cfg isolinux/live.cfg isolinux/isolinux.cfg isolinux/menu.cfg; do
+    if [ -f "$menu" ]; then
+        sed -i \
+            -e 's/Live system (amd64 fail-safe mode)/Linsoft OS 1.5 (Safe mode)/g' \
+            -e 's/Live system (amd64)/Linsoft OS 1.5 (Live)/g' \
+            -e 's/Debian GNU\/Linux Live/Linsoft OS 1.5/g' \
+            -e 's/Debian GNU\/Linux/Linsoft/g' \
+            -e 's/Debian Installer/Linsoft Installer/g' \
+            -e 's/Linsoft OS 1.1/Linsoft OS 1.5/g' \
+            -e 's/ findiso=${iso_path}//g' \
+            -e 's/ union=aufs//g' \
+            -e 's/menu title Boot menu/menu title Linsoft OS 1.5/g' \
+            "$menu"
+
+        case "$menu" in
+            boot/grub/grub.cfg|boot/grub/x86_64-efi/grub.cfg)
+                if grep -q 'terminal_output.*gfxterm' "$menu"; then
+                    if ! grep -q 'background_image --mode=stretch /boot/grub/linsoft-grub.png' "$menu"; then
+                        sed -i '0,/terminal_output.*gfxterm/{/terminal_output.*gfxterm/a\
+insmod png\
+background_image --mode=stretch /boot/grub/linsoft-grub.png\
+set menu_color_normal=white/black\
+set menu_color_highlight=white/blue
+}' "$menu"
+                    fi
+                else
+                    sed -i '1i insmod gfxterm\nterminal_output gfxterm\ninsmod png\nbackground_image --mode=stretch /boot/grub/linsoft-grub.png\nset menu_color_normal=white/black\nset menu_color_highlight=white/blue' "$menu"
+                fi
+                ;;
+        esac
+    fi
+done
+
+grub_theme_config=boot/grub/theme.cfg
+if [ -f "$grub_theme_config" ] && [ -f boot/grub/themes/linsoft/theme.txt ]; then
+    sed -i \
+        's#^[[:space:]]*set theme=.*#set theme=/boot/grub/themes/linsoft/theme.txt#' \
+        "$grub_theme_config"
+fi
+
+for menu in boot/grub/install_start.cfg boot/grub/install.cfg isolinux/install.cfg; do
+    if [ -f "$menu" ]; then
+        sed -i -E '/^[[:space:]]*linux[[:space:]].*\/install(\/gtk)?\/vmlinuz/ {
+            /netcfg\/get_hostname=linsoft/! {
+                s/[[:space:]]---/ netcfg\/get_hostname=linsoft ---/
+                t
+                s/$/ netcfg\/get_hostname=linsoft/
+            }
+        }' "$menu"
+
+        case "$menu" in
+            isolinux/install.cfg)
+                sed -i -E '/^[[:space:]]*append[[:space:]]/ {
+                    /netcfg\/get_hostname=linsoft/! {
+                        s/[[:space:]]---/ netcfg\/get_hostname=linsoft ---/
+                        t
+                        s/$/ netcfg\/get_hostname=linsoft/
+                    }
+                }' "$menu"
+                ;;
+        esac
+    fi
+done
+
+installer_banner=installer/linsoft-installer-banner.png
+if [ -f "$installer_banner" ]; then
+    for initrd in install/gtk/initrd.gz; do
+        if [ -f "$initrd" ]; then
+            workdir=$(mktemp -d)
+            gzip -dc "$binary_root/$initrd" > "$workdir/initrd.cpio"
+            if ! (
+                cd "$workdir"
+                cpio -idmu --quiet < initrd.cpio
+                install -m 0644 "$binary_root/$installer_banner" usr/share/graphics/logo_debian.png
+                install -m 0644 "$binary_root/$installer_banner" usr/share/graphics/logo_debian_dark.png
+                rm -f initrd.cpio
+                find . -mindepth 1 ! -name files.list -print0 > files.list
+                cpio --null -o -H newc --owner=0:0 --quiet < files.list > initrd.cpio
+                gzip -n -9 < initrd.cpio > "$binary_root/$initrd.tmp"
+            ); then
+                rm -rf "$workdir"
+                rm -f "$binary_root/$initrd.tmp"
+                exit 1
+            fi
+            mv "$initrd.tmp" "$initrd"
+            rm -rf "$workdir"
+        fi
+    done
+fi
+
+for checksum_file in md5sum.txt sha256sum.txt; do
+    if [ -f "$checksum_file" ]; then
+        case "$checksum_file" in
+            md5sum.txt) checksum_tool=md5sum ;;
+            sha256sum.txt) checksum_tool=sha256sum ;;
+        esac
+        while IFS= read -r line; do
+            file=${line#*  }
+            case "$file" in
+                ./md5sum.txt|./sha256sum.txt) continue ;;
+            esac
+            if [ ! -f "$file" ]; then
+                printf 'Missing file in %s: %s\n' "$checksum_file" "$file" >&2
+                exit 1
+            fi
+            "$checksum_tool" "$file"
+        done < "$checksum_file" > "$checksum_file.tmp"
+        mv "$checksum_file.tmp" "$checksum_file"
+    fi
+done
