@@ -12,7 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=1.5.5">
+<link rel="stylesheet" href="style.css?v=1.5.6">
 </head>
 <body>
 <a class="skip-link" href="#obsah">Preskočiť na obsah</a>
@@ -103,6 +103,52 @@
   <h2>Čo je teraz</h2>
   <p>Verzia 1.5 je iná vetva: používa Debian 13, jeho podpísané jadro, Openbox a Tint2, vďaka čomu funguje so zapnutým Secure Boot bez registrácie kľúča. Vlastné jadro Linsoft Kernel sa v nej nepoužíva: nepodpísané vlastné jadro vo vývojovej zostave 1.5 neprešlo Secure Boot (HP hlásilo „Secure Boot Violation“), preto sme prešli na podpísané jadro Debianu. Vetva 1.0–1.4 zostáva dostupná na GitHube, no nie je s verziou 1.5 priamo kompatibilná a aktualizácia z nej nie je podporovaná.</p>
   <p><a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.4">Vydanie 1.4 (pôvodná vetva)</a> <a class="btn ghost" href="https://github.com/Linsoft1/linsoft-os/releases">Všetky vydania</a> <a class="btn ghost" href="index.html#stiahnut">Stiahnuť 1.5</a></p>
+  <section aria-labelledby="projekty">
+    <h2 id="projekty">Svet Linsoft: vyhľadávanie, komunikácia a digitálna kancelária</h2>
+    <p class="lead">Linsoft nie je iba operačný systém. Jeho webové projekty rozširujú značku do troch každodenných oblastí: hľadania informácií, rozhovorov a práce s dokumentmi. Každý má vlastné rozhranie a vlastnú úlohu — spolu predstavujú širší záber tvorby Linsoft.</p>
+    <div class="project-list">
+      <article class="project-card" aria-labelledby="projekt-search">
+        <a class="project-preview" href="img/linsoft-search.png" aria-label="Zväčšiť snímku Linsoft Search">
+          <img src="img/linsoft-search.png" width="1280" height="800" loading="lazy" alt="Úvodná stránka Linsoft Search s vyhľadávacím poľom a kategóriami výsledkov">
+        </a>
+        <div class="project-body">
+          <p class="version">Objavovanie informácií</p>
+          <h3 id="projekt-search">Linsoft Search</h3>
+          <p>Vstupná brána k informáciám s čistým rozhraním, výrazným vyhľadávacím poľom a voľbou kategórií Všetko, Web, Obrázky, Videá a Správy. Stránka ponúka prepínanie témy aj voľbu zapamätania vyhľadávaní s prehľadom nedávnych hľadaní.</p>
+          <p><b>Pohľad na projekt:</b> Jeho silnou stránkou je sústredenie na jednu činnosť: zadať otázku a vybrať typ obsahu. Jednotná vizuálna identita robí z vyhľadávania prirodzenú súčasť sveta Linsoft. Samotné rozhranie však nepotvrdzuje vlastný index webu ani konkrétnu technológiu získavania výsledkov.</p>
+          <p><a class="btn" href="https://linsoft.ddns.net/linsoft-search/">Otvoriť Linsoft Search</a></p>
+        </div>
+      </article>
+      <article class="project-card" aria-labelledby="projekt-chat">
+        <a class="project-preview" href="img/linsoft-chat.png" aria-label="Zväčšiť snímku Linsoft Chat">
+          <img src="img/linsoft-chat.png" width="1280" height="800" loading="lazy" alt="Uvítacie rozhranie Linsoft Chat s možnosťami prihlásenia a stiahnutia aplikácií">
+        </a>
+        <div class="project-body">
+          <p class="version">Priestor na rozhovory</p>
+          <h3 id="projekt-chat">Linsoft Chat</h3>
+          <p>Komunikačný projekt s webovým rozhraním a odkazmi na aplikácie pre Android a Windows. Rozhranie ponúka prihlásenie cez QR kód z mobilnej aplikácie, pridávanie kontaktov prostredníctvom kontaktných kódov a zoznam rozhovorov.</p>
+          <p>V prostredí sú pripravené ovládacie prvky pre správy, prílohy, hlasové správy, videohovory a zdieľanie obrazovky. Dopĺňa ich panel internetového rádia so slovenskými stanicami. Stránka uvádza koncové šifrovanie nových správ a súborov (E2E); nejde tu o nezávislé overenie jeho implementácie.</p>
+          <p><b>Pohľad na projekt:</b> Linsoft Chat rozvíja myšlienku jedného komunikačného priestoru na viacerých zariadeniach. Spojenie rozhovorov, mobilnej aplikácie a desktopového klienta dáva značke presah za hranice samotného operačného systému. Hovory a odosielanie správ neboli pri príprave článku testované po prihlásení.</p>
+          <p><a class="btn" href="https://linsoft.ddns.net/Linsoft-chat/">Otvoriť Linsoft Chat</a></p>
+        </div>
+      </article>
+      <article class="project-card" aria-labelledby="projekt-office">
+        <a class="project-preview" href="img/linsoft-office.png" aria-label="Zväčšiť snímku Linsoft Office">
+          <img src="img/linsoft-office.png" width="1280" height="800" loading="lazy" alt="Úvodná stránka Linsoft Office s prehľadom kancelárskych nástrojov a prihlasovacím formulárom">
+        </a>
+        <div class="project-body">
+          <p class="version">Digitálna kancelária</p>
+          <h3 id="projekt-office">Linsoft Office</h3>
+          <p>Projekt predstavuje spoločný pracovný priestor pre textové dokumenty, tabuľky a prezentácie. Úvodná stránka uvádza vlastný používateľský účet, vlastné súbory a synchronizáciu medzi počítačmi; ponúka prihlásenie aj registráciu.</p>
+          <p>Samostatne predstavuje aplikáciu Linsoft Office pre 64-bitový Windows 10/11: podľa stránky umožňuje lokálnu prácu bez internetu a bez účtu, pričom prihlásenie je určené na synchronizáciu dát. Názvy Word, Excel a Prezentácie sú označenia nástrojov na stránke, nie potvrdenie, že ide o aplikácie Microsoftu alebo o úplnú kompatibilitu s ich formátmi.</p>
+          <p><b>Pohľad na projekt:</b> Najzaujímavejšia je myšlienka spojiť lokálnu kanceláriu s voliteľnou synchronizáciou. Používateľ by tak nemusel zamieňať prácu na vlastnom počítači za povinnosť byť stále online. Editory, synchronizácia a inštalátor pre Windows neboli pri príprave článku prakticky testované.</p>
+          <p><a class="btn" href="https://linsoft.ddns.net/linsoft-offiece/">Otvoriť Linsoft Office</a></p>
+        </div>
+      </article>
+    </div>
+    <p class="small">Skutočné snímky verejných úvodných rozhraní z 28. 10. 2026; kliknutím sa otvoria v plnej veľkosti. Popisy vychádzajú zo zobrazených stránok. Webové služby sú samostatné projekty: ich uvedenie neznamená, že sú nainštalované v ISO Linsoft OS 1.5.</p>
+  </section>
+
   <section aria-labelledby="buducnost">
     <h2 id="buducnost">Budúcnosť Linsoft OS: od vlastného jadra k otvorenej platforme</h2>
     <p class="lead">Operačný systém nie je iba to, čo vidíme na obrazovke. Je to súhra tisícov rozhodnutí: ako počítač štartuje, ako prideľuje výkon aplikáciám, čo dovolí programom a ako ochráni dáta pri zlyhaní. Práve v tomto priestore sa otvára ďalšia kapitola Linsoftu — prepojiť technickú hĺbku s prostredím, ktorému používateľ rozumie.</p>
