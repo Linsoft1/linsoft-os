@@ -22,7 +22,7 @@ class Checker(html.parser.HTMLParser):
             if value.startswith("#") and len(value) > 1:
                 self.anchors.append(value[1:])
             elif value and not value.startswith(("http:", "https:", "mailto:", "#", "data:")):
-                self.files.append(value.split("?")[0])
+                self.files.append(value.split("?")[0].split("#")[0])
         if tag == "img" and "alt" not in attrs:
             self.errors.append(f"img without alt: {attrs.get('src')}")
         if tag not in VOID:
