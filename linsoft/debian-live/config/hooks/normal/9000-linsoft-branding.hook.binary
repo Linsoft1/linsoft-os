@@ -84,10 +84,19 @@ if [ -f "$installer_banner" ]; then
                 install -m 0644 "$binary_root/$installer_banner" usr/share/graphics/logo_debian_dark.png
                 gtkrc=usr/share/themes/Clearlooks/gtk-2.0/gtkrc
                 if [ -f "$gtkrc" ]; then
-                    sed -i \
-                        -e 's/#ede9e3/#e6edf8/g' -e 's/#f9f7f3/#f3f7fd/g' \
-                        -e 's/#dcd4c9/#cdd9ec/g' -e 's/#efebe5/#eaf0f8/g' \
-                        -e 's/#275e7e/#3274ff/g' -e 's/#26475b/#1d3453/g' \
+                    sed -i -E \
+                        -e '/^[[:space:]]*(fg|text)\[(NORMAL|PRELIGHT|ACTIVE)\]/ s/"#000000"/"#f2f7ff"/' \
+                        -e '/^[[:space:]]*(fg|text)\[INSENSITIVE\]/ s/"#[0-9a-fA-F]{6}"/"#5d7394"/' \
+                        -e '/^[[:space:]]*bg\[NORMAL\][[:space:]]*=[[:space:]]*"/ s/"#[0-9a-fA-F]{6}"/"#111f36"/' \
+                        -e '/^[[:space:]]*bg\[PRELIGHT\][[:space:]]*=[[:space:]]*"/ s/"#[0-9a-fA-F]{6}"/"#1b2f50"/' \
+                        -e '/^[[:space:]]*bg\[ACTIVE\][[:space:]]*=[[:space:]]*"/ s/"#[0-9a-fA-F]{6}"/"#0d1830"/' \
+                        -e '/^[[:space:]]*bg\[INSENSITIVE\][[:space:]]*=[[:space:]]*"/ s/"#[0-9a-fA-F]{6}"/"#0f1b2f"/' \
+                        -e '/^[[:space:]]*bg\[SELECTED\][[:space:]]*=[[:space:]]*"/ s/"#[0-9a-fA-F]{6}"/"#3274ff"/' \
+                        -e '/^[[:space:]]*base\[NORMAL\]/ s/"#[0-9a-fA-F]{6}"/"#0b1426"/' \
+                        -e '/^[[:space:]]*base\[PRELIGHT\]/ s/"#[0-9a-fA-F]{6}"/"#1b2f50"/' \
+                        -e '/^[[:space:]]*base\[ACTIVE\]/ s/"#[0-9a-fA-F]{6}"/"#1d3453"/' \
+                        -e '/^[[:space:]]*base\[INSENSITIVE\]/ s/"#[0-9a-fA-F]{6}"/"#0f1b2f"/' \
+                        -e '/^[[:space:]]*base\[SELECTED\]/ s/"#[0-9a-fA-F]{6}"/"#3274ff"/' \
                         "$gtkrc"
                 fi
                 rm -f initrd.cpio
