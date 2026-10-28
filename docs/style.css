@@ -10,6 +10,8 @@ nav a:hover, footer a:hover { color:var(--cyan); }
 .nav-links { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:.25rem; min-width:0; max-width:100%; }
 .nav-links a { display:inline-flex; align-items:center; min-height:2.5rem; padding:.45rem .75rem; border-radius:.5rem; white-space:nowrap; transition:background-color .15s ease,color .15s ease; }
 .nav-links a:hover { background:#1a2b47; }
+.nav-links .nav-company { color:var(--cyan); border:1px solid #3a6785; }
+.nav-links .nav-company[aria-current="page"] { background:#1a2b47; }
 a:focus-visible, summary:focus-visible { outline:3px solid var(--cyan); outline-offset:4px; border-radius:.2rem; }
 .skip-link { position:absolute; top:.5rem; left:.5rem; z-index:2; padding:.6rem 1rem; border-radius:.4rem; background:var(--cyan); color:#06101f; font-weight:700; transform:translateY(-160%); }
 .skip-link:focus { transform:translateY(0); }
