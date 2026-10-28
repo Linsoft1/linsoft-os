@@ -103,6 +103,36 @@
   <h2>Čo je teraz</h2>
   <p>Verzia 1.5 je iná vetva: používa Debian 13, jeho podpísané jadro, Openbox a Tint2, vďaka čomu funguje so zapnutým Secure Boot bez registrácie kľúča. Vlastné jadro Linsoft Kernel sa v nej nepoužíva: nepodpísané vlastné jadro vo vývojovej zostave 1.5 neprešlo Secure Boot (HP hlásilo „Secure Boot Violation“), preto sme prešli na podpísané jadro Debianu. Vetva 1.0–1.4 zostáva dostupná na GitHube, no nie je s verziou 1.5 priamo kompatibilná a aktualizácia z nej nie je podporovaná.</p>
   <p><a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.4">Vydanie 1.4 (pôvodná vetva)</a> <a class="btn ghost" href="https://github.com/Linsoft1/linsoft-os/releases">Všetky vydania</a> <a class="btn ghost" href="index.html#stiahnut">Stiahnuť 1.5</a></p>
+  <section aria-labelledby="buducnost">
+    <h2 id="buducnost">Budúcnosť Linsoft OS: od vlastného jadra k otvorenej platforme</h2>
+    <p class="lead">Operačný systém nie je iba to, čo vidíme na obrazovke. Je to súhra tisícov rozhodnutí: ako počítač štartuje, ako prideľuje výkon aplikáciám, čo dovolí programom a ako ochráni dáta pri zlyhaní. Práve v tomto priestore sa otvára ďalšia kapitola Linsoftu — prepojiť technickú hĺbku s prostredím, ktorému používateľ rozumie.</p>
+    <p class="warn"><b>Technologická vízia:</b> Zakladateľ uvádza pokračovanie vývoja vlastného systému a zdokonaľovanie Linsoft Kernel. Nasledujúce témy rozvíjajú tento zámer ako návrhy budúceho smerovania. Nejde o potvrdený harmonogram ani zoznam funkcií dostupných v ISO 1.5.</p>
+
+    <h3>1. Linsoft Kernel: výkon, ktorý treba dokázať</h3>
+    <p>Ďalší rozvoj vlastnej vetvy môže stáť na dlhodobo podporovanom jadre Linux, premyslenej konfigurácii a pravidelnom preberaní bezpečnostných opráv. Dôležitá nie je iba verzia jadra, ale aj fungovanie ovládačov, plánovanie úloh, správa pamäte a spotreba energie. Cieľom by mala byť vyvážená odozva desktopu aj pri vyššej záťaži, nie výkon získaný vypnutím bezpečnostných mechanizmov.</p>
+    <p>Každé tvrdenie o zrýchlení potrebuje meranie: čas štartu, odozvu aplikácií, využitie RAM či výdrž notebooku za rovnakých podmienok. Súčasťou takejto cesty je aj testovanie Wi-Fi, grafiky, zvuku, uspávania a prebúdzania na konkrétnych zariadeniach. Vlastné meno jadra samo osebe výkon nezaručuje; rozhoduje kvalita zostavenia a overenia.</p>
+
+    <h3>2. Aktualizácie, pri ktorých zostáva cesta späť</h3>
+    <p>Pôvodný Linsoft už pracoval s podpísanými balíkmi jadra a zachovaním predchádzajúceho jadra. Ambicióznym pokračovaním by bolo overovanie pôvodu všetkých aktualizácií, kontrola kompatibility a obnova po neúspešnej zmene. Podpis potvrdzuje pôvod a neporušenosť balíka, nie jeho bezchybnosť — preto sú testy aj návrat k funkčnej verzii rovnako dôležité.</p>
+    <p>Jednou z možností na preskúmanie sú systémové snímky alebo oddelené systémové oddiely A/B: nová verzia sa pripraví vedľa existujúcej a po overení sa aktivuje. Takéto riešenie však vyžaduje návrh rozdelenia disku, spoluprácu bootloadera a ochranu používateľských dát; nejde o funkciu, ktorú možno pridať iba novým tlačidlom.</p>
+
+    <h3>3. Linsoft Native: vlastný desktop s moderným základom</h3>
+    <p>Vlastné rozhranie môže ďalej rozvíjať jednotnú ponuku aplikácií, nastavenia, upozornenia a prácu so súbormi. Technologickou témou do budúcnosti je Wayland — protokol pre komunikáciu aplikácií s kompozitorom, ktorý riadi zobrazovanie a vstup. Prechod by vyžadoval vhodný kompozitor a prispôsobenie nástrojov; samotný Openbox je správca okien pre X11, nie Wayland kompozitor.</p>
+    <p>Zmysel takéhoto vývoja by bol v lepšej podpore viacerých monitorov, rôznych mierok zobrazenia a riadeného prístupu aplikácií k obrazovke. Rovnako podstatné sú dostupné klávesové skratky, čitateľnosť, ovládanie bez myši a slovenská lokalizácia. Modernosť rozhrania sa meria aj tým, koľkým ľuďom umožní pohodlne pracovať.</p>
+
+    <h3>4. Linsoft Store: aplikácie s jasným pôvodom a oprávneniami</h3>
+    <p>Budúci obchod s aplikáciami môže klásť dôraz na zrozumiteľné informácie: odkiaľ aplikácia pochádza, kto ju udržiava a k čomu má prístup. Popri systémových balíkoch možno preskúmať aj Flatpak, ktorý umožňuje distribúciu aplikácií s izoláciou a používanie portálov na vybrané úkony, napríklad otvorenie súboru. Miera izolácie však závisí od udelených oprávnení; nie je automatickou zárukou bezpečnosti.</p>
+    <p>Pre používateľa by mala byť inštalácia jednoduchá, ale nie nepriehľadná. Systém má vysvetliť potrebu administrátorského oprávnenia, ukázať skutočný priebeh operácie a pri chybe ponúknuť zrozumiteľnú správu namiesto predstierania úspechu.</p>
+
+    <h3>5. Súkromie a kontrola nad vlastným počítačom</h3>
+    <p>Silnou zásadou budúceho Linsoftu môže byť lokálne fungovanie bez povinného cloudového účtu. Prípadná diagnostika odosielaná vývojárovi by mala byť dobrovoľná, s náhľadom obsahu a bez hesiel či osobných súborov. Šifrovanie disku a zálohovanie sú ďalšie témy na rozvoj, no vyžadujú spoľahlivú správu kľúčov a otestovanú obnovu dát.</p>
+
+    <h3>6. Otvorený vývoj, ktorému sa dá dôverovať</h3>
+    <p>Zverejnenie kódu je začiatok, nie koniec. Ďalším krokom môžu byť zdokumentované zostavenia, automatické testy, prehľad známych problémov a verejné výsledky overovania hardvéru. Reprodukovateľné zostavenie znamená, že z rovnakých zdrojov a definovaného prostredia možno získať bitovo rovnaký výsledok; vyžaduje kontrolu nástrojov, závislostí aj časových údajov. Je to konkrétny technický cieľ, nie nálepka.</p>
+    <p><b>Veľká vízia Linsoftu nemusí byť o najhlasnejšom sľube.</b> Môže byť o systéme zo Slovenska, ktorý má vlastnú identitu, rozvíja vlastné nástroje a svoje schopnosti dokazuje otvoreným kódom a opakovateľnými testami. Od Linsoft Kernel až po posledné tlačidlo na ploche má každá vrstva slúžiť jedinému výsledku: aby používateľ svojmu počítaču rozumel a mohol sa naň spoľahnúť.</p>
+    <p><a href="https://github.com/Linsoft1/linsoft-os/issues">Diskutovať o návrhoch a nahlásiť skúsenosti na GitHube</a></p>
+  </section>
+
   <p class="small">Autor: Martin Pastorek. Linux, Debian, XFCE a ďalší open-source softvér patria ich pôvodným autorom.</p>
 </article>
 </main>
