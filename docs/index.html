@@ -10,9 +10,10 @@
 <meta property="og:title" content="Linsoft OS 1.5">
 <meta property="og:description" content="Nové live ISO s opraveným Store, prepínaním klávesnice a logom pri štarte aj vypnutí.">
 <meta property="og:url" content="https://linsoft1.github.io/linsoft-os/">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://linsoft1.github.io/linsoft-os/img/linsoft15-desktop.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=1.5.1">
+<link rel="stylesheet" href="style.css?v=1.5.2">
 </head>
 <body>
 <a class="skip-link" href="#obsah">Preskočiť na obsah</a>
@@ -20,7 +21,7 @@
   <nav aria-label="Hlavná navigácia">
     <a class="brand" href="#top" aria-label="Linsoft OS – domov"><span class="logo">L</span><span>Linsoft OS</span></a>
     <div class="nav-links">
-      <a href="#funkcie">Funkcie</a><a href="#ukazky">Ukážky</a><a href="#verzia">Verzia</a><a href="#novinky">Novinky</a><a href="#stiahnut">Stiahnuť</a><a href="#navod">Návod</a><a href="#autor">Autor</a>
+      <a href="#funkcie">Funkcie</a><a href="#ukazky">Ukážky</a><a href="#verzia">Verzia</a><a href="#novinky">Novinky</a><a href="#stiahnut">Stiahnuť</a><a href="#navod">Návod</a><a href="#faq">Otázky</a><a href="#autor">Autor</a>
       <a href="https://github.com/Linsoft1/linsoft-os">GitHub</a>
     </div>
   </nav>
@@ -33,6 +34,13 @@
     <a class="btn ghost" href="#navod">Ako začať</a>
     <p class="small">x86-64 · BIOS aj UEFI · funguje so zapnutým Secure Boot</p>
   </div>
+      <img class="shot" src="img/linsoft15-desktop.png" width="1280" height="800" alt="Pracovná plocha Linsoft OS 1.5 s panelom a tapetou">
+      <ul class="facts" aria-label="Rýchly prehľad">
+        <li><b>Debian 13</b><span>základ systému</span></li>
+        <li><b>Secure Boot</b><span>bez vypínania</span></li>
+        <li><b>2,1 GB</b><span>live ISO</span></li>
+        <li><b>SK / US</b><span>klávesnica v paneli</span></li>
+      </ul>
 </header>
 <main id="obsah">
 <section id="funkcie">
@@ -90,7 +98,7 @@
   <p class="download-meta"><span data-iso-size>2,10 GB (1,95 GiB)</span> · <a href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso.sha256">Kontrolný súčet SHA-256</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.5">Podrobnosti vydania</a></p>
   <details class="verify">
     <summary>Ako overiť stiahnutý súbor</summary>
-    <p>SHA-256: <code class="hash">251054953813d29f921cfe62b46dbb3d3785237e32c96d30b26b2a9e2a5b5d84</code></p>
+    <p>SHA-256: <code class="hash" id="sha">251054953813d29f921cfe62b46dbb3d3785237e32c96d30b26b2a9e2a5b5d84</code> <button type="button" class="copy" data-copy="sha">Kopírovať</button></p>
     <p>Windows PowerShell: <code>Get-FileHash .\Linsoft-OS-Live.iso -Algorithm SHA256</code></p>
     <p>Linux: <code>sha256sum Linsoft-OS-Live.iso</code></p>
     <p>Výsledok musí zodpovedať súčtu vyššie alebo v priloženom súbore.</p>
@@ -121,6 +129,15 @@
     </article>
   </div>
 </section>
+<section id="faq">
+  <h2>Časté otázky</h2>
+  <details class="faq"><summary>Je Linsoft OS zadarmo?</summary><p>Áno, je to open-source projekt postavený na Debiane a ďalšom slobodnom softvéri.</p></details>
+  <details class="faq"><summary>Musím vypnúť Secure Boot?</summary><p>Nie. Zostava používa Microsoft-podpísaný shim, Debian GRUB a podpísané Debian jadro, takže Secure Boot môže ostať zapnutý.</p></details>
+  <details class="faq"><summary>Stiahol som staršie ISO 1.5. Čo mám urobiť?</summary><p>Stiahnite ISO znova, overte jeho SHA-256 súčet s hodnotou v sekcii Stiahnuť a USB zapíšte nanovo.</p></details>
+  <details class="faq"><summary>Ako prepnem klávesnicu na slovenskú?</summary><p>Kliknite na indikátor SK/US v paneli alebo stlačte Alt + Shift.</p></details>
+  <details class="faq"><summary>Môžem ho nainštalovať na disk?</summary><p>ISO obsahuje grafický inštalátor, no čistá inštalácia a prvý štart z disku ešte nie sú potvrdené. Vyskúšajte ho najprv vo virtuálnom stroji.</p></details>
+  <details class="faq"><summary>Kde nahlásim chybu?</summary><p>V <a href="https://github.com/Linsoft1/linsoft-os/issues">GitHub Issues</a> projektu.</p></details>
+</section>
 <section id="autor">
   <h2>Autor</h2>
   <div class="author"><span class="logo big">L</span><div><h3>Martin Pastorek</h3><p>Autor projektu Linsoft OS a jeho integrácie pracovnej plochy, značky a systémových nástrojov. Systém využíva Linux, Debian, Openbox a ďalší open-source softvér ich pôvodných autorov.</p></div></div>
@@ -130,5 +147,8 @@
   <p>Linsoft OS 1.5 · autor <b>Martin Pastorek</b> · postavené na Debiane 13 a Linuxe.</p>
   <p><a href="https://github.com/Linsoft1/linsoft-os/tree/main/linsoft/debian-live">Zostavenie verzie 1.5</a> · <a href="https://github.com/Linsoft1/linsoft-os/issues">Nahlásiť problém</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases">Vydania</a></p>
 </footer>
+<a class="to-top" href="#top" aria-label="Späť hore">↑</a>
+<div class="lightbox" id="lightbox" hidden><img alt=""></div>
+<script src="site.js?v=1.5.2"></script>
 </body>
 </html>
