@@ -40,6 +40,19 @@ preto určuje tapetu `linsoft-blue.svg` aj pre predvolený monitor a pracovnú p
 na ktoré zamykač prejde, ak nenájde nastavenie konkrétneho monitora. Samotná
 zmena pozadia cez Nitrogen alebo LightDM toto nastavenie nenahrádza.
 
+## SSH pripojenia cez PuTTY
+
+V Linsoft Store (`Super+S`) vyhľadaj **PuTTY** alebo otvor kategóriu
+**Internet** a nainštaluj **PuTTY – SSH klient**. Store stiahne natívny
+Debian balík `putty`; Wine nie je potrebné. Potrebuješ internet a systémové
+overenie. Ak balík nie je dostupný, najprv obnov zoznam balíkov.
+
+Po inštalácii otvor PuTTY z ponuky aplikácií alebo príkazom `putty`.
+Zadaj adresu svojho servera, vyber SSH a jeho port (zvyčajne 22).
+Pred prvým prihlásením over odtlačok hostiteľského kľúča u správcu servera.
+Táto položka inštaluje klienta, nie SSH server. V live režime bez
+perzistencie sa inštalácia a uložené relácie po reštarte stratia.
+
 ## Windows aplikácie cez Wine
 
 V Linsoft Store (`Super+S`) vyhľadaj **Wine** alebo otvor kategóriu

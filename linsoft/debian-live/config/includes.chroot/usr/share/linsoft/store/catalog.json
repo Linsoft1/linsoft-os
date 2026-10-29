@@ -5,6 +5,7 @@
   {"package": "thunderbird", "name": "Thunderbird", "category": "Internet", "description": "Poštový klient, kalendár a kontakty.", "icon": "thunderbird"},
   {"package": "transmission-gtk", "name": "Transmission", "category": "Internet", "description": "Jednoduchý klient pre BitTorrent.", "icon": "transmission"},
   {"package": "remmina", "name": "Remmina", "category": "Internet", "description": "Vzdialená plocha cez RDP, VNC a SSH.", "icon": "org.remmina.Remmina"},
+  {"package": "putty", "name": "PuTTY – SSH klient", "category": "Internet", "description": "Grafický klient na SSH pripojenie k vzdialeným serverom a správu uložených relácií. Natívna linuxová aplikácia, nevyžaduje Wine.", "icon": "putty"},
   {"package": "libreoffice", "name": "LibreOffice", "category": "Kancelária", "description": "Kompletný kancelársky balík: text, tabuľky, prezentácie.", "icon": "libreoffice-startcenter"},
   {"package": "evince", "name": "Evince", "category": "Kancelária", "description": "Prehliadač PDF a dokumentov.", "icon": "evince"},
   {"package": "simple-scan", "name": "Skenovanie", "category": "Kancelária", "description": "Jednoduché skenovanie dokumentov.", "icon": "scanner"},

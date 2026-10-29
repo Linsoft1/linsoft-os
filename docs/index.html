@@ -54,7 +54,7 @@
     <div><h3>Live režim</h3><p>Vyskúšajte systém z USB alebo vo virtuálnom stroji. Zmeny live relácie sa po reštarte stratia.</p></div>
     <div><h3>Linsoft Hub</h3><p>Ponuka Štart s vyhľadávaním a kategóriami aplikácií, zarovnaná s panelom. Otvoríte ju cez Super + Medzerník.</p></div>
     <div><h3>Panel a klávesnica</h3><p>Zaoblený panel Tint2 s časom, zvukom a indikátorom rozloženia SK/US. Prepínanie cez Alt + Shift; názvy pracovných plôch sú skryté.</p></div>
-    <div><h3>Linsoft Store</h3><p>Katalóg aplikácií z Debianu, inštalácia, odstránenie a aktualizácie cez systémové overenie. Opravené spúšťanie aplikácie aj pomocníka.</p></div>
+    <div><h3>Linsoft Store</h3><p>Katalóg aplikácií z Debianu, inštalácia, odstránenie a aktualizácie cez systémové overenie. Ponúka aj voliteľného PuTTY SSH klienta pre vzdialené pripojenia.</p></div>
     <div><h3>Linsoft Browser</h3><p>Predinštalovaný prehliadač 2.0.32 namiesto Firefoxu. Dostupný v paneli aj ponuke Štart a predvolený pre webové odkazy a HTML súbory.</p></div>
     <div><h3>Windows aplikácie cez Wine</h3><p>V Linsoft Store nájdete voliteľnú inštaláciu Wine pre Windows programy (.exe a .msi). Stiahne sa až na požiadanie; kompatibilita závisí od aplikácie.</p></div>
     <div><h3>Logo Linsoft</h3><p>Vlastná tapeta a prihlasovacia obrazovka. Plymouth pri štarte, vypnutí a reštarte zobrazuje logo so zodpovedajúcim textom.</p></div>
@@ -97,6 +97,7 @@
     <ul>
       <li><b>Linsoft Browser 2.0.32 namiesto Firefoxu:</b> predvolený pre odkazy a HTML, so spúšťačmi v paneli aj ponuke Štart a opraveným otváraním externých odkazov.</li>
       <li><b>Voliteľné Wine v Linsoft Store:</b> podpora mnohých Windows aplikácií bez predinštalovania Wine do ISO.</li>
+      <li><b>PuTTY SSH klient:</b> voliteľná natívna linuxová aplikácia v kategórii Internet v Linsoft Store, bez potreby Wine.</li>
       <li><b>Opravený Linsoft Store:</b> linuxové konce riadkov v spúšťacom skripte aj privilegovanom pomocníkovi.</li>
       <li><b>Vypínacia obrazovka:</b> logo Linsoft a text VYPÍNAM SYSTÉM; pri reštarte REŠTARTUJEM SYSTÉM.</li>
       <li>Kompaktnejší panel, zarovnaná ponuka Štart a skryté názvy pracovných plôch.</li>
@@ -112,7 +113,7 @@
   <p class="download-meta"><span data-iso-size>2,04 GB (1,90 GiB)</span> · <a href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso.sha256">Kontrolný súčet SHA-256</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.5">Podrobnosti vydania</a></p>
   <details class="verify">
     <summary>Ako overiť stiahnutý súbor</summary>
-    <p>SHA-256: <code class="hash" id="sha">4508b3a36875a8644bb5c3263dca9525cb1a9ea397f7f87fd297f599a79d8bb2</code> <button type="button" class="copy" data-copy="sha">Kopírovať</button></p>
+    <p>SHA-256: <code class="hash" id="sha">46e379e1c6323965456899087c920e5ae8cfad451c4f0cac617cf5912d8d00ac</code> <button type="button" class="copy" data-copy="sha">Kopírovať</button></p>
     <p>Windows PowerShell: <code>Get-FileHash .\Linsoft-OS-Live.iso -Algorithm SHA256</code></p>
     <p>Linux: <code>sha256sum Linsoft-OS-Live.iso</code></p>
     <p>Výsledok musí zodpovedať súčtu vyššie alebo v priloženom súbore.</p>
@@ -156,6 +157,7 @@
   <details class="faq"><summary>Musím vypnúť Secure Boot?</summary><p>Nie. Zostava používa Microsoft-podpísaný shim, Debian GRUB a podpísané Debian jadro, takže Secure Boot môže ostať zapnutý.</p></details>
   <details class="faq"><summary>Stiahol som staršie ISO 1.5. Čo mám urobiť?</summary><p>Stiahnite ISO znova, overte jeho SHA-256 súčet s hodnotou v sekcii Stiahnuť a USB zapíšte nanovo.</p></details>
   <details class="faq"><summary>Ako prepnem klávesnicu na slovenskú?</summary><p>Kliknite na indikátor SK/US v paneli alebo stlačte Alt + Shift.</p></details>
+  <details class="faq"><summary>Ako nainštalujem PuTTY na SSH pripojenie?</summary><p>Otvorte Linsoft Store cez Super + S, vyhľadajte PuTTY alebo kategóriu Internet a nainštalujte „PuTTY – SSH klient“. Potrebujete internet a systémové overenie; podľa potreby najprv obnovte zoznam balíkov. Po inštalácii otvorte PuTTY z ponuky aplikácií alebo príkazom <code>putty</code>. Zadajte adresu svojho servera, vyberte SSH a port (zvyčajne 22). Pri prvom pripojení overte odtlačok hostiteľského kľúča u správcu servera. Wine nie je potrebné; neinštaluje sa SSH server. V live režime bez perzistencie sa inštalácia a uložené relácie po reštarte stratia.</p></details>
   <details class="faq"><summary>Ako nainštalujem Windows aplikáciu?</summary><p>Otvorte Linsoft Store cez Super + S, vyhľadajte Wine a nainštalujte položku „Wine – Windows aplikácie“. Potrebujete internet a voľné miesto; podľa potreby najprv obnovte zoznam balíkov. Potom v termináli spustite <code>wine "/cesta/program.exe"</code> alebo <code>wine msiexec /i "/cesta/program.msi"</code> so skutočnou cestou k súboru. Nepoužívajte sudo a spúšťajte iba dôveryhodné programy: Wine nie je bezpečnostný sandbox. Nie všetky aplikácie a hry fungujú; staršie 32-bitové programy môžu potrebovať podporu i386/wine32. V live režime bez perzistencie sa inštalácie po reštarte stratia.</p></details>
   <details class="faq"><summary>Môžem ho nainštalovať na disk?</summary><p>ISO obsahuje grafický inštalátor, no čistá inštalácia a prvý štart z disku ešte nie sú potvrdené. Vyskúšajte ho najprv vo virtuálnom stroji.</p></details>
   <details class="faq"><summary>Kde nahlásim chybu?</summary><p>V <a href="https://github.com/Linsoft1/linsoft-os/issues">GitHub Issues</a> projektu.</p></details>

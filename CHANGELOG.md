@@ -5,6 +5,8 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Adds the native PuTTY SSH client as an optional Internet application in
+  Linsoft Store; Wine is not required.
 * Adds optional Wine installation to Linsoft Store for Windows .exe/.msi
   applications, with compatibility, 32-bit support and live-persistence notes.
 * Replaces preinstalled Firefox ESR with official Linsoft Browser 2.0.32:
