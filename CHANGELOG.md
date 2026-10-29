@@ -5,6 +5,9 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Website: fixes mobile image proportions and narrow-screen gallery overflow;
+  adds a collapsible accessible navigation on all three pages, with all links
+  still available when JavaScript is disabled.
 * Publishes the updated Debian 13 live image with the Debian-signed
   `6.12.113+deb13-amd64` kernel, Openbox, Tint2 and Linsoft Hub.
 * Boots with Secure Boot enabled (signed shim, GRUB and kernel); fixes the

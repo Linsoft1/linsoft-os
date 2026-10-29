@@ -1,10 +1,32 @@
 (function () {
-  var lb = document.getElementById("lightbox"), im = lb.querySelector("img");
-  document.querySelectorAll(".shots img").forEach(function (i) {
-    i.addEventListener("click", function () { im.src = i.src; im.alt = i.alt; lb.hidden = false; });
-  });
-  lb.addEventListener("click", function () { lb.hidden = true; });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") lb.hidden = true; });
+  var toggle = document.querySelector(".menu-toggle");
+  if (toggle) {
+    var nav = toggle.closest("nav");
+    toggle.hidden = false;
+    nav.classList.add("nav-ready");
+    function closeMenu() { toggle.setAttribute("aria-expanded", "false"); }
+    toggle.addEventListener("click", function () {
+      toggle.setAttribute("aria-expanded", String(toggle.getAttribute("aria-expanded") !== "true"));
+    });
+    nav.querySelectorAll(".nav-links a").forEach(function (link) {
+      link.addEventListener("click", closeMenu);
+    });
+    nav.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && toggle.getAttribute("aria-expanded") === "true") {
+        closeMenu();
+        toggle.focus();
+      }
+    });
+  }
+  var lb = document.getElementById("lightbox");
+  if (lb) {
+    var im = lb.querySelector("img");
+    document.querySelectorAll(".shots img").forEach(function (i) {
+      i.addEventListener("click", function () { im.src = i.src; im.alt = i.alt; lb.hidden = false; });
+    });
+    lb.addEventListener("click", function () { lb.hidden = true; });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") lb.hidden = true; });
+  }
   document.querySelectorAll(".copy").forEach(function (b) {
     b.addEventListener("click", function () {
       var s = document.getElementById(b.dataset.copy).textContent;
