@@ -1,6 +1,8 @@
 :root { --bg:#0b1426; --panel:#13213a; --ink:#e6eefb; --muted:#9fb3cf; --cyan:#45d4e0; --violet:#8b7cf6; }
 * { box-sizing: border-box; }
 html { scroll-behavior:smooth; scroll-padding-top:calc(var(--header-height, 11rem) + 1rem); }
+html { scrollbar-width:none; }
+html::-webkit-scrollbar { display:none; }
 .site-header { position:sticky; top:0; z-index:5; background:rgba(11,20,38,.97); border-bottom:1px solid #2a3f63; box-shadow:0 6px 24px #0004; }
 .site-header nav { max-height:100vh; max-height:100dvh; overflow-y:auto; }
 body { margin:0; font-family: "Segoe UI", system-ui, sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }

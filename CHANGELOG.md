@@ -5,6 +5,8 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Hides the website document scrollbar without disabling wheel, touch or
+  keyboard scrolling; nested scrollable menus keep their own scrollbars.
 * Keeps website navigation and the Linsoft logo visible while scrolling on
   all pages, with anchor offsets and scrollable menus for short viewports.
 * Organizes the community portal into eight technical topic areas with
