@@ -106,9 +106,25 @@
   <p>Verzia 1.5 je iná vetva: používa Debian 13, jeho podpísané jadro, Openbox a Tint2, vďaka čomu funguje so zapnutým Secure Boot bez registrácie kľúča. Vlastné jadro Linsoft Kernel sa v nej nepoužíva: nepodpísané vlastné jadro vo vývojovej zostave 1.5 neprešlo Secure Boot (HP hlásilo „Secure Boot Violation“), preto sme prešli na podpísané jadro Debianu. Vetva 1.0–1.4 zostáva dostupná na GitHube, no nie je s verziou 1.5 priamo kompatibilná a aktualizácia z nej nie je podporovaná.</p>
   <p><a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.4">Vydanie 1.4 (pôvodná vetva)</a> <a class="btn ghost" href="https://github.com/Linsoft1/linsoft-os/releases">Všetky vydania</a> <a class="btn ghost" href="index.html#stiahnut">Stiahnuť 1.5</a></p>
   <section aria-labelledby="projekty">
-    <h2 id="projekty">Svet Linsoft: vyhľadávanie, komunikácia a digitálna kancelária</h2>
-    <p class="lead">Linsoft nie je iba operačný systém. Jeho webové projekty rozširujú značku do troch každodenných oblastí: hľadania informácií, rozhovorov a práce s dokumentmi. Každý má vlastné rozhranie a vlastnú úlohu — spolu predstavujú širší záber tvorby Linsoft.</p>
+    <h2 id="projekty">Svet Linsoft: prehliadač, vyhľadávanie, komunikácia a kancelária</h2>
+    <p class="lead">Linsoft nie je iba operačný systém. Jeho projekty rozširujú značku do každodenných oblastí: prehliadania webu, hľadania informácií, rozhovorov a práce s dokumentmi. Každý má vlastné rozhranie a vlastnú úlohu — spolu predstavujú širší záber tvorby Linsoft.</p>
     <div class="project-list">
+      <article class="project-card" aria-labelledby="projekt-browser">
+        <a class="project-preview" href="img/linsoft-browser.webp" aria-label="Zväčšiť snímku Linsoft Browser">
+          <span class="preview-bar" aria-hidden="true"><span class="preview-dots">● ● ●</span><span>Linsoft Browser</span><span>linsoft1.github.io</span></span>
+          <img src="img/linsoft-browser.webp" width="1109" height="768" loading="lazy" alt="Linsoft Browser s kartami, adresným riadkom a vlastnou domovskou stránkou s vyhľadávaním a rýchlym prístupom">
+        </a>
+        <div class="project-body">
+          <p class="version">Váš web. Pod vašou kontrolou.</p>
+          <h3 id="projekt-browser">Linsoft Browser</h3>
+          <p>Samostatný počítačový prehliadač pre Windows a distribúcie Linuxu založené na Debiane, napríklad Ubuntu. Projekt zverejňuje vlastný zdrojový kód pod licenciou MIT. Jeho domovská stránka spája vyhľadávanie s rýchlym prístupom k obľúbeným webom a dopĺňa rozhranie s kartami a adresným riadkom.</p>
+          <p>Oficiálna stránka predstavuje záložky, históriu, správu sťahovania, centrum webových aplikácií a otváranie miestnych PDF súborov. Medzi pokročilejšie možnosti uvádza podporu OpenVPN a samostatné voliteľné Tor nástroje. Ako vyhľadávač možno podľa dokumentácie vybrať Google, Bing, DuckDuckGo alebo Linsoft Search.</p>
+          <p><b>Pohľad na projekt:</b> Linsoft Browser dáva ekosystému vlastné vstupné miesto na web. Zaujímavé je prepojenie bežného prehliadania s prístupom k službám Linsoft a otvorenosťou kódu, ktorú môžu technicky zvedaví používatelia využiť na štúdium či úpravy podľa licencie. Je to samostatná aplikácia, nie iba webová stránka vyhľadávača.</p>
+          <p><b>Súkromie bez prehnaných sľubov:</b> Podľa stránky sa história a záložky ukladajú do lokálneho profilu a automaticky sa nesynchronizujú cez cloudové konto. Vyhľadávacie dopyty však dostáva vybraný poskytovateľ a blokovanie sledovania nie je úplné. Bežné prehliadanie nejde automaticky cez Tor a projekt negarantuje anonymitu.</p>
+          <p><a class="btn" href="https://linsoft1.github.io/v2.0.1/">Spoznať Linsoft Browser</a> <a class="btn ghost" href="https://github.com/Linsoft1/v2.0.1">Zdrojový kód</a></p>
+          <p class="small">Originálna snímka prevzatá z oficiálnej stránky projektu 29. 10. 2026. Popis vychádza z jeho dokumentácie; inštalácia a funkcie prehliadača tu neboli prakticky testované. Uvedenie projektu nepotvrdzuje jeho prítomnosť v ISO Linsoft OS 1.5.</p>
+        </div>
+      </article>
       <article class="project-card" aria-labelledby="projekt-search">
         <a class="project-preview" href="img/linsoft-search.png?v=2" aria-label="Zväčšiť snímku Linsoft Search">
           <span class="preview-bar" aria-hidden="true"><span class="preview-dots">● ● ●</span><span>Linsoft Search</span><span>linsoft.ddns.net</span></span>
@@ -151,7 +167,7 @@
         </div>
       </article>
     </div>
-    <p class="small">Skutočné snímky verejných úvodných rozhraní z 28. 10. 2026; kliknutím sa otvoria v plnej veľkosti. Popisy vychádzajú zo zobrazených stránok. Webové služby sú samostatné projekty: ich uvedenie neznamená, že sú nainštalované v ISO Linsoft OS 1.5.</p>
+    <p class="small">Snímky Search, Chat a Office zachytávajú verejné úvodné rozhrania z 28. 10. 2026; kliknutím sa otvoria v plnej veľkosti. Popisy vychádzajú zo zobrazených stránok. Ide o samostatné projekty: ich uvedenie neznamená, že sú nainštalované v ISO Linsoft OS 1.5.</p>
   </section>
 
   <section aria-labelledby="buducnost">
