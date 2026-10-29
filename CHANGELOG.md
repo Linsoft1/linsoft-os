@@ -5,6 +5,8 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Adds optional Wine installation to Linsoft Store for Windows .exe/.msi
+  applications, with compatibility, 32-bit support and live-persistence notes.
 * Replaces preinstalled Firefox ESR with official Linsoft Browser 2.0.32:
   panel and Hub launchers, Openbox menus, HTTP/HTTPS/HTML associations, XFCE
   helper and system browser alternatives. Build verifies the downloaded

@@ -56,6 +56,7 @@
     <div><h3>Panel a klávesnica</h3><p>Zaoblený panel Tint2 s časom, zvukom a indikátorom rozloženia SK/US. Prepínanie cez Alt + Shift; názvy pracovných plôch sú skryté.</p></div>
     <div><h3>Linsoft Store</h3><p>Katalóg aplikácií z Debianu, inštalácia, odstránenie a aktualizácie cez systémové overenie. Opravené spúšťanie aplikácie aj pomocníka.</p></div>
     <div><h3>Linsoft Browser</h3><p>Predinštalovaný prehliadač 2.0.32 namiesto Firefoxu. Dostupný v paneli aj ponuke Štart a predvolený pre webové odkazy a HTML súbory.</p></div>
+    <div><h3>Windows aplikácie cez Wine</h3><p>V Linsoft Store nájdete voliteľnú inštaláciu Wine pre Windows programy (.exe a .msi). Stiahne sa až na požiadanie; kompatibilita závisí od aplikácie.</p></div>
     <div><h3>Logo Linsoft</h3><p>Vlastná tapeta a prihlasovacia obrazovka. Plymouth pri štarte, vypnutí a reštarte zobrazuje logo so zodpovedajúcim textom.</p></div>
     <div><h3>Nastavenia</h3><p>Sieť cez NetworkManager, zvuk, obrazovky, Bluetooth a informácie o PC. Dostupnosť zariadení treba overiť na konkrétnom počítači.</p></div>
   </div>
@@ -71,6 +72,7 @@
     <figure><img src="img/linsoft15-installer.png?v=3" width="1280" height="800" loading="lazy" alt="Grafický inštalátor Linsoft v tmavej téme – výber jazyka"><figcaption>Inštalátor Linsoft (tmavá téma)</figcaption></figure>
     <figure><img src="img/linsoft15-lockscreen.png" width="1280" height="800" loading="lazy" alt="Odomykacia obrazovka s vlastnou tapetou a logom Linsoft OS 1.5"><figcaption>Zamknutá obrazovka s tapetou Linsoft</figcaption></figure>
     <figure><img src="img/linsoft15-browser.png" width="1280" height="800" loading="lazy" alt="Linsoft Browser otvorený v Linsoft OS 1.5 s webovou stránkou projektu"><figcaption>Linsoft Browser priamo v systéme</figcaption></figure>
+    <figure><img src="img/linsoft15-wine.png" width="1280" height="800" loading="lazy" alt="Poznámkový blok spustený cez dodatočne nainštalované Wine v Linsoft OS 1.5"><figcaption>Voliteľné Wine: spustený Poznámkový blok</figcaption></figure>
   </div>
 </section>
 <section id="verzia">
@@ -94,6 +96,7 @@
     <p class="version">28. 10. 2026 · aktualizovaná Debian live zostava</p>
     <ul>
       <li><b>Linsoft Browser 2.0.32 namiesto Firefoxu:</b> predvolený pre odkazy a HTML, so spúšťačmi v paneli aj ponuke Štart a opraveným otváraním externých odkazov.</li>
+      <li><b>Voliteľné Wine v Linsoft Store:</b> podpora mnohých Windows aplikácií bez predinštalovania Wine do ISO.</li>
       <li><b>Opravený Linsoft Store:</b> linuxové konce riadkov v spúšťacom skripte aj privilegovanom pomocníkovi.</li>
       <li><b>Vypínacia obrazovka:</b> logo Linsoft a text VYPÍNAM SYSTÉM; pri reštarte REŠTARTUJEM SYSTÉM.</li>
       <li>Kompaktnejší panel, zarovnaná ponuka Štart a skryté názvy pracovných plôch.</li>
@@ -109,7 +112,7 @@
   <p class="download-meta"><span data-iso-size>2,04 GB (1,90 GiB)</span> · <a href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso.sha256">Kontrolný súčet SHA-256</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.5">Podrobnosti vydania</a></p>
   <details class="verify">
     <summary>Ako overiť stiahnutý súbor</summary>
-    <p>SHA-256: <code class="hash" id="sha">3b01554f3222a6e5f5c9cbe4c43b8dd28ad931d1b1729f0f70cf445c44c53103</code> <button type="button" class="copy" data-copy="sha">Kopírovať</button></p>
+    <p>SHA-256: <code class="hash" id="sha">4508b3a36875a8644bb5c3263dca9525cb1a9ea397f7f87fd297f599a79d8bb2</code> <button type="button" class="copy" data-copy="sha">Kopírovať</button></p>
     <p>Windows PowerShell: <code>Get-FileHash .\Linsoft-OS-Live.iso -Algorithm SHA256</code></p>
     <p>Linux: <code>sha256sum Linsoft-OS-Live.iso</code></p>
     <p>Výsledok musí zodpovedať súčtu vyššie alebo v priloženom súbore.</p>
@@ -153,6 +156,7 @@
   <details class="faq"><summary>Musím vypnúť Secure Boot?</summary><p>Nie. Zostava používa Microsoft-podpísaný shim, Debian GRUB a podpísané Debian jadro, takže Secure Boot môže ostať zapnutý.</p></details>
   <details class="faq"><summary>Stiahol som staršie ISO 1.5. Čo mám urobiť?</summary><p>Stiahnite ISO znova, overte jeho SHA-256 súčet s hodnotou v sekcii Stiahnuť a USB zapíšte nanovo.</p></details>
   <details class="faq"><summary>Ako prepnem klávesnicu na slovenskú?</summary><p>Kliknite na indikátor SK/US v paneli alebo stlačte Alt + Shift.</p></details>
+  <details class="faq"><summary>Ako nainštalujem Windows aplikáciu?</summary><p>Otvorte Linsoft Store cez Super + S, vyhľadajte Wine a nainštalujte položku „Wine – Windows aplikácie“. Potrebujete internet a voľné miesto; podľa potreby najprv obnovte zoznam balíkov. Potom v termináli spustite <code>wine "/cesta/program.exe"</code> alebo <code>wine msiexec /i "/cesta/program.msi"</code> so skutočnou cestou k súboru. Nepoužívajte sudo a spúšťajte iba dôveryhodné programy: Wine nie je bezpečnostný sandbox. Nie všetky aplikácie a hry fungujú; staršie 32-bitové programy môžu potrebovať podporu i386/wine32. V live režime bez perzistencie sa inštalácie po reštarte stratia.</p></details>
   <details class="faq"><summary>Môžem ho nainštalovať na disk?</summary><p>ISO obsahuje grafický inštalátor, no čistá inštalácia a prvý štart z disku ešte nie sú potvrdené. Vyskúšajte ho najprv vo virtuálnom stroji.</p></details>
   <details class="faq"><summary>Kde nahlásim chybu?</summary><p>V <a href="https://github.com/Linsoft1/linsoft-os/issues">GitHub Issues</a> projektu.</p></details>
 </section>

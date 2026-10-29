@@ -1,4 +1,5 @@
 [
+  {"package": "wine", "name": "Wine – Windows aplikácie", "category": "Systém", "description": "Voliteľná podpora Windows aplikácií (.exe a .msi). Vyžaduje internet a voľné miesto; nie všetky programy fungujú. Staršie 32-bitové aplikácie môžu vyžadovať ďalšie balíky.", "icon": "applications-other"},
   {"package": "firefox-esr", "name": "Firefox", "category": "Internet", "description": "Rýchly a súkromný webový prehliadač.", "icon": "web-browser"},
   {"package": "chromium", "name": "Chromium", "category": "Internet", "description": "Open-source webový prehliadač.", "icon": "chromium"},
   {"package": "thunderbird", "name": "Thunderbird", "category": "Internet", "description": "Poštový klient, kalendár a kontakty.", "icon": "thunderbird"},

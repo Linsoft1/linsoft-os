@@ -40,7 +40,32 @@ preto určuje tapetu `linsoft-blue.svg` aj pre predvolený monitor a pracovnú p
 na ktoré zamykač prejde, ak nenájde nastavenie konkrétneho monitora. Samotná
 zmena pozadia cez Nitrogen alebo LightDM toto nastavenie nenahrádza.
 
-## Čo potrebuješ
+## Windows aplikácie cez Wine
+
+V Linsoft Store (`Super+S`) vyhľadaj **Wine** alebo otvor kategóriu
+**Systém** a nainštaluj **Wine – Windows aplikácie**. Ak je zoznam balíkov
+zastaraný, najprv stlač **Obnoviť zoznam balíkov**. Wine nie je predinštalované:
+Store ho stiahne z nakonfigurovaných Debian repozitárov a vyžiada systémové
+overenie. Potrebuješ internet a dostatok voľného miesta.
+
+Po inštalácii môžeš z terminálu spustiť dôveryhodný inštalátor:
+
+```sh
+wine "$HOME/Downloads/program.exe"
+wine msiexec /i "$HOME/Downloads/program.msi"
+winecfg
+```
+
+Nahraď cestu skutočným umiestnením stiahnutého súboru. Wine spúšťaj ako
+bežný používateľ, nie cez `sudo`. Nie je to bezpečnostný sandbox:
+Windows program môže pristupovať k tvojim súborom. Nie všetky aplikácie,
+ovládače, hry s anti-cheat ochranou ani Microsoft Store aplikácie fungujú.
+Základná inštalácia na amd64 je určená najmä pre 64-bitové programy;
+32-bitové programy môžu potrebovať dodatočnú podporu i386/wine32.
+V live režime bez perzistencie sa Wine aj nainštalované aplikácie po
+reštarte stratia. Fyzický Windows ani jeho licenciu tým neinštaluješ.
+
+## Čo potrebuješ na zostavenie
 
 - Počítač s Debianom 13 alebo kompatibilnou distribúciou založenou na Debiane
 - Pripojenie na internet
