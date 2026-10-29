@@ -23,7 +23,10 @@ PINNED_APPS = (
         "Zvuk",
         "pavucontrol",
     ),
-    ("lxappearance.desktop", "preferences-system", "Nastavenia", "lxappearance"),
+    ("xfce4-settings-manager.desktop", "preferences-system", "Nastavenia", "xfce4-settings-manager"),
+    ("linsoft-system-info.desktop", "org.linsoft.OS", "O Linsoft OS", "linsoft-system-info"),
+    ("linsoft-updates.desktop", "system-software-update", "Aktualizácie", "linsoft-system-info --updates"),
+    ("linsoft-printers.desktop", "printer", "Tlačiarne", "system-config-printer"),
     (
         "xfce-display-settings.desktop",
         "preferences-desktop-display",

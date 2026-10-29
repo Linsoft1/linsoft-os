@@ -5,6 +5,11 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Adds branded About Linsoft OS and Updates panels to system settings, Hub
+  and Openbox menus. Checks the latest stable GitHub release on demand,
+  reports network errors and distinguishes ISO releases from Debian package
+  updates through Linsoft Store. No automatic ISO migration is performed.
+* Adds CUPS, its PolicyKit helper and printer settings for adding printers.
 * Adds the native PuTTY SSH client as an optional Internet application in
   Linsoft Store; Wine is not required.
 * Adds optional Wine installation to Linsoft Store for Windows .exe/.msi

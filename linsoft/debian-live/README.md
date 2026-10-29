@@ -40,6 +40,31 @@ preto určuje tapetu `linsoft-blue.svg` aj pre predvolený monitor a pracovnú p
 na ktoré zamykač prejde, ak nenájde nastavenie konkrétneho monitora. Samotná
 zmena pozadia cez Nitrogen alebo LightDM toto nastavenie nenahrádza.
 
+## Informácie, tlačiarne a aktualizácie v nastaveniach
+
+Otvorte **Nastavenia** v Linsoft Hub alebo **Nastavenia systému** v ponuke
+Openbox. V správcovi nastavení sú dostupné:
+
+- **O Linsoft OS**: značkové logo, verzia z `/etc/os-release`, autor,
+  skutočne spustené jadro a architektúra. Spúšťač: `linsoft-system-info`.
+- **Tlačiarne – pridať a nastaviť**: `system-config-printer` s CUPS
+  a `cups-pk-helper` na overené administrátorské operácie. Tlačidlom
+  **Pridať** vyberte lokálnu alebo sieťovú tlačiareň. Niektoré modely
+  vyžadujú samostatný ovládač; fyzická tlač nebola certifikovaná.
+- **Aktualizácie Linsoft OS**: `linsoft-system-info --updates`.
+  Kontrola prebieha až po kliknutí, cez oficiálne GitHub API projektu
+  `Linsoft1/linsoft-os`, s časovým limitom a viditeľnou chybou pri výpadku.
+  Porovnáva číselné verzie, ponúka vydanie na GitHube a Linsoft Store.
+
+Aktualizácia balíkov Debianu cez Store nie je prechodom na nové vydanie
+Linsoft OS. Automatická inštalácia ISO ani výmena jadra z GitHubu sa
+nevykonáva. Vydanie `v1.5` môže obsahovať novšie zostavenie s rovnakou
+verziou: preto treba overiť aj SHA-256 z webu. V live režime bez perzistencie
+sa nastavenia a aktualizácie po reštarte stratia.
+
+Regresné testy kontroly vydaní: `python3 tools/test-system-info.py`
+z koreňa repozitára, v prostredí s PyGObject a GTK 3.
+
 ## SSH pripojenia cez PuTTY
 
 V Linsoft Store (`Super+S`) vyhľadaj **PuTTY** alebo otvor kategóriu

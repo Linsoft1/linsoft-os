@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=O Linsoft OS
+Comment=Logo, verzia systému Linsoft OS a informácie o jadre
+Exec=linsoft-system-info
+Icon=org.linsoft.OS
+Terminal=false
+Categories=Settings;System;X-XFCE-SettingsDialog;
+X-XfcePluggable=false
+X-XFCE-SettingsName=Linsoft OS
+Keywords=Linsoft;verzia;logo;informácie;

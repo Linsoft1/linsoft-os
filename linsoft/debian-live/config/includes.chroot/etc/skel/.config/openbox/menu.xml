@@ -38,6 +38,15 @@
         <command>lxappearance</command>
       </action>
     </item>
+    <item label="O Linsoft OS">
+      <action name="Execute"><command>linsoft-system-info</command></action>
+    </item>
+    <item label="Aktualizácie Linsoft OS">
+      <action name="Execute"><command>linsoft-system-info --updates</command></action>
+    </item>
+    <item label="Tlačiarne – pridať a nastaviť">
+      <action name="Execute"><command>system-config-printer</command></action>
+    </item>
     <item label="Obrazovka">
       <action name="Execute">
         <command>xfce4-display-settings</command>

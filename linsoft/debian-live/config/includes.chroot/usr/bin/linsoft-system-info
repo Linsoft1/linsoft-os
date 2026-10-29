@@ -1,0 +1,195 @@
+#!/usr/bin/python3
+
+import json
+import platform
+import re
+import subprocess
+import sys
+import threading
+import urllib.error
+import urllib.request
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gio, GLib, Gtk
+
+RELEASES = "https://github.com/Linsoft1/linsoft-os/releases"
+LATEST_API = "https://api.github.com/repos/Linsoft1/linsoft-os/releases/latest"
+
+
+def version_parts(value):
+    if not isinstance(value, str) or not re.fullmatch(r"v?\d+(?:\.\d+)*", value):
+        raise ValueError("Nepodporovaný formát verzie: %r" % value)
+    return tuple(int(part) for part in value.lstrip("v").split("."))
+
+
+def compare_versions(latest, installed):
+    left, right = version_parts(latest), version_parts(installed)
+    length = max(len(left), len(right))
+    left += (0,) * (length - len(left))
+    right += (0,) * (length - len(right))
+    return (left > right) - (left < right)
+
+
+def fetch_latest():
+    request = urllib.request.Request(
+        LATEST_API,
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "Linsoft-OS"},
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        content = response.read(1048577)
+    if len(content) > 1048576:
+        raise ValueError("Odpoveď GitHubu je príliš veľká.")
+    release = json.loads(content)
+    if not isinstance(release, dict):
+        raise ValueError("GitHub nevrátil platné vydanie.")
+    tag = release.get("tag_name")
+    version_parts(tag)
+    if release.get("draft") or release.get("prerelease"):
+        raise ValueError("GitHub nevrátil stabilné vydanie.")
+    return tag
+
+
+class SystemInfo(Gtk.Application):
+    def __init__(self, updates=False):
+        super().__init__(
+            application_id="org.linsoft.SystemInfo",
+            flags=Gio.ApplicationFlags.NON_UNIQUE,
+        )
+        self.updates = updates
+        self.window = None
+        self.latest_url = RELEASES
+
+    def do_activate(self):
+        if self.window is not None:
+            self.window.present()
+            return
+        self.window = Gtk.ApplicationWindow(application=self, title="Linsoft OS – systém")
+        self.window.set_default_size(650, 540)
+        self.window.set_icon_name("org.linsoft.OS")
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14, margin=22)
+        self.window.add(root)
+        root.pack_start(
+            Gtk.Image.new_from_file("/usr/share/pixmaps/linsoft-logo.svg"),
+            False, False, 0,
+        )
+        self.notebook = Gtk.Notebook()
+        root.pack_start(self.notebook, True, True, 0)
+        about = self.page("O Linsoft OS")
+        try:
+            info = platform.freedesktop_os_release()
+            self.version = info["VERSION_ID"]
+            version_parts(self.version)
+            self.label(about, info["PRETTY_NAME"])
+        except (OSError, KeyError, ValueError) as error:
+            self.version = None
+            self.label(about, "Nepodarilo sa načítať verziu systému: %s" % error)
+        self.label(about, "Autor: Martin Pastorek · Linsoft Global · Slovensko")
+        self.label(about, "Jadro: %s\nArchitektúra: %s" % (
+            platform.release(), platform.machine(),
+        ))
+        self.label(about, "Debian 13 · Openbox · Tint2 · Linsoft Hub")
+        self.button(about, "Web Linsoft OS", lambda _button: self.open_uri(
+            "https://linsoft1.github.io/linsoft-os/"
+        ))
+        updates_page = self.page("Aktualizácie")
+        self.label(updates_page, "Nainštalovaná verzia: %s" % (
+            self.version or "neznáma",
+        ))
+        self.status = self.label(
+            updates_page, "Stlačte Skontrolovať vydanie na GitHube."
+        )
+        self.check_button = self.button(
+            updates_page, "Skontrolovať vydanie na GitHube", self.check_release
+        )
+        self.button(updates_page, "Otvoriť vydanie / stiahnuť ISO",
+                    lambda _button: self.open_uri(self.latest_url))
+        self.button(updates_page, "Aktualizácie balíkov – Linsoft Store",
+                    lambda _button: self.open_store())
+        self.label(
+            updates_page,
+            "Kontrola GitHubu nepreinštaluje systém. Nové ISO treba stiahnuť "
+            "a pripraviť samostatne. Rovnaké číslo vydania nevylučuje "
+            "novšie zostavenie ISO; overte aj jeho SHA-256 na webe.\n\n"
+            "V Linsoft Store vyberte Nainštalovať aktualizácie pre systémové "
+            "balíky. V live režime bez perzistencie sa zmeny po reštarte stratia.",
+        )
+        self.window.show_all()
+        self.notebook.set_current_page(1 if self.updates else 0)
+
+    def page(self, title):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin=16)
+        self.notebook.append_page(box, Gtk.Label(label=title))
+        return box
+
+    def label(self, box, text):
+        label = Gtk.Label(label=text, xalign=0)
+        label.set_line_wrap(True)
+        label.set_max_width_chars(70)
+        label.set_selectable(True)
+        box.pack_start(label, False, False, 0)
+        return label
+
+    def button(self, box, title, callback):
+        button = Gtk.Button(label=title)
+        button.connect("clicked", callback)
+        box.pack_start(button, False, False, 0)
+        return button
+
+    def error(self, message):
+        dialog = Gtk.MessageDialog(
+            transient_for=self.window, modal=True,
+            message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE,
+            text=message,
+        )
+        dialog.run()
+        dialog.destroy()
+
+    def open_uri(self, uri):
+        try:
+            Gio.AppInfo.launch_default_for_uri(uri, None)
+        except GLib.Error as error:
+            self.error("Odkaz sa nepodarilo otvoriť: %s" % error)
+
+    def open_store(self):
+        try:
+            subprocess.Popen(["linsoft-store"])
+        except OSError as error:
+            self.error("Linsoft Store sa nepodarilo spustiť: %s" % error)
+
+    def check_release(self, _button):
+        self.check_button.set_sensitive(False)
+        self.status.set_text("Kontrolujem stabilné vydanie na GitHube…")
+
+        def work():
+            try:
+                tag = fetch_latest()
+                comparison = compare_versions(tag, self.version) if self.version else None
+                if comparison is None:
+                    message = "Najnovšie vydanie: %s. Miestna verzia je neznáma." % tag
+                elif comparison > 0:
+                    message = "Dostupná je novšia verzia Linsoft OS: %s." % tag
+                elif comparison == 0:
+                    message = "GitHub aj systém majú verziu %s. Skontrolujte aj zostavenie ISO." % tag
+                else:
+                    message = "Miestna verzia je novšia než stabilné vydanie %s." % tag
+                GLib.idle_add(self.finish_check, message, RELEASES + "/tag/" + tag)
+            except (OSError, urllib.error.URLError, ValueError) as error:
+                GLib.idle_add(
+                    self.finish_check,
+                    "Kontrola zlyhala: %s. Skontrolujte internet alebo skúste neskôr." % error,
+                    RELEASES,
+                )
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def finish_check(self, message, url):
+        self.latest_url = url
+        self.status.set_text(message)
+        self.check_button.set_sensitive(True)
+        return GLib.SOURCE_REMOVE
+
+
+if __name__ == "__main__":
+    SystemInfo(updates="--updates" in sys.argv[1:]).run([sys.argv[0]])

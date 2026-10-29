@@ -46,5 +46,6 @@ chmod +x "$openbox_defaults/autostart"
 chmod +x config/hooks/normal/9000-linsoft-branding.hook.binary
 chmod +x config/hooks/normal/7000-linsoft-plymouth.hook.chroot
 chmod +x config/hooks/normal/7100-linsoft-browser.hook.chroot
+chmod +x config/includes.chroot/usr/bin/linsoft-system-info
 lb clean --all
 MKSQUASHFS_OPTIONS="${MKSQUASHFS_OPTIONS:-} -b 1048576" lb build

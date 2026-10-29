@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Aktualizácie Linsoft OS
+Comment=Kontrola verzie na GitHube a aktualizácie systémových balíkov
+Exec=linsoft-system-info --updates
+Icon=system-software-update
+Terminal=false
+Categories=Settings;System;X-XFCE-SettingsDialog;
+X-XfcePluggable=false
+X-XFCE-SettingsName=Linsoft Updates
+Keywords=Linsoft;GitHub;verzia;aktualizácie;

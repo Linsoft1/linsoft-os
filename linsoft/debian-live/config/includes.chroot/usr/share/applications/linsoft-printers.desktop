@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Tlačiarne – pridať a nastaviť
+Comment=Pridanie tlačiarne a nastavenie tlače cez CUPS
+Exec=system-config-printer
+Icon=printer
+Terminal=false
+Categories=Settings;HardwareSettings;X-XFCE-SettingsDialog;
+X-XfcePluggable=false
+X-XFCE-SettingsName=Linsoft Printers
+Keywords=Linsoft;printer;print;tlač;tlačiareň;

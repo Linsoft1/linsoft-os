@@ -1,4 +1,7 @@
 fonts-dejavu-core
+cups
+cups-pk-helper
+system-config-printer
 dbus-x11
 xdg-utils
 arandr
