@@ -5,6 +5,8 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Adds a Linsoft community portal linking GitHub Discussions categories,
+  topic creation, a welcome thread and public participation guidelines.
 * Adds annotated Linsoft project links to the wiki and a public GitHub
   Discussions thread for visitor questions and comments (GitHub login required
   to post; no third-party comment scripts embedded).
