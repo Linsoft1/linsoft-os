@@ -27,6 +27,7 @@
       <a href="index.html#stiahnut">Stiahnuť OS</a>
       <a href="wiki.html">Wiki</a>
       <a href="komunita.html" aria-current="page">Komunita</a>
+      <a href="#temy">Témy fóra</a>
       <a href="#pravidla">Pravidlá</a>
       <a href="https://github.com/Linsoft1/linsoft-os">GitHub</a>
       <a class="nav-company" href="o-spolocnosti.html">O spoločnosti</a>
@@ -37,14 +38,83 @@
     <h1>Komunita Linsoft</h1>
     <p class="tag">Pýtajte sa. Zdieľajte skúsenosti. Tvorte s nami.</p>
     <p>Verejné fórum pre používateľov Linsoft OS a záujemcov o projekty Linsoft. Miesto pre pomoc, návody aj nové nápady.</p>
+    <a class="btn" href="#temy">Nájsť správnu oblasť</a>
     <a class="btn" href="https://github.com/Linsoft1/linsoft-os/discussions">Otvoriť komunitné fórum</a>
     <a class="btn ghost" href="https://github.com/Linsoft1/linsoft-os/discussions/new">Založiť novú tému</a>
     <p class="small">Fórum funguje cez GitHub Discussions. Na písanie príspevkov a reakcií potrebujete účet GitHub.</p>
   </div>
 </header>
 <main id="obsah">
+  <section aria-labelledby="temy">
+    <h2 id="temy">Čo presne hľadáte?</h2>
+    <p>Vyberte oblasť podľa toho, čo riešite. Každá má vlastnú spoločnú diskusiu na GitHube s vysvetlením, čo do nej patrí a aké údaje priložiť. Pre samostatný problém môžete založiť novú otázku; tieto tematické diskusie nie sú ďalšími GitHub kategóriami.</p>
+    <div class="grid">
+      <div>
+        <h3 id="kernel">Kernel a ovládače</h3>
+        <p><b>Patrí sem:</b> jadro, moduly, ovládače a chyby pri štarte súvisiace s jadrom. Napríklad „Po načítaní jadra je čierna obrazovka“ alebo „Chýba modul zariadenia“.</p>
+        <p><b>Priložte:</b> výsledok <code>uname -r</code>, model hardvéru a presnú chybu. Rozlíšte Debian/Openbox 1.5 od pôvodnej vetvy Linsoft Kernel 1.0–1.4.</p>
+        <p><a href="https://github.com/Linsoft1/linsoft-os/discussions/3">Diskusia: Kernel a ovládače</a> · <a href="wiki.html#system">Vysvetlenie verzií a jadra</a></p>
+      </div>
+      <div>
+        <h3 id="skripty">Skripty a automatizácia</h3>
+        <p><b>Patrí sem:</b> Bash, shell, spúšťače, automatické úlohy a skripty na správu systému. Napríklad „Ako spustiť skript po prihlásení?“.</p>
+        <p><b>Priložte:</b> použitý shell, krátku ukážku skriptu, príkaz spustenia, očakávaný výsledok a chybu. Odstráňte heslá a tokeny; upozornite na sudo a operácie s diskami.</p>
+        <p><a href="https://github.com/Linsoft1/linsoft-os/discussions/4">Diskusia: Skripty a automatizácia</a></p>
+      </div>
+      <div>
+        <h3 id="programovanie">Programovanie a vývoj</h3>
+        <p><b>Patrí sem:</b> Python, C/C++, GTK, webové aplikácie, kompilácia, vývoj nástrojov Linsoft a zostavenie ISO. Napríklad „Zostavenie aplikácie končí chybou“.</p>
+        <p><b>Priložte:</b> jazyk, verzie nástrojov, minimálny príklad a výpis chyby. Zmeny zdrojového kódu navrhujte cez pull request; rešpektujte licencie.</p>
+        <p><a href="https://github.com/Linsoft1/linsoft-os/discussions/5">Diskusia: Programovanie a vývoj</a> · <a href="https://github.com/Linsoft1/linsoft-os/tree/main/linsoft/debian-live">Zdroj zostavy</a></p>
+      </div>
+      <div>
+        <h3 id="opravy">Opravy a riešenie problémov</h3>
+        <p><b>Patrí sem:</b> pády, chybové hlásenia, nefunkčné nastavenia a hľadanie príčiny. Napríklad „Po otvorení nastavení aplikácia spadne“.</p>
+        <p><b>Priložte:</b> verziu a SHA-256 ISO, live alebo nainštalovaný režim, kroky zopakovania a očakávané/skutočné správanie. Konkrétnu chybu systému evidujte v Issues.</p>
+        <p><a href="https://github.com/Linsoft1/linsoft-os/discussions/6">Diskusia: Opravy a diagnostika</a> · <a href="https://github.com/Linsoft1/linsoft-os/issues/new">Nahlásiť chybu</a></p>
+      </div>
+      <div>
+        <h3 id="hardver">Hardvér, sieť a tlačiarne</h3>
+        <p><b>Patrí sem:</b> Wi-Fi, Ethernet, Bluetooth, zvuk, grafika, USB a tlačiarne. Napríklad „Nevidím Wi-Fi sieť“ alebo „Ako pridať sieťovú tlačiareň?“.</p>
+        <p><b>Priložte:</b> model zariadenia, spôsob pripojenia a verziu jadra. Ak už viete, že ide o konkrétny modul jadra, pokračujte v oblasti Kernel.</p>
+        <p><a href="https://github.com/Linsoft1/linsoft-os/discussions/7">Diskusia: Hardvér a pripojenia</a> · <a href="wiki.html#tlaciarne">Návod pre tlačiarne</a></p>
+      </div>
+      <div>
+        <h3 id="aplikacie">Aplikácie, Store, Wine a PuTTY</h3>
+        <p><b>Patrí sem:</b> inštalácia a používanie aplikácií, Linsoft Browser, Windows programy cez Wine a SSH cez PuTTY. Napríklad „Ako nainštalovať PuTTY?“.</p>
+        <p><b>Priložte:</b> názov/verziu programu, zdroj inštalácie a chybu. Pri Wine uveďte 32/64-bitový program. PuTTY je natívny klient bez potreby Wine.</p>
+        <p><a href="https://github.com/Linsoft1/linsoft-os/discussions/8">Diskusia: Aplikácie a Store</a> · <a href="wiki.html#store">Store</a> · <a href="wiki.html#wine">Wine</a> · <a href="wiki.html#putty">PuTTY</a></p>
+      </div>
+      <div>
+        <h3 id="instalacia">Inštalácia, USB a aktualizácie</h3>
+        <p><b>Patrí sem:</b> zápis USB, ISO, SHA-256, BIOS/UEFI, Secure Boot, inštalátor a nové vydania. Napríklad „USB sa nespustí“ alebo „Je novšie ISO 1.5?“.</p>
+        <p><b>Priložte:</b> zostavu ISO, model počítača a režim BIOS/UEFI. Aktualizácia balíkov nie je prechod na nové ISO. Pred zásahom do disku zálohujte dáta.</p>
+        <p><a href="https://github.com/Linsoft1/linsoft-os/discussions/9">Diskusia: Inštalácia a aktualizácie</a> · <a href="wiki.html#usb">Live USB</a> · <a href="wiki.html#aktualizacie">Aktualizácie</a></p>
+      </div>
+      <div>
+        <h3 id="ostatne">Ostatné, vzhľad a projekty Linsoft</h3>
+        <p><b>Patrí sem:</b> témy plochy, panel, tapety, projekty Search/Chat/Office, predstavenie členov a otázky, ktoré nespadajú do oblastí vyššie.</p>
+        <p><b>Priložte:</b> názov projektu a čo chcete dosiahnuť. Nové funkcie navrhujte v Ideas; hotové návody zdieľajte v Show and tell.</p>
+        <p><a href="https://github.com/Linsoft1/linsoft-os/discussions/10">Diskusia: Ostatné a projekty</a> · <a href="wiki.html#projekty">Prehľad webových projektov</a></p>
+      </div>
+    </div>
+  </section>
+  <section aria-labelledby="orientacia">
+    <h2 id="orientacia">Rýchla orientácia podľa problému</h2>
+    <ul>
+      <li><b>Neviem, či mám novšie ISO, alebo USB neštartuje:</b> <a href="#instalacia">Inštalácia, USB a aktualizácie</a>.</li>
+      <li><b>Systém štartuje, ale nefunguje Wi-Fi či tlačiareň:</b> <a href="#hardver">Hardvér, sieť a tlačiarne</a>.</li>
+      <li><b>Poznám chybný modul alebo riešim verziu jadra:</b> <a href="#kernel">Kernel a ovládače</a>.</li>
+      <li><b>Chcem písať Bash skript alebo automatizovať úlohu:</b> <a href="#skripty">Skripty a automatizácia</a>.</li>
+      <li><b>Píšem aplikáciu alebo zostavujem zdrojový kód:</b> <a href="#programovanie">Programovanie a vývoj</a>.</li>
+      <li><b>Neviem nainštalovať alebo používať program:</b> <a href="#aplikacie">Aplikácie a Store</a>.</li>
+      <li><b>Niečo padá a potrebujem nájsť príčinu:</b> <a href="#opravy">Opravy a diagnostika</a>. <b>Reprodukovateľná chyba:</b> <a href="https://github.com/Linsoft1/linsoft-os/issues">Issues</a>.</li>
+      <li><b>Mám návrh novej funkcie:</b> <a href="https://github.com/Linsoft1/linsoft-os/discussions/categories/ideas">Ideas</a>. <b>Mám hotový návod:</b> <a href="https://github.com/Linsoft1/linsoft-os/discussions/categories/show-and-tell">Show and tell</a>.</li>
+    </ul>
+    <p>Pred písaním použite vyhľadávanie na <a href="https://github.com/Linsoft1/linsoft-os/discussions">stránke fóra</a>. Hľadajte názov programu, zariadenia alebo presný text chyby. Ak si neviete vybrať, začnite v <a href="#ostatne">Ostatné</a> a opíšte cieľ; nezakladajte rovnakú otázku vo viacerých oblastiach.</p>
+  </section>
   <section aria-labelledby="forum">
-    <h2 id="forum">Vyberte si časť fóra</h2>
+    <h2 id="forum">Typy príspevkov na GitHube</h2>
     <div class="grid">
       <div><h3><a href="https://github.com/Linsoft1/linsoft-os/discussions/categories/q-a">Otázky a pomoc</a></h3><p>Neviete si poradiť so systémom alebo aplikáciou? Opíšte problém v kategórii Q&amp;A. Užitočnú odpoveď možno označiť ako riešenie.</p></div>
       <div><h3><a href="https://github.com/Linsoft1/linsoft-os/discussions/categories/general">Všeobecná diskusia</a></h3><p>Predstavte sa, podeľte sa o skúsenosti a diskutujte o Linsoft OS či súvisiacich projektoch v kategórii General.</p></div>
