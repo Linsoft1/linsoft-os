@@ -1,6 +1,8 @@
 :root { --bg:#0b1426; --panel:#13213a; --ink:#e6eefb; --muted:#9fb3cf; --cyan:#45d4e0; --violet:#8b7cf6; }
 * { box-sizing: border-box; }
-html { scroll-behavior:smooth; }
+html { scroll-behavior:smooth; scroll-padding-top:calc(var(--header-height, 11rem) + 1rem); }
+.site-header { position:sticky; top:0; z-index:5; background:rgba(11,20,38,.97); border-bottom:1px solid #2a3f63; box-shadow:0 6px 24px #0004; }
+.site-header nav { max-height:100vh; max-height:100dvh; overflow-y:auto; }
 body { margin:0; font-family: "Segoe UI", system-ui, sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
 img { max-width:100%; height:auto; }
 p, li, h1, h2, h3, td { overflow-wrap:anywhere; }
@@ -16,7 +18,7 @@ nav a:hover, footer a:hover { color:var(--cyan); }
 .nav-links .nav-company { color:var(--cyan); border:1px solid #3a6785; }
 .nav-links .nav-company[aria-current="page"] { background:#1a2b47; }
 a:focus-visible, summary:focus-visible, button:focus-visible { outline:3px solid var(--cyan); outline-offset:4px; border-radius:.2rem; }
-.skip-link { position:absolute; top:.5rem; left:.5rem; z-index:2; padding:.6rem 1rem; border-radius:.4rem; background:var(--cyan); color:#06101f; font-weight:700; transform:translateY(-160%); }
+.skip-link { position:absolute; top:.5rem; left:.5rem; z-index:6; padding:.6rem 1rem; border-radius:.4rem; background:var(--cyan); color:#06101f; font-weight:700; transform:translateY(-160%); }
 .skip-link:focus { transform:translateY(0); }
 .logo { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:50%;
   border:3px solid var(--cyan); border-bottom-color:var(--violet); font-weight:800; }
@@ -93,6 +95,7 @@ footer p { margin:.35rem 0; }
 .to-top { position:fixed; right:1rem; bottom:1rem; width:2.6rem; height:2.6rem; display:grid; place-items:center; border-radius:50%; background:var(--panel); border:1px solid var(--cyan); text-decoration:none; font-weight:700; }
 
 @media (max-width:760px) {
+  html { --header-height:77px; }
   nav { flex-wrap:wrap; width:100%; padding:1rem; }
   .brand { justify-content:flex-start; }
   .menu-toggle:not([hidden]) { display:block; margin-left:auto; }

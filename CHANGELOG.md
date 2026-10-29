@@ -5,6 +5,8 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Keeps website navigation and the Linsoft logo visible while scrolling on
+  all pages, with anchor offsets and scrollable menus for short viewports.
 * Organizes the community portal into eight technical topic areas with
   dedicated discussion threads, posting checklists and symptom-based routing.
 * Adds a Linsoft community portal linking GitHub Discussions categories,

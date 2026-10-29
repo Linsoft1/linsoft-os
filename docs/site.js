@@ -1,4 +1,16 @@
 (function () {
+  var header = document.querySelector(".site-header");
+  if (header) {
+    function updateHeaderHeight() {
+      document.documentElement.style.setProperty("--header-height", header.getBoundingClientRect().height + "px");
+    }
+    updateHeaderHeight();
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(updateHeaderHeight).observe(header);
+    } else {
+      window.addEventListener("resize", updateHeaderHeight);
+    }
+  }
   var toggle = document.querySelector(".menu-toggle");
   if (toggle) {
     var nav = toggle.closest("nav");
