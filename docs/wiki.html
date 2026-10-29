@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linsoft OS Wiki – návody a dokumentácia</title>
+<meta name="description" content="Oficiálna dokumentácia projektu Linsoft OS 1.5: live USB, inštalácia, systémové nastavenia, Wine, PuTTY, tlačiarne a aktualizácie.">
+<meta name="theme-color" content="#0b1426">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Linsoft OS Wiki – návody a dokumentácia">
+<meta property="og:description" content="Praktická príručka pre Linsoft OS 1.5, jeho aplikácie a systémové nastavenia.">
+<meta property="og:url" content="https://linsoft1.github.io/linsoft-os/wiki.html">
+<meta property="og:image" content="https://linsoft1.github.io/linsoft-os/img/linsoft15-about.png">
+<link rel="canonical" href="https://linsoft1.github.io/linsoft-os/wiki.html">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css?v=1.5.9">
+</head>
+<body>
+<a class="skip-link" href="#obsah">Preskočiť na obsah</a>
+<header class="hero article-hero" id="top">
+  <nav aria-label="Hlavná navigácia">
+    <a class="brand" href="index.html" aria-label="Linsoft OS – domov"><img class="mark" src="favicon.svg" width="36" height="36" alt=""><span>Linsoft OS</span></a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" hidden>Menu</button>
+    <div class="nav-links" id="nav-links">
+      <a href="index.html#stiahnut">Stiahnuť OS</a>
+      <a href="wiki.html" aria-current="page">Wiki</a>
+      <a href="povodny-linsoft-os.html">Pôvodný OS</a>
+      <a href="https://github.com/Linsoft1/linsoft-os">GitHub</a>
+      <a class="nav-company" href="o-spolocnosti.html">O spoločnosti</a>
+    </div>
+  </nav>
+  <div class="hero-text">
+    <img class="hero-logo" src="logo.svg" width="520" height="120" alt="Logo Linsoft">
+    <h1>Linsoft OS Wiki</h1>
+    <p class="tag">Návody, aplikácie a nastavenia na jednom mieste.</p>
+    <p>Dokumentácia projektu pre aktualizovanú Debian/Openbox edíciu Linsoft OS 1.5.</p>
+    <p class="small">Vlastná wiki projektu, nie článok na Wikipédii. Aktualizované 29. 10. 2026.</p>
+  </div>
+</header>
+<main id="obsah">
+<article class="article">
+  <section aria-labelledby="rozcestnik">
+    <h2 id="rozcestnik">Čo potrebujete urobiť?</h2>
+    <div class="grid">
+      <div><h3><a href="#system">Spoznať systém</a></h3><p>Verzia, jadro, logo a rozdiel medzi vetvami Linsoft OS.</p></div>
+      <div><h3><a href="#usb">Spustiť live USB</a></h3><p>Stiahnutie ISO, kontrolný súčet a Secure Boot.</p></div>
+      <div><h3><a href="#instalacia">Nainštalovať systém</a></h3><p>Príprava, záloha a obmedzenia overenia inštalátora.</p></div>
+      <div><h3><a href="#plocha">Ovládať plochu</a></h3><p>Ponuka Štart, klávesnica a užitočné skratky.</p></div>
+      <div><h3><a href="#store">Pridať aplikácie</a></h3><p>Linsoft Store, Wine a PuTTY SSH klient.</p></div>
+      <div><h3><a href="#tlaciarne">Pridať tlačiareň</a></h3><p>Nastavenia tlače a služba CUPS.</p></div>
+      <div><h3><a href="#aktualizacie">Aktualizovať systém</a></h3><p>Balíky Debianu verzus vydania ISO na GitHube.</p></div>
+      <div><h3><a href="#pomoc">Vyriešiť problém</a></h3><p>Kontroly pred nahlásením chyby a stav testovania.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="system">
+    <h2 id="system">Čo je Linsoft OS?</h2>
+    <p>Linsoft OS je projekt Martina Pastoreka zo Slovenska. Aktuálna vetva <b>1.5</b> je live systém pre x86-64 postavený na <b>Debiane 13 (trixie)</b>. Používa Openbox, panel Tint2, ponuku Linsoft Hub a Linsoft Store. Predvoleným prehliadačom je <b>Linsoft Browser 2.0.32</b>; Firefox nie je predinštalovaný, zostáva však voliteľný v Store.</p>
+    <p>Vydané ISO používa podpísané jadro Debianu <code>6.12.113+deb13-amd64</code>, Microsoft-podpísaný shim a Debian GRUB. Štart so zapnutým Secure Boot bol overený v QEMU/OVMF; výsledok nie je certifikáciou všetkých počítačov.</p>
+    <p class="warn"><b>Nezamieňajte vetvy:</b> pôvodný Linsoft OS 1.0–1.4 s Linsoft Native a Linsoft Kernel je iná vetva než Debian/Openbox edícia 1.5. Vydanie 1.5 nie je jej priamou aktualizáciou. <a href="povodny-linsoft-os.html">História pôvodného OS a jadra</a>.</p>
+    <h3>Kde nájdem verziu a logo?</h3>
+    <p>Otvorte <b>Linsoft Hub → Nastavenia → O Linsoft OS</b>. Okno zobrazuje vlastné logo, verziu z <code>/etc/os-release</code>, autora, aktuálne spustené jadro a architektúru. Spustíte ho aj príkazom <code>linsoft-system-info</code>.</p>
+    <div class="shots">
+      <figure><img src="img/linsoft15-about.png" width="1280" height="800" loading="lazy" alt="Okno O Linsoft OS s logom, verziou a informáciami o jadre"><figcaption>Informácie o systéme</figcaption></figure>
+      <figure><img src="img/linsoft15-settings.png" width="1280" height="800" loading="lazy" alt="Správca nastavení s informáciami o Linsoft OS, tlačiarňami a aktualizáciami"><figcaption>Systémové nastavenia</figcaption></figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="usb">
+    <h2 id="usb">Stiahnutie a spustenie z USB</h2>
+    <ol>
+      <li><a href="index.html#stiahnut">Stiahnite aktuálne ISO a jeho SHA-256</a>. Veľkosť aj aktuálny súčet sú uvedené na hlavnej stránke; neopierajte sa iba o názov súboru alebo číslo 1.5.</li>
+      <li>Vo Windows overte súbor príkazom <code>Get-FileHash .\Linsoft-OS-Live.iso -Algorithm SHA256</code>. V Linuxe použite <code>sha256sum Linsoft-OS-Live.iso</code>. Výsledok musí zodpovedať súčtu publikovanému pri ISO.</li>
+      <li>Zapíšte ISO pomocou <a href="https://rufus.ie/">Rufusu</a> v režime DD alebo <a href="https://etcher.balena.io/">balenaEtcheru</a>. Starostlivo vyberte USB: jeho obsah sa vymaže.</li>
+      <li>V bootovacej ponuke počítača vyberte USB a položku <b>Linsoft OS 1.5 (Live)</b>. Secure Boot môže zostať zapnutý.</li>
+    </ol>
+    <p>Na prvé vyskúšanie odporúčame virtuálny stroj a aspoň 4 GB RAM. Live režim umožňuje systém skúsiť bez inštalácie na disk.</p>
+    <p class="warn"><b>Live režim bez perzistencie:</b> doinštalované aplikácie, aktualizácie a nastavenia sa po reštarte stratia. Dôležité dokumenty ukladajte na samostatné trvalé úložisko.</p>
+  </section>
+
+  <section aria-labelledby="instalacia">
+    <h2 id="instalacia">Inštalácia na disk</h2>
+    <p>ISO obsahuje bootovaciu položku <b>Linsoft Installer</b> a grafický inštalátor s označením Linsoft. Najprv overte systém v live režime: sieť, zvuk, obrazovku, klávesnicu a úložiská.</p>
+    <p class="warn"><b>Zálohujte dáta.</b> Automatické rozdelenie môže vymazať systém aj súbory na vybranom disku. Čistá inštalácia a prvý štart z disku nie sú potvrdené; použite najprv prázdny virtuálny disk. Ak si nie ste istí cieľovým diskom, nepokračujte.</p>
+    <p>Táto dokumentácia nesľubuje automatický prechod z vetvy 1.4 ani zachovanie jej nastavení pri inštalácii 1.5.</p>
+  </section>
+
+  <section aria-labelledby="plocha">
+    <h2 id="plocha">Pracovná plocha a klávesnica</h2>
+    <p>Linsoft Hub otvoríte tlačidlom Linsoft v paneli alebo skratkou <b>Super + Medzerník</b>. Super je zvyčajne kláves s logom Windows. Hub ponúka vyhľadávanie, kategórie a pripnuté aplikácie.</p>
+    <div class="table-wrap">
+      <table class="ver">
+        <caption>Užitočné klávesové skratky</caption>
+        <thead><tr><th scope="col">Skratka</th><th scope="col">Funkcia</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Super + S</th><td>Linsoft Store</td></tr>
+          <tr><th scope="row">Alt + F2</th><td>Spustenie alebo vyhľadanie aplikácie</td></tr>
+          <tr><th scope="row">Alt + Shift</th><td>Prepnutie klávesnice SK / US; prepínať možno aj indikátorom v paneli</td></tr>
+          <tr><th scope="row">Super + L</th><td>Uzamknutie obrazovky</td></tr>
+          <tr><th scope="row">Alt + Tab</th><td>Prepínanie okien</td></tr>
+          <tr><th scope="row">Alt + F4</th><td>Zatvorenie aktívneho okna</td></tr>
+          <tr><th scope="row">Super + 1 až 4</th><td>Prepínanie pracovných plôch</td></tr>
+          <tr><th scope="row">Super + šípka doľava / doprava</th><td>Zarovnanie okna na polovicu obrazovky</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Sieť, zvuk, Bluetooth, monitor a napájanie nájdete v Hub alebo systémových nastaveniach. Podrobnejšie údaje o hardvéri otvorí položka <b>Informácie o PC</b> pomocou nástroja inxi.</p>
+  </section>
+
+  <section aria-labelledby="store">
+    <h2 id="store">Linsoft Store a inštalácia aplikácií</h2>
+    <ol>
+      <li>Otvorte Linsoft Store cez <b>Super + S</b>.</li>
+      <li>Pri prvom použití alebo neaktuálnom zozname stlačte <b>Obnoviť zoznam balíkov</b>.</li>
+      <li>Vyhľadajte aplikáciu alebo vyberte kategóriu a kliknite na <b>Inštalovať</b>.</li>
+      <li>Potvrďte systémové overenie. Počkajte na výsledok; pri chybe skontrolujte internet a voľné miesto.</li>
+    </ol>
+    <p>Store inštaluje aplikácie z nakonfigurovaných Debian repozitárov. Inštalácia potrebuje internet a administrátorské oprávnenie. Nezatvárajte aplikáciu ani nevypínajte počítač počas správy balíkov.</p>
+    <h3 id="wine">Windows aplikácie cez Wine</h3>
+    <p>V kategórii <b>Systém</b> vyberte <b>Wine – Windows aplikácie</b>. Wine sa doinštaluje až na požiadanie, nie je predinštalované v ISO. Následne môžete ako bežný používateľ spustiť dôveryhodný inštalátor:</p>
+    <ul>
+      <li>EXE: <code>wine "/cesta/program.exe"</code></li>
+      <li>MSI: <code>wine msiexec /i "/cesta/program.msi"</code></li>
+      <li>Nastavenia Wine: <code>winecfg</code></li>
+    </ul>
+    <p>Nahraďte cestu skutočným umiestnením súboru. <b>Nepoužívajte sudo.</b> Wine nie je bezpečnostný sandbox; program môže pristupovať k vašim súborom. Nie všetky aplikácie, ovládače či hry s anti-cheat ochranou fungujú. Základná amd64 inštalácia je určená najmä pre 64-bitové programy; staršie 32-bitové aplikácie môžu potrebovať podporu i386/wine32.</p>
+    <p class="small">Overená bola inštalácia Wine 10.0 cez pomocníka Store a spustenie dodaného Poznámkového bloku. Nie je to potvrdenie kompatibility iných Windows aplikácií.</p>
+    <h3 id="putty">PuTTY – SSH klient</h3>
+    <p>V kategórii <b>Internet</b> vyberte <b>PuTTY – SSH klient</b>. Je to natívny linuxový balík a nepotrebuje Wine. Po inštalácii ho otvorte z ponuky aplikácií alebo príkazom <code>putty</code>.</p>
+    <ol>
+      <li>Zadajte adresu svojho servera do poľa Host Name.</li>
+      <li>Vyberte SSH a port servera, zvyčajne <b>22</b>.</li>
+      <li>Pri prvom pripojení overte odtlačok hostiteľského kľúča u správcu servera; nepotvrdzujte neznámy kľúč bez overenia.</li>
+    </ol>
+    <p class="small">Overená bola inštalácia PuTTY 0.83 aj jeho grafické rozhranie, nie pripojenie k vzdialenému serveru. Položka inštaluje klienta, nie SSH server. V live režime bez perzistencie sa uložené relácie po reštarte stratia.</p>
+  </section>
+
+  <section aria-labelledby="tlaciarne">
+    <h2 id="tlaciarne">Pridanie tlačiarne a nastavenia tlače</h2>
+    <ol>
+      <li>Otvorte <b>Nastavenia → Tlačiarne – pridať a nastaviť</b>, prípadne spustite <code>system-config-printer</code>.</li>
+      <li>Pripojte USB tlačiareň alebo overte, že je sieťová tlačiareň dostupná vo vašej sieti.</li>
+      <li>Stlačte <b>Pridať</b>, vyberte zariadenie a postupujte podľa sprievodcu. Administrátorské operácie môžu vyžiadať systémové overenie.</li>
+      <li>Podľa potreby vyberte ovládač a skúste testovaciu stránku.</li>
+    </ol>
+    <p>Správu zabezpečuje CUPS, grafický nástroj system-config-printer a pomocník cups-pk-helper. Pri probléme možno overiť službu príkazmi <code>systemctl status cups</code> a <code>lpstat -r</code>.</p>
+    <p class="warn">Overené je otvorenie nastavení a pripojenie k aktívnemu CUPS. Fyzická tlačiareň ani samotná tlač neboli testované. Niektoré modely potrebujú dodatočný ovládač alebo firmvér.</p>
+  </section>
+
+  <section aria-labelledby="aktualizacie">
+    <h2 id="aktualizacie">Aktualizácie systému a vydania na GitHube</h2>
+    <h3>Aktualizácie balíkov</h3>
+    <p>V Linsoft Store vyberte <b>Nainštalovať aktualizácie</b>. Ide o aktualizácie nainštalovaných balíkov z nakonfigurovaných Debian repozitárov, nie o automatický prechod na ďalšie vydanie Linsoft OS.</p>
+    <h3>Kontrola verzie Linsoft OS</h3>
+    <p>Otvorte <b>Nastavenia → Aktualizácie Linsoft OS</b> alebo <code>linsoft-system-info --updates</code> a stlačte <b>Skontrolovať vydanie na GitHube</b>. Kontrola sa vykoná na požiadanie cez GitHub API projektu. Okno zobrazí výsledok alebo chybu spojenia a ponúkne otvorenie vydania aj Linsoft Store.</p>
+    <p class="warn"><b>Nové ISO sa automaticky neinštaluje.</b> Vydanie v1.5 môže dostať novšiu zostavu s rovnakým číslom. Porovnajte preto aj SHA-256 z <a href="index.html#stiahnut">aktuálneho stiahnutia</a>. Staré USB treba prepísať novým obrazom; existujúca inštalácia sa tým nemení. Pred preinštalovaním vždy zálohujte dáta.</p>
+    <p><a href="https://github.com/Linsoft1/linsoft-os/releases">Všetky vydania na GitHube</a> · <a href="https://github.com/Linsoft1/linsoft-os/blob/main/CHANGELOG.md">Zoznam zmien</a></p>
+  </section>
+
+  <section aria-labelledby="pomoc">
+    <h2 id="pomoc">Riešenie problémov a stav overenia</h2>
+    <details class="faq"><summary>V Store nevidím Wine alebo PuTTY.</summary><p>Katalóg je súčasťou konkrétnej zostavy ISO. Obnovenie zoznamu balíkov aktualizuje údaje Debianu, nie samotný katalóg Linsoft Store. Na staršom USB použite aktuálne ISO a overte jeho SHA-256.</p></details>
+    <details class="faq"><summary>Po reštarte zmizli aplikácie alebo nastavenia.</summary><p>To je očakávané v live relácii bez perzistencie. Zmeny nie sú trvalou inštaláciou na disk. Dôležité dáta ukladajte mimo dočasného live systému.</p></details>
+    <details class="faq"><summary>Kontrola vydania na GitHube zlyhala.</summary><p>Skontrolujte internet, systémový čas a skúste kontrolu neskôr. GitHub môže dočasne obmedziť počet požiadaviek. Vydania môžete otvoriť aj cez odkaz v okne aktualizácií. Chyba kontroly neznamená, že je systém aktuálny.</p></details>
+    <details class="faq"><summary>Nefunguje Wi-Fi, zvuk alebo obrazovka.</summary><p>Skontrolujte zariadenie v nastaveniach a zozbierajte informácie cez Informácie o PC. Výsledky z virtuálneho stroja nepotvrdzujú podporu každého fyzického zariadenia.</p></details>
+    <p>Overený je live štart v QEMU/OVMF so Secure Boot, vybrané aplikácie a systémové nastavenia. Inštalácia na disk, fyzická tlač a úplná hardvérová kompatibilita nie sú certifikované. Linsoft OS je experimentálna distribúcia.</p>
+    <p>Chyby hláste v <a href="https://github.com/Linsoft1/linsoft-os/issues">GitHub Issues</a>. Uveďte verziu, SHA-256 ISO, model zariadenia, postup zopakovania a presnú chybovú správu. Nezverejňujte heslá, súkromné kľúče ani osobné údaje.</p>
+  </section>
+  <section aria-labelledby="zdroje">
+    <h2 id="zdroje">Zdrojový kód a ďalšie čítanie</h2>
+    <ul>
+      <li><a href="https://github.com/Linsoft1/linsoft-os/tree/main/linsoft/debian-live">Konfigurácia zostavenia Linsoft OS 1.5</a></li>
+      <li><a href="https://github.com/Linsoft1/linsoft-os/blob/main/linsoft/debian-live/README.md">Technická dokumentácia zostavy</a></li>
+      <li><a href="povodny-linsoft-os.html">Pôvodný Linsoft OS a Linsoft Kernel</a></li>
+      <li><a href="o-spolocnosti.html">Linsoft Global a zakladateľ</a></li>
+    </ul>
+  </section>
+</article>
+</main>
+<footer>
+  <p>Linsoft OS Wiki · dokumentácia projektu Martina Pastoreka</p>
+  <p><a href="index.html">Domov</a> · <a href="https://github.com/Linsoft1/linsoft-os">GitHub</a> · <a href="#top">Späť hore</a></p>
+</footer>
+<div class="lightbox" id="lightbox" hidden><img alt=""></div>
+<script src="site.js?v=1.5.9"></script>
+</body>
+</html>

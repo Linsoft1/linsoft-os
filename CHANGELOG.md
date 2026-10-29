@@ -5,6 +5,8 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Adds a project-owned website wiki covering live USB, installation cautions,
+  desktop shortcuts, Store, Wine, PuTTY, printers and release/package updates.
 * Adds branded About Linsoft OS and Updates panels to system settings, Hub
   and Openbox menus. Checks the latest stable GitHub release on demand,
   reports network errors and distinguishes ISO releases from Debian package
