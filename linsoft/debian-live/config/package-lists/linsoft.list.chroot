@@ -1,6 +1,6 @@
 fonts-dejavu-core
-firefox-esr
 dbus-x11
+xdg-utils
 arandr
 bluez
 blueman

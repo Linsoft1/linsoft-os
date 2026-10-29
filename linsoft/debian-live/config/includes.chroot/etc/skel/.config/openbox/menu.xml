@@ -22,9 +22,9 @@
         <command>pcmanfm</command>
       </action>
     </item>
-    <item label="Internet">
+    <item label="Linsoft Browser">
       <action name="Execute">
-        <command>firefox-esr</command>
+        <command>linsoft-browser</command>
       </action>
     </item>
     <separator/>

@@ -4,6 +4,30 @@ Aktuálne vydanie je **Linsoft OS 1.5 (28. 10. 2026)**, Debian 13/Openbox s jadr
 
 Pre publikovanie sa initramfs komprimuje cez XZ (`xz-utils`) a SquashFS používa 1 MiB bloky, aby ISO neprekročilo limit jedného súboru v GitHub Releases. Obsah a aplikácie sa tým neodoberajú.
 
+## Predvolený webový prehliadač
+
+Zostava obsahuje **Linsoft Browser 2.0.32** namiesto predinštalovaného Firefox ESR.
+`build.sh` stiahne oficiálny amd64 balík z vydania projektu
+[Linsoft Browser](https://github.com/Linsoft1/v2.0.1/releases/tag/v2.0.32)
+do `config/packages.chroot` a overí jeho pevne určený SHA-256 súčet.
+Balík nie je súčasťou zdrojového repozitára; pri zmene verzie treba aktualizovať
+URL, názov balíka aj súčet v skripte.
+
+Prehliadač je pripnutý v Tint2 a Linsoft Hub, dostupný v ponuke Openbox
+a predvolený pre HTTP, HTTPS a HTML cez systémové MIME nastavenia, alternatívy
+`x-www-browser`/`gnome-www-browser` a pomocníka XFCE. Spúšťací skript
+`linsoft-browser` zachováva argumenty URL a nevypína sandbox prehliadača.
+Firefox zostáva voliteľnou aplikáciou v katalógu Debian aplikácií Linsoft Store.
+
+Hook `7100-linsoft-browser.hook.chroot` navyše opravuje spracovanie externých
+HTTP/HTTPS odkazov vo verzii 2.0.32 pri prvom aj opakovanom spustení.
+Skript `usr/lib/linsoft/patch-browser.cjs` používa Node runtime samotného
+Electronu, kontroluje očakávaný zdrojový kód a integritu `main.cjs`, mení
+iba tento súbor v ASAR a aktualizuje jeho SHA-256 aj blokové súčty.
+Ostatné položky archívu vrátane externých súborov zostávajú nezmenené.
+Opakované spustenie opravu nezdvojuje; neočakávaná verzia zdroja ukončí
+zostavenie chybou. Nejde o nový balík vydaný projektom prehliadača.
+
 Linsoft 1.1 je vlastná slovenská live distribúcia postavená na Debiane 13 s vlastným zostaveným upstream jadrom Linux 6.12.113. Jadro používa konfiguráciu odvodenú od Debianu, obsahuje moduly pre live boot a hardvér a má vlastnú verziu `6.12.113-linsoft-amd64`. Používa samostatnú reláciu Openbox bez desktopového prostredia XFCE, vlastný panel Tint2 a Linsoft Hub v štýle ponuky Štart. Pri štarte zobrazuje vlastné logo Linsoft a indikátor priebehu načítania cez Plymouth; bootovacie menu, obraz ISO, systémové informácie a inštalátor používajú jednotné označenie Linsoft. Prihlásenie aj zamknutá obrazovka používajú tapetu Linsoft OS a používateľský profil zobrazuje logo Linsoft. Panel je tmavý, priesvitný a zaoblený; zobrazuje tlačidlo Linsoft, pripnuté aplikácie, otvorené okná, systémovú oblasť a hodiny s dátumom. Názvy pracovných plôch sa na paneli nezobrazujú; medzi štyrmi plochami prepínaš skratkami `Super+1` až `Super+4`. V systémovej oblasti je indikátor klávesnice: slovenské rozloženie je predvolené, kliknutím na vlajku prepneš na anglické (US) a späť; prepínať môžeš aj skratkou `Alt+Shift`. Hub otvoríš kliknutím na tlačidlo LINSOFT alebo skratkou `Super+Medzerník`; jeho okraj sa zarovná s okrajom panela a spodná hrana dosadne na panel. Obsahuje vyhľadávanie, kategórie, pripnuté aplikácie a prístup k nastaveniam, vzhľadu a uzamknutiu obrazovky. Jeho tmavé rozhranie zjednocujú modré akcenty, kontrastné stavy tlačidiel, zaoblené karty a upravený panel vyhľadávania. Hub sa umiestni na monitor, na ktorom sa nachádza kurzor, a prispôsobí svoju veľkosť dostupnej pracovnej ploche; pri užšom okne zobrazí aplikácie a pripnuté položky pod sebou. Po opätovnom otvorení obnoví zoznam aplikácií, takže sa zobrazia aj programy nainštalované cez Linsoft Store. Vo výsledkoch vyhľadávania sa môžeš pohybovať šípkami a aplikáciu spustiť klávesom Enter. `Alt+F2` otvorí vyhľadávanie aplikácií a správca nastavení poskytuje spoločné miesto na úpravu zariadení a pracovnej plochy. Upozornenia zabezpečuje XFCE Notify Daemon. Obrazovku zamkneš skratkou `Super+L`. Téma Linsoft-Blue prináša zaoblené rohy, tiene a prechody.
 
 Okná zatvoríš kliknutím na tlačidlo `X` v titulkovom paneli alebo pomocou `Alt+F4`; tlačidlá zatvorenia, maximalizácie aj minimalizácie reagujú na kliknutie. Ďalšie ovládanie: `Alt+Tab` prepína okná, `Alt+Medzerník` otvorí ponuku okna vrátane presunutia a zmeny veľkosti. `Super+Šípka doľava/doprava` zarovná okno na polovicu obrazovky, `Super+Šípka nahor` ho maximalizuje alebo obnoví a `Super+Shift+Šípka nahor` prepína maximalizáciu na výšku. `Super+Šípka nadol` obnoví maximalizované okno a `Super+Shift+Šípka nadol` ho minimalizuje. Rozhranie dopĺňajú tmavá GTK téma, vlastné ikony, tapeta Linsoft Flow a plocha bez ikon. Logo Linsoft sa zobrazuje v bootovacích ponukách a počas štartu cez Plymouth. Locale a predvolené rozloženie klávesnice sú nastavené na slovenčinu; dostupné je aj rozloženie anglické (US). Linsoft Store (`Super+S`) umožňuje inštalovať aplikácie z katalógu `config/includes.chroot/usr/share/linsoft/store/catalog.json`, obnoviť zoznam balíkov a aktualizovať nainštalované systémové balíky.

@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+test -x "/opt/Linsoft Browser/linsoft-browser"
+ELECTRON_RUN_AS_NODE=1 ELECTRON_NO_ASAR=1 "/opt/Linsoft Browser/linsoft-browser" \
+    /usr/lib/linsoft/patch-browser.cjs "/opt/Linsoft Browser/resources/app.asar"
+chmod 755 /usr/bin/linsoft-browser
+update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/linsoft-browser 200
+update-alternatives --set x-www-browser /usr/bin/linsoft-browser
+update-alternatives --install /usr/bin/gnome-www-browser gnome-www-browser /usr/bin/linsoft-browser 200
+update-alternatives --set gnome-www-browser /usr/bin/linsoft-browser
+update-desktop-database /usr/share/applications

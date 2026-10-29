@@ -5,6 +5,13 @@ All notable changes to Linsoft OS. Versions follow the GitHub releases
 
 ## 1.5 – Debian live / Openbox edition (28 Oct 2026)
 
+* Replaces preinstalled Firefox ESR with official Linsoft Browser 2.0.32:
+  panel and Hub launchers, Openbox menus, HTTP/HTTPS/HTML associations, XFCE
+  helper and system browser alternatives. Build verifies the downloaded
+  Debian package's SHA-256; Electron sandbox remains enabled.
+  Applies a reproducible, integrity-updated main.cjs fix for HTTP/HTTPS
+  arguments on initial launch and when handing URLs to an existing window;
+  other ASAR entries and unpacked resources are preserved.
 * Website: fixes mobile image proportions and narrow-screen gallery overflow;
   adds a collapsible accessible navigation on all three pages, with all links
   still available when JavaScript is disabled.

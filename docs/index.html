@@ -55,6 +55,7 @@
     <div><h3>Linsoft Hub</h3><p>Ponuka Štart s vyhľadávaním a kategóriami aplikácií, zarovnaná s panelom. Otvoríte ju cez Super + Medzerník.</p></div>
     <div><h3>Panel a klávesnica</h3><p>Zaoblený panel Tint2 s časom, zvukom a indikátorom rozloženia SK/US. Prepínanie cez Alt + Shift; názvy pracovných plôch sú skryté.</p></div>
     <div><h3>Linsoft Store</h3><p>Katalóg aplikácií z Debianu, inštalácia, odstránenie a aktualizácie cez systémové overenie. Opravené spúšťanie aplikácie aj pomocníka.</p></div>
+    <div><h3>Linsoft Browser</h3><p>Predinštalovaný prehliadač 2.0.32 namiesto Firefoxu. Dostupný v paneli aj ponuke Štart a predvolený pre webové odkazy a HTML súbory.</p></div>
     <div><h3>Logo Linsoft</h3><p>Vlastná tapeta a prihlasovacia obrazovka. Plymouth pri štarte, vypnutí a reštarte zobrazuje logo so zodpovedajúcim textom.</p></div>
     <div><h3>Nastavenia</h3><p>Sieť cez NetworkManager, zvuk, obrazovky, Bluetooth a informácie o PC. Dostupnosť zariadení treba overiť na konkrétnom počítači.</p></div>
   </div>
@@ -69,6 +70,7 @@
     <figure><img src="img/linsoft15-start-menu.png" width="1280" height="800" loading="lazy" alt="Ponuka Štart – Linsoft Hub s pripnutými aplikáciami"><figcaption>Ponuka Štart (Linsoft Hub)</figcaption></figure>
     <figure><img src="img/linsoft15-installer.png?v=3" width="1280" height="800" loading="lazy" alt="Grafický inštalátor Linsoft v tmavej téme – výber jazyka"><figcaption>Inštalátor Linsoft (tmavá téma)</figcaption></figure>
     <figure><img src="img/linsoft15-lockscreen.png" width="1280" height="800" loading="lazy" alt="Odomykacia obrazovka s vlastnou tapetou a logom Linsoft OS 1.5"><figcaption>Zamknutá obrazovka s tapetou Linsoft</figcaption></figure>
+    <figure><img src="img/linsoft15-browser.png" width="1280" height="800" loading="lazy" alt="Linsoft Browser otvorený v Linsoft OS 1.5 s webovou stránkou projektu"><figcaption>Linsoft Browser priamo v systéme</figcaption></figure>
   </div>
 </section>
 <section id="verzia">
@@ -79,9 +81,10 @@
       <tr><th scope="row">Základ systému</th><td>Debian 13 (trixie)</td></tr>
       <tr><th scope="row">Jadro</th><td>Linux 6.12.113 · <code>6.12.113+deb13-amd64</code> (podpísané Debianom)</td></tr>
       <tr><th scope="row">Pracovná plocha</th><td>Openbox · Tint2 · Linsoft Hub</td></tr>
+      <tr><th scope="row">Webový prehliadač</th><td>Linsoft Browser 2.0.32</td></tr>
       <tr><th scope="row">Architektúra</th><td>x86-64 · bootovacie položky BIOS a UEFI</td></tr>
       <tr><th scope="row">Secure Boot</th><td>Podporovaný (Microsoft-podpísaný shim, Debian GRUB a jadro); vypnúť netreba</td></tr>
-      <tr><th scope="row">ISO súbor</th><td>Linsoft-OS-Live.iso · <span data-iso-size>2,10 GB (1,95 GiB)</span></td></tr>
+      <tr><th scope="row">ISO súbor</th><td>Linsoft-OS-Live.iso · <span data-iso-size>2,04 GB (1,90 GiB)</span></td></tr>
     </tbody></table>
   </div>
 </section>
@@ -90,6 +93,7 @@
   <div class="release-note">
     <p class="version">28. 10. 2026 · aktualizovaná Debian live zostava</p>
     <ul>
+      <li><b>Linsoft Browser 2.0.32 namiesto Firefoxu:</b> predvolený pre odkazy a HTML, so spúšťačmi v paneli aj ponuke Štart a opraveným otváraním externých odkazov.</li>
       <li><b>Opravený Linsoft Store:</b> linuxové konce riadkov v spúšťacom skripte aj privilegovanom pomocníkovi.</li>
       <li><b>Vypínacia obrazovka:</b> logo Linsoft a text VYPÍNAM SYSTÉM; pri reštarte REŠTARTUJEM SYSTÉM.</li>
       <li>Kompaktnejší panel, zarovnaná ponuka Štart a skryté názvy pracovných plôch.</li>
@@ -102,10 +106,10 @@
 <section id="stiahnut">
   <h2>Stiahnuť</h2>
   <p><a class="btn" href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso">⬇ Stiahnuť Linsoft OS 1.5</a></p>
-  <p class="download-meta"><span data-iso-size>2,10 GB (1,95 GiB)</span> · <a href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso.sha256">Kontrolný súčet SHA-256</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.5">Podrobnosti vydania</a></p>
+  <p class="download-meta"><span data-iso-size>2,04 GB (1,90 GiB)</span> · <a href="https://github.com/Linsoft1/linsoft-os/releases/download/v1.5/Linsoft-OS-Live.iso.sha256">Kontrolný súčet SHA-256</a> · <a href="https://github.com/Linsoft1/linsoft-os/releases/tag/v1.5">Podrobnosti vydania</a></p>
   <details class="verify">
     <summary>Ako overiť stiahnutý súbor</summary>
-    <p>SHA-256: <code class="hash" id="sha">5d804a26870a78fc8a5fe51ee7677ae416d9364a4b8954fad586a2f732e76db3</code> <button type="button" class="copy" data-copy="sha">Kopírovať</button></p>
+    <p>SHA-256: <code class="hash" id="sha">3b01554f3222a6e5f5c9cbe4c43b8dd28ad931d1b1729f0f70cf445c44c53103</code> <button type="button" class="copy" data-copy="sha">Kopírovať</button></p>
     <p>Windows PowerShell: <code>Get-FileHash .\Linsoft-OS-Live.iso -Algorithm SHA256</code></p>
     <p>Linux: <code>sha256sum Linsoft-OS-Live.iso</code></p>
     <p>Výsledok musí zodpovedať súčtu vyššie alebo v priloženom súbore.</p>

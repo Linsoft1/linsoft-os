@@ -14,7 +14,7 @@ APP_ID = "org.linsoft.Hub"
 APP_CSS = "/usr/share/linsoft/linsoft-hub.css"
 PINNED_APPS = (
     ("linsoft-store.desktop", "org.linsoft.Store", "Linsoft Store", None),
-    ("firefox-esr.desktop", "web-browser", "Internet", None),
+    ("linsoft-browser.desktop", "linsoft-browser", "Linsoft Browser", None),
     ("pcmanfm.desktop", "system-file-manager", "Súbory", None),
     ("lxterminal.desktop", "utilities-terminal", "Terminál", None),
     (

@@ -6,6 +6,16 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+browser_package="config/packages.chroot/linsoft-browser_2.0.32_amd64.deb"
+browser_sha256="a84dfef3ead6ee600ba1c126e98821d1099ddd21911c3c2eade94ff001ef8475"
+mkdir -p config/packages.chroot
+if [ ! -f "$browser_package" ]; then
+    curl --fail --location --retry 3 \
+        "https://github.com/Linsoft1/v2.0.1/releases/download/v2.0.32/Linsoft-Browser-2.0.32-amd64.deb" \
+        --output "$browser_package"
+fi
+printf '%s  %s\n' "$browser_sha256" "$browser_package" | sha256sum --check
+
 lb config \
     --mode debian \
     --distribution trixie \
@@ -35,5 +45,6 @@ chmod +x "$openbox_defaults/autostart"
 
 chmod +x config/hooks/normal/9000-linsoft-branding.hook.binary
 chmod +x config/hooks/normal/7000-linsoft-plymouth.hook.chroot
+chmod +x config/hooks/normal/7100-linsoft-browser.hook.chroot
 lb clean --all
 MKSQUASHFS_OPTIONS="${MKSQUASHFS_OPTIONS:-} -b 1048576" lb build

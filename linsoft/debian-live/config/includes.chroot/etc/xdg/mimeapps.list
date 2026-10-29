@@ -1,0 +1,5 @@
+[Default Applications]
+x-scheme-handler/http=linsoft-browser.desktop
+x-scheme-handler/https=linsoft-browser.desktop
+text/html=linsoft-browser.desktop
+application/xhtml+xml=linsoft-browser.desktop
