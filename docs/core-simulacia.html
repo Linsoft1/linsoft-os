@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulácia disku C: – Linsoft OS Core</title>
+<meta name="description" content="Klikateľná simulácia disku C: v Linsoft OS Core: systémový priečinok C:\Linsoft, kontrola systému, návrat verzie a chybové stavy.">
+<meta name="theme-color" content="#070F1C">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Rozloženie: pracovná plocha Linsoft s oknom Súborov vľavo, panel simulácie vpravo (na úzkej obrazovke pod ním). Jeden tmavý vzhľad ako systém. */
+:root{
+  --bg:#070F1C; --desk1:#10294A; --desk2:#0A1628;
+  --win:#0F1A2B; --bar:#13213A; --line:#22385A; --line2:#1C2F4C; --row:#16263F; --field:#0B1424;
+  --fg:#EEF4FF; --fg2:#C9D7EA; --mut:#8FA3BD; --dim:#5D7290;
+  --accent:#2F6FE4; --sel:#1D3557; --selb:#3D6AA8; --gold:#FFC23D;
+  --ok:#7CE0A5; --okbg:#13301F; --warn:#FFE3A0; --warnbg:#2A2410; --warnb:#6B5416;
+  --bad:#FFD0D0; --badbg:#2A1418; --badb:#6A2A30; --vio:#C7B4FF; --viobg:#2E1F44; --blu:#8FD3FF; --blubg:#10263A;
+  --f-ui:Inter,"Segoe UI",system-ui,sans-serif; --f-head:"Space Grotesk",Inter,system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-ui);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 28px}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.top{max-width:1400px;margin:0 auto 14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 24px;justify-content:space-between}
+.top h1{font-family:var(--f-head);font-size:26px;margin:0;text-wrap:balance}
+.top p{margin:4px 0 0;color:var(--mut);font-size:14px;max-width:70ch}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.stage{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:18px;align-items:start}
+@media (max-width:1100px){.stage{grid-template-columns:minmax(0,1fr)}}
+.deskwrap{min-width:0;overflow-x:auto}
+.desk{position:relative;height:720px;border-radius:14px;border:1px solid var(--line);overflow:hidden;background:linear-gradient(165deg,var(--desk1),var(--desk2) 60%,var(--bg));margin:0 auto}
+.desk.s1024{width:1024px;height:768px}
+.desk.sphone{width:400px;height:760px}
+.desk svg.wall{position:absolute;inset:0;width:100%;height:100%}
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(15,28,48,.94);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:12px;color:var(--fg2)}
+.taskbar .clock{margin-left:auto;font-variant-numeric:tabular-nums;text-align:right;line-height:1.2}
+.win{position:absolute;left:12px;right:12px;top:12px;bottom:60px;display:flex;flex-direction:column;background:var(--win);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.sphone .win{left:0;right:0;top:0;border-radius:0}
+.tbar{display:flex;align-items:center;gap:9px;height:40px;padding:0 6px 0 12px;background:var(--bar);border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600;flex:0 0 auto}
+.tbar .wb{margin-left:auto;display:flex;gap:2px;color:var(--mut);font-weight:400}
+.tbar .wb span{width:34px;text-align:center}
+.nav{display:flex;align-items:center;gap:8px;height:44px;padding:0 10px;border-bottom:1px solid var(--line2);flex:0 0 auto}
+.ib{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--fg2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.ib:hover:not(:disabled){background:#1A2C47}
+.ib:disabled{color:#3B5578;cursor:default}
+.addr{flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;background:var(--field);border:1px solid var(--line);font-size:13px;color:var(--fg2);overflow:hidden;white-space:nowrap}
+.addr button{border:0;background:none;padding:2px 3px;border-radius:5px;cursor:pointer;color:var(--fg2)}
+.addr button:hover{background:#1A2C47}
+.addr .cur{color:var(--fg);font-weight:600}
+.addr .sep{color:#4E6584}
+.addr .lockt{margin-left:auto;display:flex;align-items:center;gap:5px;color:var(--gold);font-size:12px}
+.search{width:200px;height:30px;border-radius:8px;background:var(--field);border:1px solid var(--line);color:var(--fg);padding:0 10px;font:13px var(--f-ui)}
+.cmd{display:flex;align-items:center;gap:4px;height:40px;padding:0 10px;border-bottom:1px solid var(--line2);flex:0 0 auto;overflow-x:auto}
+.cb{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:0;border-radius:8px;background:transparent;font-size:13px;color:var(--fg2);cursor:pointer;white-space:nowrap}
+.cb:hover:not(:disabled){background:#1A2C47;color:var(--fg)}
+.cb:disabled{color:#4A5F7E;cursor:not-allowed}
+.cb .lk{width:12px;height:12px}
+.body{flex:1;display:flex;min-height:0}
+.side{flex:0 0 200px;overflow-y:auto;padding:8px 6px;border-right:1px solid var(--line2);font-size:13px}
+.si{display:flex;align-items:center;gap:8px;width:100%;padding:5px 8px;border:0;border-radius:7px;background:transparent;color:var(--fg2);text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si:hover{background:#15263F}
+.si.on{background:var(--sel);color:var(--fg);font-weight:600}
+.si svg{flex:0 0 auto}
+.sdiv{height:1px;background:var(--line2);margin:6px 6px}
+.content{flex:1;min-width:0;overflow-y:auto;padding:14px;position:relative}
+.status{display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;border-top:1px solid var(--line2);font-size:12px;color:var(--mut);flex:0 0 auto;white-space:nowrap;overflow:hidden}
+.status .r{margin-left:auto}
+.narrow .side{flex-basis:52px;padding:8px 4px}
+.narrow .side .lbltxt{display:none}
+.narrow .side .si{justify-content:center;padding:7px 0}
+.narrow .side .sdiv{margin:6px 4px}
+.narrow .side .si.sub{display:none}
+.narrow .search{display:none}
+.tiny .side{display:none}
+.tiny .tbar .wb{display:none}
+
+/* položky */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:4px}
+.it{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;border-radius:11px;border:1px solid transparent;background:transparent;cursor:default;font-size:12.5px;text-align:center;color:var(--fg);position:relative;user-select:none}
+.it:hover{background:#13233A}
+.it.sel{background:var(--sel);border-color:var(--selb)}
+.it .nm{max-width:100%;overflow-wrap:anywhere;line-height:1.25}
+.it .sub{font-size:11.5px;color:var(--mut)}
+.it .lkb{position:absolute;top:44px;left:calc(50% + 14px)}
+.it input{width:100%;font:12.5px var(--f-ui);background:var(--field);color:var(--fg);border:1px solid var(--accent);border-radius:5px;padding:2px 4px;text-align:center}
+.list{display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.lr{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:50px;padding:5px 12px;border:0;border-bottom:1px solid var(--row);background:transparent;color:var(--fg);text-align:left;font-size:13px;user-select:none}
+.lr:last-child{border-bottom:0}
+.lr:hover{background:#13233A}
+.lr.sel{background:var(--sel)}
+.lr .d{font-size:11.5px;color:var(--mut);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lr .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sz{font-size:12px;color:#A9BDD6;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.p-ok{background:var(--okbg);color:var(--ok)}.p-blue{background:var(--blubg);color:var(--blu)}.p-vio{background:var(--viobg);color:var(--vio)}.p-gold{background:var(--warnbg);color:var(--gold)}.p-off{background:#1A2433;color:var(--mut)}.p-bad{background:var(--badbg);color:#FF9A9A}
+.chip{font-size:10.5px;font-weight:700;border-radius:8px;padding:2px 8px}
+.banner{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;font-size:12.5px;line-height:1.4;margin-bottom:12px}
+.banner .bt{flex:1;min-width:0}
+.banner b{display:block;font-size:13px}
+.b-lock{background:var(--warnbg);border:1px solid var(--warnb);color:var(--warn)}
+.b-bad{background:var(--badbg);border:1px solid var(--badb);color:var(--bad)}
+.b-warn{background:var(--warnbg);border:1px solid var(--warnb);color:var(--warn)}
+.b-ok{background:var(--okbg);border:1px solid #2C6B4C;color:#C9F2DA}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 13px;border-radius:8px;border:0;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{filter:brightness(1.12)}
+.btn.gold{background:#E3A919;color:#1A2433}
+.btn.ghost{background:transparent;border:1px solid var(--warnb);color:var(--gold)}
+.btn.ghost2{background:transparent;border:1px solid #33507A;color:var(--fg2)}
+.lnk{border:0;background:none;color:var(--blu);font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 4px}
+
+/* domov systému */
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;padding:14px 16px;border-radius:14px;background:linear-gradient(120deg,#16304F,#0F2038 70%);border:1px solid #2A4266;margin-bottom:12px}
+.hero h2{font-family:var(--f-head);font-size:20px;margin:0}
+.hero .meta{font-size:12.5px;color:#A9BDD6;margin-top:3px}
+.hero .use{flex:1 1 260px;min-width:0}
+.usebar{display:flex;height:12px;margin-top:7px;border-radius:6px;overflow:hidden;background:var(--field)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:7px;font-size:11.5px;color:#A9BDD6}
+.dot{display:inline-block;width:8px;height:8px;border-radius:4px;margin-right:5px}
+.cards{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
+.narrow .cards{grid-template-columns:minmax(0,1fr)}
+.sec{background:#0F1C30;border:1px solid var(--line);border-radius:13px;min-width:0;display:flex;flex-direction:column}
+.sech{display:flex;align-items:center;gap:9px;min-height:44px;padding:0 12px;border-bottom:1px solid #1A2D48;font-size:13.5px;flex-wrap:wrap}
+.sech .grow{flex:1}
+.mut{font-size:12px;color:var(--mut)}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:4px;padding:8px}
+.badge{font-size:10.5px;font-weight:700;color:#1A2433;background:var(--vio);border-radius:8px;padding:1px 7px}
+.tl{position:relative;padding:0 0 14px 18px;border-left:2px solid var(--line);margin-left:16px;font-size:13px}
+.tl:last-child{border-left-color:transparent}
+.tl i{position:absolute;left:-7px;top:3px;width:12px;height:12px;border-radius:6px}
+.kv{display:flex;justify-content:space-between;gap:12px;min-height:30px;align-items:center;font-size:12.5px;color:#A9BDD6;border-bottom:1px solid var(--row);margin:0 12px}
+.kv:last-child{border-bottom:0}
+.kv b{color:var(--fg);font-weight:600;text-align:right}
+.drives{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.drv{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid var(--line2);background:#0F1C30;text-align:left;color:var(--fg);user-select:none}
+.drv:hover{background:#13233A}
+.drv.sel{background:var(--sel);border-color:var(--selb)}
+.drv .bar{height:7px;border-radius:4px;background:var(--field);overflow:hidden;margin-top:6px}
+.h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:16px 2px 8px;font-weight:700}
+
+/* ponuka, dialógy, oznámenie */
+.menu{position:absolute;z-index:30;min-width:220px;padding:5px;border-radius:11px;background:var(--bar);border:1px solid #2A4266;box-shadow:0 16px 40px rgba(0,0,0,.55);font-size:13px}
+.mi{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;height:30px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:#DDE7F5;text-align:left;cursor:pointer}
+.mi:hover:not(:disabled){background:#1F3456}
+.mi:disabled{color:var(--dim);cursor:not-allowed}
+.mi.vio{color:var(--vio)}
+.msep{height:1px;background:var(--line);margin:4px 6px}
+.ovl{position:absolute;inset:0;z-index:40;background:rgba(4,9,18,.55);display:flex;align-items:center;justify-content:center;padding:14px}
+.dlg{width:min(480px,100%);max-height:100%;overflow:auto;background:var(--win);border:1px solid #2A4266;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.dlg .dh{display:flex;align-items:center;gap:10px;padding:14px 16px 6px}
+.dlg .dh b{font-size:16px}
+.dlg .dbody{padding:4px 16px 8px;font-size:13px;color:#A9BDD6;line-height:1.5}
+.dlg .kv{margin:0}
+.dlg .df{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--line2);margin-top:8px}
+.prog{height:8px;border-radius:4px;background:var(--field);overflow:hidden;margin-top:10px}
+.prog div{height:100%;width:0;background:var(--accent);transition:width .15s linear}
+.perm{font-size:12px;padding:3px 10px;border-radius:12px;background:var(--blubg);color:var(--blu);border:1px solid #24527A}
+.toast{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);z-index:50;max-width:calc(100% - 32px);padding:9px 14px;border-radius:10px;background:#1B2E4C;border:1px solid #2F4E7A;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;gap:8px;align-items:center}
+.boot{position:absolute;inset:0;z-index:60;background:#050B16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--fg2);font-size:14px}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid #22385A;border-top-color:var(--gold);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.prog div{transition:none}}
+
+/* panel simulácie */
+.sim{background:#0D1829;border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:14px;font-size:13px}
+.sim h2{font-family:var(--f-head);font-size:16px;margin:0}
+.sim .grp{display:flex;flex-direction:column;gap:6px}
+.sim .gl{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.tg{display:flex;align-items:flex-start;gap:9px;padding:7px 9px;border-radius:9px;border:1px solid var(--line2);cursor:pointer;line-height:1.35}
+.tg:hover{background:#13233A}
+.tg input{margin-top:2px;accent-color:var(--gold)}
+.tg small{display:block;color:var(--mut);font-size:11.5px}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;height:30px;border:0;background:transparent;color:var(--fg2);font-size:12.5px;cursor:pointer}
+.seg button.on{background:var(--sel);color:var(--fg);font-weight:600}
+.tips{font-size:12px;color:var(--mut);line-height:1.5;margin:0;padding-left:16px}
+.legendnote{font-size:12px;color:var(--mut);line-height:1.5}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+
+      <linearGradient id="t-sheen" x1="0" y1="0" x2="0.7" y2="0.8"><stop offset="0" stop-color="#ffffff" stop-opacity="0.34"></stop><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"></stop></linearGradient>
+      <clipPath id="t-clip"><path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z"></path></clipPath>
+      <clipPath id="t-fclip"><path d="M22 4H46A6 6 0 0 1 52 10V48A12 12 0 0 1 40 60H18A6 6 0 0 1 12 54V14A10 10 0 0 1 22 4Z"></path></clipPath>
+      <filter id="t-sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.3" flood-color="#06101F" flood-opacity="0.35"></feDropShadow></filter>
+      <symbol id="t-logo" viewBox="50 46 168 168">
+        <path d="M57 54h43v102h85v43H57z" fill="#4AA8FF"></path>
+        <path d="M190 62c-8-8-19-12-33-12h-7c-24 0-39 13-39 33 0 16 10 27 29 33l28 9c9 3 14 8 14 16 0 9-7 14-19 14h-18c-12 0-21-5-28-14l-27 27c13 16 31 24 55 24h21c38 0 61-19 61-50 0-23-14-39-42-48l-27-8c-5-2-8-4-8-7 0-4 3-6 9-6h7c9 0 16 3 22 10z" fill="#F2F7FF"></path>
+      </symbol>
+      <symbol id="t-tile" viewBox="0 0 64 64">
+        <path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z" fill="currentColor"></path>
+        <path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z" fill="url(#t-sheen)"></path>
+        <g clip-path="url(#t-clip)"><path d="M0 47C18 43 40 37 64 25V64H0Z" fill="#000000" opacity="0.22"></path><path d="M0 47C18 43 40 37 64 25" fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="1.2"></path></g>
+      </symbol>
+      <symbol id="t-folder" viewBox="0 0 64 64">
+        <path d="M6 15a7 7 0 0 1 7-7h11.5a4 4 0 0 1 2.9 1.2L32 14h19a7 7 0 0 1 7 7v21H6z" fill="currentColor"></path>
+        <path d="M6 15a7 7 0 0 1 7-7h11.5a4 4 0 0 1 2.9 1.2L32 14h19a7 7 0 0 1 7 7v21H6z" fill="#000000" opacity="0.32"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="currentColor"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="url(#t-sheen)"></path>
+        <path d="M6 31C21 29.5 39 26 58 19" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.2"></path>
+      </symbol>
+      <symbol id="t-sysfolder" viewBox="0 0 64 64">
+        <path d="M6 15a7 7 0 0 1 7-7h11.5a4 4 0 0 1 2.9 1.2L32 14h19a7 7 0 0 1 7 7v21H6z" fill="#0C1626"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="#1B2D49"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="url(#t-sheen)"></path>
+        <path d="M6 31C21 29.5 39 26 58 19" fill="none" stroke="#FFC23D" stroke-width="1.6"></path>
+        <use href="#t-logo" x="16" y="33" width="19" height="19" filter="url(#t-sh)"></use>
+      </symbol>
+      <symbol id="t-lock" viewBox="0 0 20 20">
+        <circle cx="10" cy="10" r="9.2" fill="#FFC23D" stroke="#0F1A2B" stroke-width="1.6"></circle>
+        <path d="M7.2 9V7.6a2.8 2.8 0 0 1 5.6 0V9" fill="none" stroke="#1A2433" stroke-width="1.7"></path>
+        <rect x="5.8" y="8.8" width="8.4" height="6" rx="1.6" fill="#1A2433"></rect>
+      </symbol>
+      <symbol id="t-check" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#23935A"></circle><path d="M5.8 10.2l2.8 2.8 5.6-6" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></symbol>
+      <symbol id="t-sysfile" viewBox="0 0 64 64">
+        <path d="M22 4H46A6 6 0 0 1 52 10V48A12 12 0 0 1 40 60H18A6 6 0 0 1 12 54V14A10 10 0 0 1 22 4Z" fill="#F4F7FC"></path>
+        <g clip-path="url(#t-fclip)"><path d="M0 47C20 44 38 40 64 32V64H0Z" fill="#13233B"></path><path d="M0 47C20 44 38 40 64 32" fill="none" stroke="#FFC23D" stroke-width="1.6"></path></g>
+        <path d="M29 9H41A3 3 0 0 1 44 12V24A9 9 0 0 1 35 33H23A3 3 0 0 1 20 30V18A9 9 0 0 1 29 9Z" fill="#13233B"></path>
+        <use href="#t-logo" x="23.5" y="12.5" width="17" height="17"></use>
+      </symbol>
+      <symbol id="t-file" viewBox="0 0 64 64">
+        <path d="M22 4H46A6 6 0 0 1 52 10V48A12 12 0 0 1 40 60H18A6 6 0 0 1 12 54V14A10 10 0 0 1 22 4Z" fill="#F4F7FC"></path>
+        <g clip-path="url(#t-fclip)"><path d="M0 47C20 44 38 40 64 32V64H0Z" fill="currentColor"></path><path d="M0 47C20 44 38 40 64 32" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.2"></path></g>
+      </symbol>
+      <symbol id="g-prehliadac" viewBox="0 0 64 64">
+        <circle cx="32" cy="31" r="15.5" fill="#ffffff"></circle>
+        <g fill="none" stroke="#1F9BD7" stroke-width="2.4" stroke-linecap="round"><ellipse cx="32" cy="31" rx="6.5" ry="15.5"></ellipse><path d="M16.5 31h31M19 23h26M19 39h26"></path></g>
+        <ellipse cx="32" cy="31" rx="23" ry="7" transform="rotate(-24 32 31)" fill="none" stroke="#FFC23D" stroke-width="2.6"></ellipse>
+      </symbol>
+      <symbol id="g-chat" viewBox="0 0 64 64">
+        <rect x="25" y="13" width="26" height="18" rx="7" fill="#ffffff" fill-opacity="0.5"></rect>
+        <path d="M13 27a7 7 0 0 1 7-7h17a7 7 0 0 1 7 7v8a7 7 0 0 1-7 7H27l-7 6v-6.3A7 7 0 0 1 13 35z" fill="#ffffff"></path>
+        <circle cx="22" cy="31" r="2.3" fill="#D9468F"></circle><circle cx="28.5" cy="31" r="2.3" fill="#D9468F"></circle><circle cx="35" cy="31" r="2.3" fill="#D9468F"></circle>
+      </symbol>
+      <symbol id="g-posta" viewBox="0 0 64 64">
+        <rect x="19" y="12" width="26" height="18" rx="3" fill="#ffffff" fill-opacity="0.5"></rect>
+        <rect x="13" y="20" width="38" height="26" rx="6" fill="#ffffff"></rect>
+        <path d="M15.5 23.5l16.5 11.5 16.5-11.5" fill="none" stroke="#0F9D8A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="g-pdf" viewBox="0 0 64 64">
+        <rect x="24" y="11" width="25" height="31" rx="5" fill="#ffffff" fill-opacity="0.45"></rect>
+        <path d="M20 17h13l8 8v19a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V21a4 4 0 0 1 4-4z" fill="#ffffff"></path>
+        <path d="M33 17v5a3 3 0 0 0 3 3h5z" fill="#F4B3B6"></path>
+        <path d="M22 32h12M22 38h8" stroke="#C8363C" stroke-width="2.8" stroke-linecap="round"></path>
+      </symbol>
+      <symbol id="g-code" viewBox="0 0 64 64">
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="M23 21l-9 10.5 9 10.5" stroke="#ffffff"></path><path d="M41 21l9 10.5-9 10.5" stroke="#ffffff"></path><path d="M35.5 16l-7 31" stroke="#8FD3FF"></path></g>
+      </symbol>
+      <symbol id="g-store" viewBox="0 0 64 64">
+        <path d="M24 25v-2.5a8 8 0 0 1 16 0V25" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="3.4" stroke-linecap="round"></path>
+        <path d="M16 25h32l-2.6 18.5A4 4 0 0 1 41.4 47H22.6a4 4 0 0 1-4-3.5z" fill="#ffffff"></path>
+        <path d="M32 29.5l1.9 3.9 4.3.6-3.1 3 .7 4.3L32 39.3l-3.8 2 .7-4.3-3.1-3 4.3-.6z" fill="#FFC23D" stroke="#FFC23D" stroke-width="0.8" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="g-aktual" viewBox="0 0 64 64">
+        <path d="M45.5 27A14 14 0 0 0 21.5 21" fill="none" stroke="#1A2433" stroke-width="4.2" stroke-linecap="round"></path>
+        <path d="M16.5 15l3 11.5 9.5-5.5z" fill="#1A2433" stroke="#1A2433" stroke-width="1.2" stroke-linejoin="round"></path>
+        <path d="M18.5 35A14 14 0 0 0 42.5 41" fill="none" stroke="#ffffff" stroke-width="4.2" stroke-linecap="round"></path>
+        <path d="M47.5 47l-3-11.5-9.5 5.5z" fill="#ffffff" stroke="#ffffff" stroke-width="1.2" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="g-media" viewBox="0 0 64 64">
+        <circle cx="32" cy="31" r="17" fill="#ffffff" fill-opacity="0.35"></circle>
+        <circle cx="32" cy="31" r="12" fill="#ffffff"></circle>
+        <path d="M29 25.5l9 5.5-9 5.5z" fill="#E05A2E" stroke="#E05A2E" stroke-width="1.5" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="g-ochrana" viewBox="0 0 64 64">
+        <path d="M32 12l15.5 5.6v11.6c0 10.3-6.7 17.6-15.5 21.2-8.8-3.6-15.5-10.9-15.5-21.2V17.6z" fill="#ffffff"></path>
+        <path d="M32 12l15.5 5.6v11.6c0 10.3-6.7 17.6-15.5 21.2z" fill="#23935A" fill-opacity="0.14"></path>
+        <path d="M25 31l5 5 9.5-10" fill="none" stroke="#23935A" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="g-agenti" viewBox="0 0 64 64">
+        <path d="M32 21v-5" stroke="#ffffff" stroke-width="3" stroke-linecap="round"></path>
+        <circle cx="32" cy="13.5" r="3.6" fill="#8FF0E0"></circle>
+        <rect x="12.5" y="28" width="5" height="10" rx="2.5" fill="#ffffff" fill-opacity="0.55"></rect>
+        <rect x="46.5" y="28" width="5" height="10" rx="2.5" fill="#ffffff" fill-opacity="0.55"></rect>
+        <rect x="16" y="21" width="32" height="24" rx="9" fill="#ffffff"></rect>
+        <circle cx="26" cy="32" r="3.2" fill="#0E7C99"></circle><circle cx="38" cy="32" r="3.2" fill="#0E7C99"></circle>
+        <path d="M28 39h8" stroke="#0E7C99" stroke-width="2.6" stroke-linecap="round"></path>
+      </symbol>
+    <symbol id="t-disk" viewBox="0 0 64 64">
+        <rect x="6" y="18" width="52" height="30" rx="8" fill="#C9D5E4"></rect>
+        <rect x="6" y="18" width="52" height="30" rx="8" fill="url(#t-sheen)"></rect>
+        <path d="M6 38C22 36.5 40 33.5 58 28V40a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8Z" fill="#13233B"></path>
+        <path d="M6 38C22 36.5 40 33.5 58 28" fill="none" stroke="#FFC23D" stroke-width="1.4"></path>
+        <use href="#t-logo" x="12" y="21" width="12" height="12"></use>
+        <circle cx="49" cy="25" r="2" fill="#7CE0A5"></circle>
+      </symbol>
+
+      <symbol id="t-sf" viewBox="0 0 64 64">
+        <path d="M6 15a7 7 0 0 1 7-7h11.5a4 4 0 0 1 2.9 1.2L32 14h19a7 7 0 0 1 7 7v21H6z" fill="#3A5272"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="#1B2D49"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="url(#t-sheen)"></path>
+        <path d="M6 31C21 29.5 39 26 58 19" fill="none" stroke="#FFC23D" stroke-width="1.6"></path>
+      </symbol>
+      <symbol id="f-jadro" viewBox="0 0 64 64"><use href="#t-sf" width="64" height="64"></use>
+        <g stroke="#FFC23D" stroke-width="1.8" stroke-linecap="round"><path d="M28 33v-3M36 33v-3M28 55v3M36 55v3M20 40h-3M20 48h-3M44 40h3M44 48h3"></path></g>
+        <rect x="20" y="33" width="24" height="22" rx="4" fill="#ffffff"></rect><rect x="26" y="39" width="12" height="10" rx="2" fill="#1B2D49"></rect></symbol>
+      <symbol id="f-apl" viewBox="0 0 64 64"><use href="#t-sf" width="64" height="64"></use>
+        <rect x="21" y="34" width="9.5" height="9.5" rx="2.6" fill="#ffffff"></rect><rect x="33.5" y="34" width="9.5" height="9.5" rx="2.6" fill="#ffffff" fill-opacity="0.6"></rect>
+        <rect x="21" y="46.5" width="9.5" height="9.5" rx="2.6" fill="#ffffff" fill-opacity="0.6"></rect><rect x="33.5" y="46.5" width="9.5" height="9.5" rx="2.6" fill="#FFC23D"></rect></symbol>
+      <symbol id="f-akt" viewBox="0 0 64 64"><use href="#t-sf" width="64" height="64"></use>
+        <path d="M41.5 41A10 10 0 0 0 24 37.5" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round"></path><path d="M21 33l1.8 7.5 6.6-3.6z" fill="#ffffff"></path>
+        <path d="M22.5 48A10 10 0 0 0 40 51.5" fill="none" stroke="#FFC23D" stroke-width="3.2" stroke-linecap="round"></path><path d="M43 56l-1.8-7.5-6.6 3.6z" fill="#FFC23D"></path></symbol>
+      <symbol id="f-ovl" viewBox="0 0 64 64"><use href="#t-sf" width="64" height="64"></use>
+        <path d="M27 33v6M37 33v6" stroke="#FFC23D" stroke-width="3" stroke-linecap="round"></path>
+        <path d="M21 39h22v4a11 11 0 0 1-22 0z" fill="#ffffff"></path><path d="M32 54v4" stroke="#ffffff" stroke-width="3" stroke-linecap="round"></path></symbol>
+      <symbol id="f-nast" viewBox="0 0 64 64"><use href="#t-sf" width="64" height="64"></use>
+        <circle cx="32" cy="45" r="9.5" fill="none" stroke="#ffffff" stroke-width="5" stroke-dasharray="3.7 3.75"></circle>
+        <circle cx="32" cy="45" r="8" fill="#ffffff"></circle><circle cx="32" cy="45" r="3.4" fill="#FFC23D"></circle></symbol>
+      <symbol id="f-zazn" viewBox="0 0 64 64"><use href="#t-sf" width="64" height="64"></use>
+        <rect x="20" y="33" width="24" height="23" rx="4" fill="#ffffff"></rect>
+        <path d="M25 39.5h14M25 44.5h14M25 49.5h8" stroke="#1B2D49" stroke-width="2.4" stroke-linecap="round"></path><circle cx="41" cy="51" r="3.3" fill="#FFC23D"></circle></symbol>
+      <symbol id="f-obn" viewBox="0 0 64 64"><use href="#t-sf" width="64" height="64"></use>
+        <circle cx="32" cy="45" r="9.5" fill="none" stroke="#ffffff" stroke-width="5.5"></circle>
+        <circle cx="32" cy="45" r="9.5" fill="none" stroke="#E05A5A" stroke-width="5.5" stroke-dasharray="7.46 7.46" transform="rotate(-22 32 45)"></circle></symbol>
+      <symbol id="t-warn" viewBox="0 0 20 20"><path d="M10 2l8.5 15H1.5z" fill="#FFC23D" stroke="#FFC23D" stroke-width="1.5" stroke-linejoin="round"></path><path d="M10 8v4" stroke="#1A2433" stroke-width="2" stroke-linecap="round"></path><circle cx="10" cy="14.6" r="1.2" fill="#1A2433"></circle></symbol>
+      <symbol id="t-err" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#E05A5A"></circle><path d="M6.6 6.6l6.8 6.8M13.4 6.6l-6.8 6.8" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"></path></symbol>
+    <symbol id="g-subory" viewBox="0 0 64 64">
+        <path d="M14 20a4 4 0 0 1 4-4h8.5l4 4H46a4 4 0 0 1 4 4v6H14z" fill="#ffffff" fill-opacity="0.55"></path>
+        <path d="M14 30C24 29 38 27 50 24V42a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4z" fill="#ffffff"></path>
+        <path d="M21 39h9" stroke="#FFC23D" stroke-width="3.2" stroke-linecap="round"></path>
+      </symbol>
+<symbol id="t-usb" viewBox="0 0 64 64">
+        <rect x="24" y="47" width="16" height="12" rx="2" fill="url(#t-metal)"></rect>
+        <rect x="27.5" y="51" width="3.5" height="3.5" rx="0.6" fill="#55657E"></rect>
+        <rect x="33" y="51" width="3.5" height="3.5" rx="0.6" fill="#55657E"></rect>
+        <path d="M28 5H40A6 6 0 0 1 46 11V40A9 9 0 0 1 37 49H24A6 6 0 0 1 18 43V15A10 10 0 0 1 28 5Z" fill="#3D8BFF"></path>
+        <path d="M28 5H40A6 6 0 0 1 46 11V40A9 9 0 0 1 37 49H24A6 6 0 0 1 18 43V15A10 10 0 0 1 28 5Z" fill="url(#t-sheen)"></path>
+        <path d="M18 37C26 36 36 33.5 46 29V40A9 9 0 0 1 37 49H24A6 6 0 0 1 18 43Z" fill="#000000" opacity="0.22"></path>
+        <path d="M18 37C26 36 36 33.5 46 29" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1"></path>
+        <circle cx="32" cy="14" r="3" fill="#ffffff" fill-opacity="0.85"></circle>
+      </symbol>
+<symbol id="t-bin" viewBox="0 0 64 64">
+        <path d="M26.5 12V9.5A2 2 0 0 1 28.5 7.5h7A2 2 0 0 1 37.5 9.5V12" fill="none" stroke="#C9D5E4" stroke-width="3" stroke-linejoin="round"></path>
+        <rect x="12" y="12" width="40" height="7" rx="3.5" fill="url(#t-metal)"></rect>
+        <path d="M16 21h32l-2.8 31A6 6 0 0 1 39.2 57.5H24.5a5 5 0 0 1-5-4.6z" fill="#E6ECF4"></path>
+        <path d="M17.7 41C28 40.2 38 38.5 47 35.5L45.2 52.5A6 6 0 0 1 39.2 57.5H24.5a5 5 0 0 1-5-4.6Z" fill="#000000" opacity="0.12"></path>
+        <path d="M25.5 27v23M32 27v23M38.5 27v23" fill="none" stroke="#8FA3BD" stroke-width="2.6" stroke-linecap="round"></path>
+      </symbol>
+<symbol id="t-pc" viewBox="0 0 64 64">
+        <path d="M14 7H52A6 6 0 0 1 58 13V35A9 9 0 0 1 49 44H12A6 6 0 0 1 6 38V15A8 8 0 0 1 14 7Z" fill="#22324A"></path>
+        <path d="M16 11H50A4 4 0 0 1 54 15V34A6 6 0 0 1 48 40H13A3 3 0 0 1 10 37V17A6 6 0 0 1 16 11Z" fill="#2F6FE4"></path>
+        <path d="M16 11H50A4 4 0 0 1 54 15V34A6 6 0 0 1 48 40H13A3 3 0 0 1 10 37V17A6 6 0 0 1 16 11Z" fill="url(#t-sheen)"></path>
+        <path d="M10 33C24 31.5 38 28.5 54 23V34A6 6 0 0 1 48 40H13A3 3 0 0 1 10 37Z" fill="#000000" opacity="0.24"></path>
+        <path d="M10 33C24 31.5 38 28.5 54 23" fill="none" stroke="#FFC23D" stroke-opacity="0.9" stroke-width="1.2"></path>
+        <path d="M27 44h10l2.2 7H24.8z" fill="#8FA3BD"></path>
+        <rect x="18" y="51" width="28" height="5" rx="2.5" fill="url(#t-metal)"></rect>
+      </symbol>
+<linearGradient id="t-metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E4EBF4"></stop><stop offset="1" stop-color="#B9C7D9"></stop></linearGradient>
+</defs></svg>
+
+<div class="top">
+  <div>
+    <div class="eyebrow"><a href="core.html" style="color:inherit;text-decoration:none">← Linsoft OS Core</a> · simulácia pripravovanej funkcie</div>
+    <h1>Disk C: so systémovým priečinkom C:\Linsoft</h1>
+    <p>Klikni dvakrát na priečinok a otvorí sa. Pravým tlačidlom vyvoláš ponuku. Systém je chránený, tvoje priečinky môžeš meniť. Vpravo zapneš chyby a skúsiš, ako ich systém rieši.</p>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="deskwrap">
+    <div class="desk" id="desk">
+      <svg class="wall" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true">
+        <circle cx="820" cy="210" r="110" fill="#FFC23D" opacity=".07"></circle>
+        <path d="M0 560C300 530 640 450 1000 260V700H0Z" fill="#13335C" opacity=".55"></path>
+        <path d="M0 560C300 530 640 450 1000 260" fill="none" stroke="#FFC23D" stroke-opacity=".45" stroke-width="2"></path>
+      </svg>
+      <div class="win" id="win">
+        <div class="tbar"><span id="wicon"></span><span id="wtitle">Súbory</span><div class="wb"><span>—</span><span>□</span><span>✕</span></div></div>
+        <div class="nav">
+          <button class="ib" id="bBack" aria-label="Späť"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="ib" id="bFwd" aria-label="Dopredu"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="ib" id="bUp" aria-label="O úroveň vyššie"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 10l5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="addr" id="addr"></div>
+          <input class="search" id="search" placeholder="Hľadať v priečinku" aria-label="Hľadať v priečinku">
+        </div>
+        <div class="cmd" id="cmd"></div>
+        <div class="body">
+          <nav class="side" id="side" aria-label="Navigácia"></nav>
+          <div class="content" id="content" tabindex="0"></div>
+        </div>
+        <div class="status" id="status"></div>
+      </div>
+      <div class="taskbar">
+        <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" style="color:#13233B"><use href="#t-tile" width="64" height="64"></use><use href="#t-logo" x="13" y="11" width="38" height="38"></use></svg>
+        <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" style="color:#2F6FE4"><use href="#t-tile" width="64" height="64"></use><use href="#g-subory" width="64" height="64"></use></svg>
+        <span id="tbver" style="color:var(--mut)"></span>
+        <div class="clock"><div>14:32</div><div style="color:var(--mut)">17. 11. 2026</div></div>
+      </div>
+      <div id="layer"></div>
+    </div>
+  </div>
+
+  <aside class="sim" aria-label="Simulácia">
+    <h2>Simulácia</h2>
+    <div class="grp">
+      <div class="gl">Obrazovka</div>
+      <div class="seg" id="seg">
+        <button data-s="full" class="on">Celá</button><button data-s="s1024">1024×768</button><button data-s="sphone">Úzka</button>
+      </div>
+    </div>
+    <div class="grp" id="errs">
+      <div class="gl">Pokaziť niečo</div>
+      <label class="tg"><input type="checkbox" id="e-sig"><span>Neplatný podpis<small>aplikácia Linsoft PDF je poškodená</small></span></label>
+      <label class="tg"><input type="checkbox" id="e-upd"><span>Aktualizácia zlyhala<small>0.9.8 nenaštartovala, systém sa vrátil</small></span></label>
+      <label class="tg"><input type="checkbox" id="e-full"><span>Plný systémový oddiel<small>zostáva 380 MB</small></span></label>
+      <label class="tg"><input type="checkbox" id="e-drv"><span>Chýba ovládač<small>Wi‑Fi Realtek RTL8852</small></span></label>
+      <label class="tg"><input type="checkbox" id="e-rec"><span>Záchrana nie je pripravená<small>oddiel Obnova je poškodený</small></span></label>
+    </div>
+    <div class="grp">
+      <div class="gl">Skús</div>
+      <ul class="tips">
+        <li>Otvor Linsoft (C:) › Linsoft</li>
+        <li>Vymaž priečinok Linsoft alebo súbor v ňom</li>
+        <li>Skontroluj systém a vráť verziu na 0.9.6</li>
+        <li>Aktualizuj Linsoft Browser na 2.0.38</li>
+        <li>V Tento počítač zapni Zobraziť systémové</li>
+      </ul>
+    </div>
+    <button class="btn ghost2" id="reset">Začať odznova</button>
+    <div class="legendnote">Toto je simulácia v prehliadači. C:\Linsoft sa v systéme pripravuje pre ďalšiu verziu. Nič sa nezapisuje na disk a čísla sú ukážkové.</div>
+  </aside>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- ikony ---------- */
+function use(id,s,col){return `<svg viewBox="0 0 64 64" width="${s}" height="${s}" aria-hidden="true"${col?` style="color:${col}"`:''}><use href="#${id}" width="64" height="64"></use></svg>`;}
+function tile(g,col,s){return `<svg viewBox="0 0 64 64" width="${s}" height="${s}" aria-hidden="true" style="color:${col}"><use href="#t-tile" width="64" height="64"></use><use href="#${g}" width="64" height="64"></use></svg>`;}
+function fileI(ext,col,s,sys){const fs=ext.length<=3?9.5:8.2;
+  return `<svg viewBox="0 0 64 64" width="${s}" height="${s}" aria-hidden="true"${sys?'':` style="color:${col}"`}><use href="#${sys?'t-sysfile':'t-file'}" width="64" height="64"></use><text x="32" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="${fs}" font-weight="700" fill="${sys?'#FFC23D':'#fff'}">${esc(ext)}</text></svg>`;}
+const LOCK=s=>`<svg viewBox="0 0 20 20" width="${s}" height="${s}" aria-hidden="true"><use href="#t-lock" width="20" height="20"></use></svg>`;
+const SI=(id,s)=>`<svg viewBox="0 0 20 20" width="${s}" height="${s}" aria-hidden="true"><use href="#${id}" width="20" height="20"></use></svg>`;
+function icon(n,s){
+  switch(n.k){
+    case 'pc':return use('t-pc',s);
+    case 'drive':return use(n.ic||'t-disk',s);
+    case 'bin':return use('t-bin',s);
+    case 'sys':return use(n.ic||'t-sysfolder',s);
+    case 'dir':return use('t-folder',s,n.col||'#3D8BFF');
+    case 'app':return tile(n.g,n.col,s);
+    case 'sysfile':return fileI(n.ext,null,s,true);
+    case 'file':return fileI(n.ext,n.col||'#5B6B82',s,false);
+  }
+  return '';
+}
+
+/* ---------- strom ---------- */
+let N,ROOT,BIN,C,LS,UID;
+function build(){
+  UID=0;N={};
+  const F=(name,ext,col,size,extra)=>Object.assign({k:'file',name,ext,col,size},extra||{});
+  const SF=(name,ext,desc,size,extra)=>Object.assign({k:'sysfile',name,ext,desc,size},extra||{});
+  const apps=[
+    {name:'Linsoft Browser',short:'Browser',id:'sk.linsoft.browser',g:'g-prehliadac',col:'#1F9BD7',ver:'2.0.37',newv:'2.0.38',prog:'5,1 MB',data:'18 MB',perms:['Sieť','Súbory','Stiahnuté','Schránka']},
+    {name:'Linsoft Chat',short:'Chat',id:'sk.linsoft.chat',g:'g-chat',col:'#D9468F',ver:'1.0.0',prog:'1,6 MB',data:'2,4 MB',perms:['Sieť','Oznámenia','Súbory','Schránka']},
+    {name:'Linsoft Pošta',short:'Pošta',id:'sk.linsoft.posta',g:'g-posta',col:'#0F9D8A',ver:'1.0.0',prog:'0,6 MB',data:'35 MB',perms:['Sieť','Oznámenia','Súbory','Schránka']},
+    {name:'Linsoft PDF',short:'PDF',id:'sk.linsoft.pdf',g:'g-pdf',col:'#C8363C',ver:'1.0.0',prog:'2,6 MB',data:'0,2 MB',perms:['Súbory','Schránka','Web'],sigApp:true},
+    {name:'Linsoft Code',short:'Code',id:'sk.linsoft.code',g:'g-code',col:'#3446B8',ver:'1.0.0',prog:'2,1 MB',data:'4 MB',perms:['Súbory','Terminál','Schránka','Oznámenia']}
+  ].map(a=>Object.assign({k:'app'},a,{children:[
+      SF('app','BIN','program',a.prog,{sigProg:a.sigApp}),
+      F('manifest.ini','INI','#5B6B82','1 kB',{desc:'názov, verzia, oprávnenia'}),
+      F('ikona.png','PNG','#1F9BD7','3 kB'),
+      SF('podpis.sig','SIG','podpis vydavateľa','64 B'),
+      {k:'dir',name:'údaje',desc:'tvoje údaje – ostanú pri aktualizácii',col:'#3D8BFF',children:[]}
+  ]}));
+  LS={k:'sys',name:'Linsoft',sysRoot:true,view:'home',ic:'t-sysfolder',size:'4,6 GB',info:'Systémový priečinok je chránený. Súbory môžeš prezerať a kopírovať, ale nie meniť.',children:[
+    {k:'sys',name:'Jadro',ic:'f-jadro',part:'LA-BOOT',list:true,size:'43 MB',info:'Jadro a zavádzač, z ktorých sa štartuje počítač. Mení ich len Aktualizácia.',children:[
+      SF('linsoft.elf','SYS','jadro Linsoft OS Core %V','9,8 MB'),
+      SF('ls1280.elf','SYS','jadro pre rozlíšenie 1280 × 720','9,8 MB'),
+      SF('ls1920.elf','SYS','jadro pre rozlíšenie 1920 × 1080','9,8 MB'),
+      SF('BOOTX64.EFI','EFI','zavádzač UEFI · podpísaný (Secure Boot)','2,1 MB'),
+      SF('grub.cfg','CFG','ponuka pri štarte','3 kB'),
+      SF('linsoft-sb.crt','SIG','certifikát Secure Boot','1 kB')]},
+    {k:'sys',name:'Aplikácie',ic:'f-apl',part:'LA-CORE',view:'apps',size:'1,2 GB',info:'Aplikácie nainštalované zo Store. Každá má vlastný priečinok s programom, podpisom a tvojimi údajmi.',children:apps},
+    {k:'sys',name:'Aktualizácie',ic:'f-akt',part:'LA-CORE',list:true,size:'980 MB',info:'Stiahnuté a nainštalované verzie systému. Predošlá verzia ostáva na návrat.',dyn:'upd',children:[]},
+    {k:'sys',name:'Ovládače',ic:'f-ovl',part:'LA-CORE',list:true,size:'310 MB',info:'Ovládače a firmvér zariadení. Linsoft ich načíta podľa hardvéru v počítači.',dyn:'drv',children:[]},
+    {k:'sys',name:'Nastavenia',ic:'f-nast',part:'LA-STORE',list:true,size:'16 MB',info:'Nastavenia systému a body obnovy. Heslá sú šifrované a nikdy sa nezobrazia.',children:[
+      SF('Systém','CFG','vzhľad, ikony Úsvit, klávesnica, zvuk','1 kB'),
+      SF('Wi‑Fi siete','CFG','3 uložené siete · heslá šifrované','••••'),
+      SF('Používateľ','CFG','prihlásenie · heslo šifrované','••••'),
+      {k:'sys',name:'Body obnovy',ic:'f-obn',desc:'pred aktualizáciou · 17. 11. 2026',size:'3 body',list:true,children:[
+        SF('Pred aktualizáciou 0.9.8','CFG','17. 11. 2026 14:02','5 MB'),SF('Pred aktualizáciou 0.9.7','CFG','17. 11. 2026 12:40','5 MB'),SF('Týždenný bod','CFG','16. 11. 2026 03:00','5 MB')]},
+      SF('Ochrana','CFG','firewall, profil siete Doma','1 kB'),
+      SF('Aktualizácia','CFG','kanál Stabilný · automaticky','1 kB')]},
+    {k:'sys',name:'Záznamy',ic:'f-zazn',part:'LA-CORE',list:true,size:'42 MB',info:'Čo sa v systéme dialo. Staré záznamy sa mažú samy po 30 dňoch.',children:[
+      SF('jadro.log','LOG','dnes 14:32 · bez chýb','1,4 MB'),
+      SF('aktualizacia.log','LOG','posledná inštalácia úspešná','86 kB'),
+      SF('ochrana.log','LOG','kontrola: 0 hrozieb','210 kB'),
+      SF('agenti.log','LOG','záloha a upratovanie hotové','64 kB'),
+      {k:'sys',name:'Hlásenia o pádoch',ic:'f-zazn',desc:'žiadne za posledných 7 dní',size:'0',list:true,children:[]},
+      {k:'sys',name:'Staršie',ic:'f-zazn',desc:'zbalené záznamy za 30 dní',size:'40 MB',list:true,children:[]}]},
+    {k:'sys',name:'Obnova',ic:'f-obn',part:'LA-RECOVERY',list:true,size:'2,0 GB',info:'Linsoft Záchrana opraví alebo preinštaluje systém, keď sa nedá naštartovať.',dyn:'rec',children:[
+      SF('linsoft.elf','SYS','záložné jadro %V','9,8 MB'),
+      SF('install.pak','LSR','celý systém na preinštalovanie','1,9 GB'),
+      SF('install.sig','SIG','podpis Linsoft','64 B'),
+      SF('zachrana.cfg','CFG','oprava zavádzača, návrat verzie','1 kB')]}
+  ]};
+  const U=(name,ch)=>({k:'dir',name,children:ch||[]});
+  C={k:'drive',name:'Linsoft (C:)',ic:'t-disk',children:[LS,
+    U('Plocha',[F('Nákupný zoznam.txt','TXT','#5B6B82','1 kB')]),
+    U('Dokumenty',[U('Projekty',[F('Plán.docx','DOCX','#2563C9','48 kB')]),F('Ponuka.docx','DOCX','#2563C9','120 kB'),F('Faktúra 2026-11.pdf','PDF','#C8363C','86 kB'),F('Rozpočet.xlsx','XLSX','#1E8E4F','34 kB'),F('Poznámky.txt','TXT','#5B6B82','2 kB')]),
+    U('Stiahnuté',[F('Linsoft-OS-Core-0.9.8.iso','ISO','#0F9D8A','412 MB'),F('Linsoft-Chat.lsa','LSA','#2F6FE4','0,4 MB')]),
+    U('Obrázky',[F('Tatry.jpg','JPG','#1F9BD7','3,2 MB'),F('Bratislava.png','PNG','#1F9BD7','2,1 MB')]),
+    U('Hudba',[F('Pieseň.mp3','MP3','#E05A2E','6,4 MB')]),
+    U('Videá',[F('Dovolenka.mp4','MP4','#8A3FD1','240 MB')]),
+    Object.assign(U('Linux',[U('home'),U('etc')]),{col:'#5B6B82',desc:'Debian 12 (oddiel LINUXROOT)'})
+  ]};
+  const D={k:'drive',name:'KLUC (D:)',ic:'t-usb',usb:true,children:[F('Záloha fotiek.zip','ZIP','#B88A0C','1,4 GB')]};
+  BIN={k:'bin',name:'Kôš',children:[]};
+  ROOT={k:'pc',name:'Tento počítač',view:'pc',children:[C,D]};
+  const reg=(n,p)=>{n.id='n'+(UID++);n.parent=p||null;N[n.id]=n;(n.children||[]).forEach(c=>reg(c,n));};
+  reg(ROOT);reg(BIN);
+}
+const prot=n=>{for(let p=n;p;p=p.parent)if(p.sysRoot)return true;return false;};
+const fixed=n=>prot(n)||n.k==='drive'||n.k==='pc'||n.k==='bin'||(n.parent&&n.parent.name==='Linux');
+const kids=n=>n.children||[];
+const findBy=(name,root)=>{root=root||LS;if(root.name===name)return root;for(const c of kids(root)){const r=findBy(name,c);if(r)return r;}return null;};
+
+/* ---------- stav ---------- */
+let S;
+function freshState(){return{cur:null,hist:[],hp:-1,sel:null,showSys:false,ver:'0.9.7',prev:'0.9.6',avail:null,
+  vers:[{v:'0.9.7',d:'17. 11. 2026',t:'nové ikony Úsvit'},{v:'0.9.6',d:'16. 11. 2026',t:'Linux pre Core, Agenti'},{v:'0.9.5',d:'15. 11. 2026',t:'predošlá verzia'}],
+  err:{sig:false,upd:false,full:false,drv:false,rec:false},lastCheck:'dnes 09:00',rename:null,filter:''};}
+
+/* ---------- navigácia ---------- */
+function go(n,push){if(!n)return;if(push!==false){S.hist=S.hist.slice(0,S.hp+1);S.hist.push(n.id);S.hp=S.hist.length-1;}S.cur=n;S.sel=null;S.rename=null;S.filter='';$('#search').value='';closeMenu();render();}
+function back(){if(S.hp>0){S.hp--;S.cur=N[S.hist[S.hp]];S.sel=null;render();}}
+function fwd(){if(S.hp<S.hist.length-1){S.hp++;S.cur=N[S.hist[S.hp]];S.sel=null;render();}}
+function up(){if(S.cur.parent)go(S.cur.parent);}
+function pathOf(n){const a=[];for(let p=n;p;p=p.parent)a.unshift(p);return a;}
+
+/* ---------- dynamické zoznamy ---------- */
+const pill=(t,c)=>`<span class="pill ${c}">${t}</span>`;
+function dynRows(n){
+  if(n.dyn==='upd'){
+    const r=[];
+    r.push({ic:use('f-akt',30),nm:'Stiahnuté',d:`linsoft-${S.ver}.lsu · podpis overený`,rt:pill('hotovo','p-ok')});
+    r.push({ic:fileI('LSU',0,30,true),nm:`linsoft-${S.ver}.lsu`,d:'balík aktualizácie',rt:'64 MB',file:{k:'sysfile',name:`linsoft-${S.ver}.lsu`,ext:'LSU',desc:'balík aktualizácie',size:'64 MB'}});
+    r.push({ic:use('f-akt',30),nm:`Nainštalovaná ${S.ver}`,d:'beží',rt:pill('beží','p-blue')});
+    if(S.prev)r.push({ic:use('f-akt',30),nm:`Predošlá verzia ${S.prev}`,d:'záloha na návrat',rt:`<button class="btn ghost" data-act="rollback" style="height:26px;font-size:11.5px">Vrátiť…</button>`});
+    if(S.avail)r.push({ic:use('f-akt',30),nm:`Dostupná ${S.avail}`,d:'novšia verzia je pripravená',rt:`<button class="btn" data-act="reinstall" style="height:26px;font-size:11.5px">Nainštalovať</button>`});
+    if(S.err.upd)r.push({ic:SI('t-err',26),nm:'0.9.8 – inštalácia zlyhala',d:'nenaštartovala, systém sa sám vrátil',rt:pill('vrátené','p-bad')});
+    const b=findBy('Linsoft Browser');
+    r.push({ic:use('f-apl',30),nm:'Aplikácie',d:b.newv?`Linsoft Browser ${b.newv} čaká`:'všetky aplikácie sú aktuálne',rt:b.newv?pill('1 nová','p-vio'):pill('aktuálne','p-ok')});
+    r.push({ic:fileI('TXT','#5B6B82',30),nm:'História.txt',d:'všetky inštalácie a návraty',rt:`${S.vers.length+8} záznamov`});
+    return r;
+  }
+  if(n.dyn==='drv'){
+    const D=(nm,d,st)=>({ic:fileI('DRV',0,30,true),nm,d,rt:st,file:{k:'sysfile',name:nm,ext:'DRV',desc:d,size:'—'}});
+    const r=[D('Wi‑Fi · Intel AX201','firmvér iwlwifi',pill('beží','p-ok')),D('Grafika · Intel UHD','firmvér i915',pill('beží','p-ok')),D('Sieť · Intel I219','LAN 1000 Mb/s',pill('beží','p-ok')),D('Zvuk · Intel HDA','reproduktory, mikrofón',pill('beží','p-ok'))];
+    if(S.err.drv)r.unshift({ic:SI('t-warn',26),nm:'Wi‑Fi · Realtek RTL8852',d:'zariadenie je v počítači, ovládač chýba',rt:`<button class="btn" data-act="fixdrv" style="height:26px;font-size:11.5px">Hľadať</button>`});
+    r.push(D('Bluetooth · Intel','zariadenie nenájdené',pill('nepoužitý','p-off')),D('Wi‑Fi · Realtek RTW88','pre iné počítače',pill('nepoužitý','p-off')));
+    return r;
+  }
+  return null;
+}
+
+/* ---------- banery chýb ---------- */
+function banners(where){
+  const e=S.err,out=[];
+  const B=(cls,ic,t,d,act,lbl)=>`<div class="banner ${cls}">${SI(ic,20)}<div class="bt"><b>${t}</b>${d}</div>${act?`<button class="btn" data-act="${act}">${lbl}</button>`:''}</div>`;
+  const all=where==='home';
+  if(e.sig&&(all||where==='Aplikácie'))out.push(B('b-bad','t-err','Neplatný podpis','Aplikácie\\Linsoft PDF\\app nemá platný podpis. Aplikácia sa nespustí.','fixsig','Opraviť z Obnovy'));
+  if(e.upd&&(all||where==='Aktualizácie'))out.push(B('b-bad','t-err','Aktualizácia na 0.9.8 zlyhala','Nová verzia nenaštartovala. Systém sa sám vrátil na '+S.ver+', nič sa nestratilo.','retryupd','Skúsiť znova'));
+  if(e.full&&(all||where==='Aktualizácie'))out.push(B('b-warn','t-warn','Systémový oddiel je plný','Zostáva 380 MB. Aktualizácie sa nebudú dať stiahnuť.','clean','Vyčistiť staré verzie'));
+  if(e.drv&&(all||where==='Ovládače'))out.push(B('b-warn','t-warn','Chýba ovládač','Wi‑Fi Realtek RTL8852 nemá ovládač. Sieť cez kábel funguje.','fixdrv','Hľadať ovládač'));
+  if(e.rec&&(all||where==='Obnova'))out.push(B('b-bad','t-err','Záchrana nie je pripravená','Oddiel Obnova je poškodený. Keď sa systém pokazí, nebude ho čím opraviť.','fixrec','Pripraviť Záchranu'));
+  return out.join('');
+}
+const anyErr=()=>Object.values(S.err).some(Boolean);
+
+/* ---------- vykreslenie ---------- */
+function render(){
+  const n=S.cur;
+  $('#wicon').innerHTML=icon(n,18);
+  $('#wtitle').textContent='Súbory – '+n.name;
+  $('#tbver').textContent='Linsoft OS Core '+S.ver;
+  $('#bBack').disabled=S.hp<=0;$('#bFwd').disabled=S.hp>=S.hist.length-1;$('#bUp').disabled=!n.parent;
+  // adresa
+  const p=pathOf(n);
+  $('#addr').innerHTML=icon(n,16)+p.map((x,i)=>i===p.length-1?`<span class="cur">${esc(x.name)}</span>`:`<button data-go="${x.id}">${esc(x.name)}</button><span class="sep">›</span>`).join('')+(prot(n)?`<span class="lockt">${LOCK(13)}len na čítanie</span>`:'');
+  renderSide();renderCmd();renderContent();renderStatus();
+}
+function sideItem(n,label,cls,pad){return `<button class="si ${cls||''}${S.cur===n?' on':''}" data-go="${n.id}" title="${esc(label)}"${pad?` style="padding-left:${pad}px"`:''}>${icon(n,18)}<span class="lbltxt">${esc(label)}</span></button>`;}
+function renderSide(){
+  const c=kids(C),h=[];
+  ['Plocha','Dokumenty','Stiahnuté','Obrázky','Hudba'].forEach(nm=>{const x=c.find(z=>z.name===nm);if(x)h.push(sideItem(x,nm));});
+  h.push('<div class="sdiv"></div>');
+  h.push(sideItem(ROOT,'Tento počítač'));
+  h.push(sideItem(C,'Linsoft (C:)'));
+  h.push(sideItem(LS,'Linsoft','',20));
+  kids(LS).forEach(x=>h.push(sideItem(x,x.name,'sub',36)));
+  h.push(sideItem(ROOT.children[1],'KLUC (D:)'));
+  h.push('<div class="sdiv"></div>');
+  h.push(sideItem(BIN,BIN.children.length?`Kôš (${BIN.children.length})`:'Kôš'));
+  $('#side').innerHTML=h.join('');
+}
+function selNode(){return S.sel?N[S.sel]:null;}
+function renderCmd(){
+  const n=S.cur,sel=selNode(),pr=prot(n),h=[];
+  const lk=pr?`<svg class="lk" viewBox="0 0 20 20"><use href="#t-lock" width="20" height="20"></use></svg>`:'';
+  if(n.k==='bin'){h.push(`<button class="cb" data-act="restore"${sel?'':' disabled'}>Obnoviť</button>`,`<button class="cb" data-act="empty"${n.children.length?'':' disabled'}>Vysypať kôš</button>`);}
+  else if(n.k==='pc'){h.push(`<button class="cb" data-act="togsys">${S.showSys?'Skryť systémové':'Zobraziť systémové'}</button>`);}
+  else{
+    h.push(`<button class="cb" data-act="newdir"${pr?' disabled title="Systémový priečinok je chránený"':''}>${lk}<span class="cbt">Nový priečinok</span></button>`);
+    const canDel=sel&&!fixed(sel);
+    h.push(`<button class="cb" data-act="del"${canDel?'':' disabled'}>${pr?lk:''}<span class="cbt">Vymazať</span></button>`);
+    h.push(`<button class="cb" data-act="ren"${canDel?'':' disabled'}>${pr?lk:''}<span class="cbt">Premenovať</span></button>`);
+    h.push(`<button class="cb" data-act="props"${sel||n?'':' disabled'}>Vlastnosti</button>`);
+    if(pr)h.push(`<button class="cb" data-act="check" style="margin-left:auto;color:var(--blu)">Skontrolovať systém</button>`);
+  }
+  $('#cmd').innerHTML=h.join('');
+}
+function itemHTML(x){
+  const isSel=S.sel===x.id;
+  let sub='';
+  if(x.k==='app')sub=`<span class="sub">${x.ver}</span>`+(x.newv?`<span class="badge">nová ${x.newv}</span>`:'')+(x.sigApp&&S.err.sig?pill('neplatný podpis','p-bad'):'');
+  const nm=S.rename===x.id?`<input id="ren" value="${esc(x.name)}" aria-label="Nový názov">`:`<span class="nm">${esc(x.name)}</span>`;
+  const lk=(x.k==='sys'&&x.sysRoot)?`<span class="lkb">${LOCK(18)}</span>`:'';
+  return `<div class="it${isSel?' sel':''}" data-id="${x.id}" tabindex="-1">${icon(x,x.k==='app'?52:58)}${lk}${nm}${sub}</div>`;
+}
+function rowHTML(x,r){
+  const id=x?x.id:'';const isSel=x&&S.sel===x.id;
+  const right=r?r.rt:(x.size?esc(x.size):'');
+  const desc=(r?r.d:(x.desc||'')).replace('%V',S.ver);
+  return `<div class="lr${isSel?' sel':''}" ${id?`data-id="${id}"`:''} tabindex="-1">${r?r.ic:icon(x,30)}<div style="min-width:0"><div class="nm">${esc(r?r.nm:x.name)}</div><div class="d">${esc(desc)}</div></div><div class="sz">${right}</div></div>`;
+}
+function filtered(list){const f=S.filter.trim().toLowerCase();return f?list.filter(x=>x.name.toLowerCase().includes(f)):list;}
+function renderContent(){
+  const n=S.cur,el=$('#content');let h='';
+  if(n.view==='pc')h=viewPC();
+  else if(n.view==='home')h=viewHome();
+  else{
+    if(prot(n)&&n.info)h+=`<div class="banner b-lock">${LOCK(18)}<div class="bt">${esc(n.info)}</div>${n.part?`<span class="chip" style="${partStyle(n.part)}">${n.part}</span>`:''}</div>`;
+    if(prot(n))h+=banners(n.name);
+    if(n.k==='bin'&&!n.children.length)h+=`<div style="padding:40px 10px;text-align:center;color:var(--mut)">${use('t-bin',64)}<div style="margin-top:8px">Kôš je prázdny. Systémové súbory sa sem nikdy nedostanú.</div></div>`;
+    const dr=dynRows(n);
+    if(dr)h+=`<div class="list">${dr.map(r=>rowHTML(null,r)).join('')}</div>`;
+    else if(n.list)h+=`<div class="list">${filtered(kids(n)).map(x=>rowHTML(x)).join('')||'<div class="lr"><span></span><span class="mut">Prázdne</span><span></span></div>'}</div>`;
+    else{
+      const l=filtered(kids(n));
+      if(n.k!=='bin'&&!l.length)h+=`<div style="padding:40px 10px;text-align:center;color:var(--mut)">Priečinok je prázdny${prot(n)?'':' – pravým tlačidlom vytvoríš nový priečinok'}.</div>`;
+      else h+=`<div class="grid">${l.map(itemHTML).join('')}</div>`;
+    }
+  }
+  el.innerHTML=h;
+  const ri=$('#ren');if(ri){ri.focus();ri.select();}
+}
+const partStyle=p=>({'LA-BOOT':'background:#1F2A44;color:#8FD3FF','LA-CORE':'background:#13301F;color:#7CE0A5','LA-STORE':'background:#2E1F44;color:#C7B4FF','LA-RECOVERY':'background:#3A1A1C;color:#FF9A9A'}[p]);
+function viewPC(){
+  let h='<div class="h3" style="margin-top:0">Disky</div><div class="drives">';
+  const used=S.err.full?'31,6 GB':'4,6 GB';
+  h+=drvCard(C,'412 GB voľných z 476 GB',14);
+  h+=drvCard(ROOT.children[1],'13,2 GB voľných z 14,6 GB',10);
+  h+='</div>';
+  if(S.showSys){
+    h+=`<div class="h3">Systémové oddiely – len na čítanie</div><div class="banner b-lock">${LOCK(18)}<div class="bt">Toto sú oddiely, z ktorých sa skladá C:\\Linsoft. Dvojklik otvorí príslušnú zložku.</div></div><div class="drives">`;
+    [['LA-BOOT','EFI · 512 MiB','Jadro'],['LA-STORE','Úložisko · 16 MiB','Nastavenia'],['LA-CORE','ext4 · 32 GiB · použité '+used,'Linsoft'],['LA-RECOVERY','FAT32 · 2 GiB','Obnova']].forEach(([p,d,t])=>{
+      const tn=findBy(t);h+=`<div class="drv" data-id="${tn.id}" tabindex="-1">${use(tn.ic,40)}<div style="flex:1;min-width:0"><div style="font-weight:600">${p}</div><div class="mut">${d}</div></div><span class="chip" style="${partStyle(p)}">→ ${t}</span></div>`;});
+    h+='</div>';
+  }else h+=`<div class="mut" style="margin-top:14px">Systémové oddiely sú skryté. Zobrazíš ich tlačidlom „Zobraziť systémové“.</div>`;
+  return h;
+}
+function drvCard(d,free,pct){const s=S.sel===d.id;return `<div class="drv${s?' sel':''}" data-id="${d.id}" tabindex="-1">${icon(d,46)}<div style="flex:1;min-width:0"><div style="font-weight:600">${esc(d.name)}</div><div class="bar"><div style="width:${pct}%;height:100%;background:${d.usb?'#3D8BFF':'#4AA8FF'}"></div></div><div class="mut" style="margin-top:4px">${free}</div></div></div>`;}
+function viewHome(){
+  const e=S.err,bad=e.sig||e.upd||e.rec,warn=e.full||e.drv;
+  const st=bad?pill('treba konať','p-bad'):warn?pill('upozornenie','p-gold'):pill('systém je v poriadku','p-ok');
+  const seg=e.full?[[60,'#7A5AF0'],[10,'#E3A919'],[22,'#5B6B82'],[1,'#23935A'],[3,'#E05A5A']]:[[3,'#4AA8FF'],[4,'#7A5AF0'],[3.2,'#E3A919'],[1,'#23935A'],[.6,'#8FA3BD'],[2.6,'#E05A5A']];
+  const b=findBy('Linsoft Browser');
+  let h=banners('home');
+  h+=`<div class="hero">${use('t-sysfolder',64)}<div style="flex:0 1 300px;min-width:0"><h2>Linsoft OS Core ${S.ver}</h2><div class="meta">Úsvit · UEFI · Secure Boot</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${st}${S.avail?pill('dostupná '+S.avail,'p-vio'):pill('aktuálny','p-blue')}</div></div>
+    <div class="use"><div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px"><b>Systém zaberá ${e.full?'31,6 GB':'4,6 GB'}</b><span style="color:#A9BDD6">z 32 GB</span></div><div class="usebar">${seg.map(([w,c])=>`<div style="width:${w}%;background:${c}"></div>`).join('')}</div>
+    <div class="legend"><span><i class="dot" style="background:#4AA8FF"></i>Jadro</span><span><i class="dot" style="background:#7A5AF0"></i>Aplikácie</span><span><i class="dot" style="background:#E3A919"></i>Aktualizácie</span><span><i class="dot" style="background:#23935A"></i>Ovládače</span><span><i class="dot" style="background:#8FA3BD"></i>Záznamy</span><span><i class="dot" style="background:#E05A5A"></i>Obnova</span></div></div></div>`;
+  const apl=findBy('Aplikácie');
+  h+=`<div class="cards"><div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+    <div class="sec"><div class="sech">${use('f-apl',24)}<b>Aplikácie</b><span class="mut">${apl.children.length} nainštalovaných</span><span class="grow"></span>${b.newv?pill('1 aktualizácia čaká','p-vio'):''}<button class="lnk" data-go="${apl.id}">Otvoriť</button></div>
+      <div class="apps">${apl.children.map(itemHTML).join('')}</div></div>
+    <div class="sec"><div class="sech">${use('f-jadro',24)}<b>Systém</b><span class="grow"></span><button class="lnk" data-act="check">Skontrolovať</button></div>
+      <div class="kv"><span>Jadro</span><b>${S.ver} · podpis platný</b></div>
+      <div class="kv"><span>Ovládače</span><b>${e.drv?'<span style="color:var(--gold)">1 chýba</span>':'4 bežia'}</b></div>
+      <div class="kv"><span>Linsoft Záchrana</span><b>${e.rec?'<span style="color:#FF9A9A">nie je pripravená</span>':'pripravená'}</b></div>
+      <div class="kv"><span>Body obnovy</span><b>3</b></div>
+      <div class="kv"><span>Posledná kontrola</span><b>${esc(S.lastCheck)}</b></div></div>
+  </div>
+  <div class="sec"><div class="sech">${use('f-akt',24)}<b>Aktualizácie</b><span class="grow"></span><button class="lnk" data-act="seek">Hľadať</button></div>
+    <div style="padding:12px 4px 0">${timeline()}</div>
+    <div style="margin:auto 12px 12px;padding:9px 11px;border-radius:9px;background:var(--field);border:1px solid var(--line);font-size:11.5px;color:#A9BDD6">Stiahnuté: linsoft-${S.ver}.lsu · 64 MB · podpis overený</div></div>
+  </div>`;
+  h+=`<div class="h3">Zložky</div><div class="grid">${kids(LS).map(itemHTML).join('')}</div>`;
+  return h;
+}
+function timeline(){
+  return S.vers.map(v=>{
+    let tag='',dot='#3B5578',extra='';
+    if(v.v===S.ver){tag=pill('beží','p-ok');dot='#23935A';}
+    else if(v.v===S.prev){tag=pill('predošlá','p-gold');dot='#FFC23D';extra=`<div style="margin-top:6px"><button class="btn ghost" data-act="rollback" style="height:26px;font-size:11.5px">Vrátiť na ${v.v}…</button></div>`;}
+    else if(v.v===S.avail){tag=pill('dostupná','p-vio');dot='#C7B4FF';extra=`<div style="margin-top:6px"><button class="btn" data-act="reinstall" style="height:26px;font-size:11.5px">Nainštalovať znova</button></div>`;}
+    return `<div class="tl"><i style="background:${dot}"></i><b>${v.v}</b> ${tag}<div class="mut">${v.d} · ${esc(v.t)}</div>${extra}</div>`;}).join('');
+}
+function renderStatus(){
+  const n=S.cur,sel=selNode();let l='';
+  if(n.view==='pc')l=`${n.children.length} disky`;
+  else if(n.view==='home')l=`Linsoft · 7 zložiek · ${S.err.full?'31,6':'4,6'} GB`;
+  else l=`${(dynRows(n)||kids(n)).length} položiek`;
+  if(sel)l+=` · vybrané: ${sel.name}`;
+  $('#status').innerHTML=`<span>${esc(l)}</span><span class="r">${prot(n)?'chránené – zmeny len cez Store a Linsoft Aktualizáciu':n.k==='bin'?'položky v koši sa dajú obnoviť':'tvoje súbory'}</span>`;
+}
+
+/* ---------- oznámenie, ponuka, dialógy ---------- */
+let tt;
+function toast(msg,ic){const L=$('#layer');const old=L.querySelector('.toast');if(old)old.remove();
+  const d=document.createElement('div');d.className='toast';d.setAttribute('role','status');d.innerHTML=(ic||'')+`<span>${msg}</span>`;L.appendChild(d);clearTimeout(tt);tt=setTimeout(()=>d.remove(),3200);}
+function closeMenu(){const m=$('#layer .menu');if(m)m.remove();}
+function menuAt(x,y,items){
+  closeMenu();const L=$('#layer'),d=document.createElement('div');d.className='menu';d.setAttribute('role','menu');
+  d.innerHTML=items.map(it=>it==='-'?'<div class="msep"></div>':`<button class="mi${it.cls?' '+it.cls:''}" role="menuitem" data-act="${it.act}"${it.dis?' disabled':''}${it.title?` title="${esc(it.title)}"`:''}><span>${it.t}</span>${it.dis&&it.lock?LOCK(13):''}</button>`).join('');
+  L.appendChild(d);const R=$('#desk').getBoundingClientRect();
+  let left=x-R.left,top=y-R.top;const w=d.offsetWidth,hh=d.offsetHeight;
+  if(left+w>R.width-6)left=R.width-w-6;if(top+hh>R.height-6)top=R.height-hh-6;
+  d.style.left=Math.max(6,left)+'px';d.style.top=Math.max(6,top)+'px';
+  const f=d.querySelector('.mi:not(:disabled)');if(f)f.focus();
+}
+function dialog(html,onclick){
+  closeDialog();const L=$('#layer'),o=document.createElement('div');o.className='ovl';o.innerHTML=`<div class="dlg" role="dialog" aria-modal="true">${html}</div>`;
+  L.appendChild(o);o.addEventListener('click',ev=>{if(ev.target===o){closeDialog();return;}const b=ev.target.closest('[data-d]');if(b){const a=b.dataset.d;if(a==='close')closeDialog();else if(onclick)onclick(a);}});
+  const b=o.querySelector('.btn');if(b)b.focus();return o;}
+function closeDialog(){const o=$('#layer .ovl');if(o)o.remove();}
+function progress(title,sub,ms,done,icHtml){
+  const o=dialog(`<div class="dh">${icHtml||use('f-jadro',30)}<b>${title}</b></div><div class="dbody"><div id="psub">${typeof sub==='function'?'':sub}</div><div class="prog"><div id="pbar"></div></div><div class="mut" id="ppct" style="margin-top:6px">0 %</div></div>`);
+  const t0=performance.now();
+  (function step(t){const k=Math.min(1,(t-t0)/ms);const bar=o.querySelector('#pbar');if(!bar)return;bar.style.width=(k*100)+'%';o.querySelector('#ppct').textContent=Math.round(k*100)+' %';
+    if(typeof sub==='function')o.querySelector('#psub').textContent=sub(k);
+    if(k<1)requestAnimationFrame(step);else{closeDialog();done&&done();}})(t0);
+  if(typeof sub==='function')o.querySelector('#psub').textContent=sub(0);
+}
+function reboot(msg,done){
+  const L=$('#layer'),d=document.createElement('div');d.className='boot';
+  d.innerHTML=`<svg viewBox="50 46 168 168" width="70" height="70" aria-hidden="true"><use href="#t-logo" x="50" y="46" width="168" height="168"></use></svg><div class="spin" aria-hidden="true"></div><div>${msg}</div>`;
+  L.appendChild(d);setTimeout(()=>{d.remove();done&&done();},2600);
+}
+
+/* ---------- vlastnosti ---------- */
+function props(n){
+  n=n||S.cur;const pr=prot(n);const loc=pathOf(n).slice(1).map(x=>x.name).join('\\').replace('Linsoft (C:)','C:');
+  let head,rows='',extra='',foot='';
+  if(n.k==='app'){
+    head=`${tile(n.g,n.col,56)}<div><b>${esc(n.name)}</b><div class="mut">${n.id} · verzia ${n.ver}</div><div style="margin-top:6px">${n.sigApp&&S.err.sig?pill('neplatný podpis','p-bad'):pill('overený vydavateľ Linsoft','p-ok')}</div></div>`;
+    rows=`<div class="kv"><span>Umiestnenie</span><b>${esc(loc)}</b></div><div class="kv"><span>Program</span><b>${n.prog}</b></div><div class="kv"><span>Tvoje údaje</span><b>${n.data} · ostanú pri aktualizácii</b></div><div class="kv"><span>Nainštalované</span><b>16. 11. 2026 zo Store</b></div>`;
+    extra=`<div class="mut" style="margin:10px 0 6px">Oprávnenia</div><div style="display:flex;flex-wrap:wrap;gap:6px">${n.perms.map(p=>`<span class="perm">${p}</span>`).join('')}</div>`;
+    foot=(n.newv?`<button class="btn" data-d="upd">Aktualizovať na ${n.newv}</button>`:'')+`<button class="btn ghost2" data-d="uninst" style="color:var(--vio);border-color:#4B3A7A">Odinštalovať v Store…</button><button class="btn" data-d="close">Zavrieť</button>`;
+  }else{
+    const kind={sysfile:'systémový súbor',file:'súbor',dir:'priečinok',sys:'systémový priečinok',drive:'disk',pc:'počítač',bin:'kôš'}[n.k];
+    head=`${icon(n,52)}<div><b>${esc(n.name)}</b><div class="mut">${kind}${n.part?' · oddiel '+n.part:''}</div>${pr?`<div style="margin-top:6px">${pill(LOCK(11)+' chránené','p-gold')}</div>`:''}</div>`;
+    rows=`<div class="kv"><span>Umiestnenie</span><b>${esc(loc||n.name)}</b></div>`+(n.size?`<div class="kv"><span>Veľkosť</span><b>${esc(n.size)}</b></div>`:'')+(n.desc?`<div class="kv"><span>Popis</span><b>${esc(n.desc.replace('%V',S.ver))}</b></div>`:'');
+    if(n.k==='sysfile'){const bad=n.sigProg&&S.err.sig;rows+=`<div class="kv"><span>Podpis</span><b style="color:${bad?'#FF9A9A':'var(--ok)'}">${bad?'neplatný':'Linsoft · platný'}</b></div><div class="kv"><span>SHA-256</span><b style="font-family:ui-monospace,Consolas,monospace;font-size:11px">${fakeHash(n.name)}</b></div><div class="kv"><span>Nainštaloval</span><b>Linsoft Aktualizácia ${S.ver}</b></div>`;}
+    if(pr)extra=`<div class="banner b-lock" style="margin:10px 0 0">${LOCK(16)}<div class="bt">Mení len Linsoft Aktualizácia a Store. Kopírovať von môžeš.</div></div>`;
+    foot=`<button class="btn" data-d="close">Zavrieť</button>`;
+  }
+  dialog(`<div class="dh" style="align-items:flex-start;gap:14px">${head}</div><div class="dbody">${rows}${extra}</div><div class="df">${foot}</div>`,a=>{
+    if(a==='upd'){closeDialog();updApp(n);}
+    if(a==='uninst'){closeDialog();toast(`Store: ${n.name} sa dá odinštalovať v Linsoft Store. Store sa spýta, či zmazať aj tvoje údaje.`);}
+  });
+}
+function fakeHash(s){let h=2166136261>>>0,o='';for(let r=0;r<8;r++){for(const c of s+r)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;o+=h.toString(16).padStart(8,'0');}return o.slice(0,16)+'…'+o.slice(-8);}
+
+/* ---------- akcie ---------- */
+function blocked(what){toast(`${what}: systémový priečinok je chránený. Mení ho len Linsoft Aktualizácia a Store.`,LOCK(16));}
+function newDir(){const n=S.cur;if(prot(n)){blocked('Nový priečinok');return;}
+  let nm='Nový priečinok',i=2;while(kids(n).some(x=>x.name===nm))nm=`Nový priečinok (${i++})`;
+  const d={k:'dir',name:nm,children:[],id:'n'+(UID++),parent:n};N[d.id]=d;n.children.push(d);S.sel=d.id;S.rename=d.id;render();}
+function del(n){n=n||selNode();if(!n)return;if(fixed(n)){blocked('Vymazať');return;}
+  const p=n.parent;p.children=p.children.filter(x=>x!==n);n.from=p;n.parent=BIN;BIN.children.push(n);S.sel=null;render();toast(`„${esc(n.name)}“ je v koši. Obnovíš ho v Koši.`);}
+function restore(){const n=selNode();if(!n||!n.from)return;BIN.children=BIN.children.filter(x=>x!==n);n.parent=n.from;n.from.children.push(n);S.sel=null;render();toast(`„${esc(n.name)}“ je späť.`);}
+function empty(){const c=BIN.children.length;BIN.children=[];S.sel=null;render();toast(`Kôš je prázdny (${c} položiek zmazaných natrvalo).`);}
+function ren(n){n=n||selNode();if(!n)return;if(fixed(n)){blocked('Premenovať');return;}S.sel=n.id;S.rename=n.id;render();}
+function commitRename(v){const n=N[S.rename];S.rename=null;if(n&&v.trim())n.name=v.trim();render();}
+function check(){
+  const total=1284;
+  progress('Kontrola systémových súborov',k=>{const f=['Jadro\\linsoft.elf','Jadro\\BOOTX64.EFI','Aplikácie\\Linsoft Browser\\app','Aplikácie\\Linsoft PDF\\app','Ovládače\\i915.bin','Nastavenia\\Systém','Obnova\\install.pak'][Math.min(6,Math.floor(k*7))];return `Overujem podpisy… ${Math.round(k*total)} z ${total} · ${f}`;},2600,()=>{
+    const fixedSig=S.err.sig;S.err.sig=false;$('#e-sig').checked=false;S.lastCheck='dnes 14:33 · v poriadku';
+    const rest=[S.err.drv?'chýba ovládač Wi‑Fi Realtek':'',S.err.rec?'Záchrana nie je pripravená':'',S.err.full?'systémový oddiel je plný':''].filter(Boolean);
+    dialog(`<div class="dh">${use('f-jadro',30)}<b>Kontrola dokončená</b></div>
+      <div class="dbody"><div class="banner ${rest.length?'b-warn':'b-ok'}" style="margin:6px 0 10px">${SI(rest.length?'t-warn':'t-check',20)}<div class="bt"><b>${rest.length?'Súbory sú v poriadku, ale niečo treba vyriešiť':'Systém je v poriadku'}</b>${fixedSig?'1 poškodený súbor bol opravený z Obnovy.':'Všetky podpisy sú platné.'}${rest.length?' Zostáva: '+rest.join(', ')+'.':''}</div></div>
+      <div class="kv"><span>Skontrolované</span><b>${total} súborov</b></div><div class="kv"><span>Podpisy</span><b style="color:var(--ok)">platné</b></div><div class="kv"><span>Opravené</span><b>${fixedSig?'Aplikácie\\Linsoft PDF\\app':'nič'}</b></div><div class="kv"><span>Trvanie</span><b>48 s</b></div></div>
+      <div class="df"><button class="btn" data-d="close">Hotovo</button></div>`);
+    render();});
+}
+function rollback(){
+  if(!S.prev)return;const to=S.prev;
+  dialog(`<div class="dh" style="align-items:flex-start">${tile('g-aktual','#E3A919',44)}<div><b>Vrátiť systém na ${to}?</b><div style="font-size:13px;color:#A9BDD6;margin-top:6px;line-height:1.5">Počítač sa reštartuje so zálohovanou verziou ${to}. Tvoje dokumenty, aplikácie a ich údaje ostanú. Verziu ${S.ver} neskôr môžeš nainštalovať znova.</div></div></div>
+    <div class="dbody"><div style="padding:9px 11px;border-radius:9px;background:var(--field);border:1px solid var(--line)">Trvá približne 1 minútu · potrebný reštart</div></div>
+    <div class="df"><button class="btn ghost2" data-d="close">Zrušiť</button><button class="btn gold" data-d="go">Vrátiť a reštartovať</button></div>`,a=>{
+    if(a!=='go')return;closeDialog();const from=S.ver;
+    reboot(`Reštartujem do verzie ${to}…`,()=>{S.ver=to;S.avail=from;const i=S.vers.findIndex(v=>v.v===to);S.prev=S.vers[i+1]?S.vers[i+1].v:null;render();toast(`Beží Linsoft OS Core ${to}. Verzia ${from} je pripravená na opätovnú inštaláciu.`,SI('t-check',16));});});
+}
+function reinstall(){if(!S.avail)return;const v=S.avail;
+  progress(`Inštalujem ${v}`,'Overujem podpis a pripravujem systém…',1800,()=>reboot(`Reštartujem do verzie ${v}…`,()=>{S.prev=S.ver;S.ver=v;S.avail=null;render();toast(`Beží Linsoft OS Core ${v}.`,SI('t-check',16));}),tile('g-aktual','#E3A919',30));}
+function seek(){progress('Hľadám aktualizácie','Pýtam sa servera Linsoft…',1200,()=>{const b=findBy('Linsoft Browser');toast(S.avail?`Dostupná je verzia ${S.avail}.`:b.newv?`Systém je aktuálny. Pre Linsoft Browser je dostupná ${b.newv}.`:'Systém aj aplikácie sú aktuálne.',SI('t-check',16));},tile('g-aktual','#E3A919',30));}
+function updApp(a){const v=a.newv;progress(`Aktualizujem ${a.name}`,'Sťahujem, overujem podpis a inštalujem…',1800,()=>{a.ver=v;a.newv=null;render();toast(`${a.name} ${v} je nainštalovaný. Tvoje údaje ostali.`,SI('t-check',16));},tile(a.g,a.col,30));}
+const fixes={
+  fixsig:()=>progress('Opravujem z Obnovy','Obnovujem Aplikácie\\Linsoft PDF\\app zo záložnej kópie…',1500,()=>{S.err.sig=false;$('#e-sig').checked=false;render();toast('Linsoft PDF je opravený, podpis je platný.',SI('t-check',16));}),
+  retryupd:()=>progress('Inštalujem 0.9.8','Overujem podpis a pripravujem systém…',1800,()=>reboot('Reštartujem do verzie 0.9.8…',()=>{S.err.upd=false;$('#e-upd').checked=false;S.vers.unshift({v:'0.9.8',d:'17. 11. 2026',t:'oprava po zlyhanej inštalácii'});S.prev=S.ver;S.ver='0.9.8';S.avail=null;render();toast('Beží Linsoft OS Core 0.9.8.',SI('t-check',16));})),
+  clean:()=>progress('Čistím staré verzie','Mažem stiahnuté balíky a staršie verzie…',1300,()=>{S.err.full=false;$('#e-full').checked=false;render();toast('Uvoľnených 980 MB. Predošlá verzia na návrat ostala.',SI('t-check',16));}),
+  fixdrv:()=>progress('Hľadám ovládač','Wi‑Fi Realtek RTL8852 – pýtam sa servera Linsoft…',1600,()=>{S.err.drv=false;$('#e-drv').checked=false;render();toast('Ovládač Wi‑Fi Realtek RTL8852 je nainštalovaný a beží.',SI('t-check',16));}),
+  fixrec:()=>progress('Pripravujem Linsoft Záchranu','Kopírujem jadro a install.pak do oddielu Obnova…',2200,()=>{S.err.rec=false;$('#e-rec').checked=false;render();toast('Linsoft Záchrana je pripravená.',SI('t-check',16));})
+};
+
+function open(n){
+  if(!n)return;
+  if(n.children||n.view){go(n);return;}
+  if(n.k==='sysfile'){props(n);return;}
+  const app={PDF:'Linsoft PDF',DOCX:'Dokumenty',XLSX:'Tabuľky',TXT:'Poznámky',JPG:'Prehliadač obrázkov',PNG:'Prehliadač obrázkov',MP3:'Linsoft Médiá',MP4:'Linsoft Médiá',ISO:'Disky',LSA:'Inštalátor aplikácií',ZIP:'Súbory',INI:'Poznámky'}[n.ext]||'Poznámky';
+  toast(`Otváram „${esc(n.name)}“ v aplikácii ${app}.`);
+}
+function launchApp(a){if(a.sigApp&&S.err.sig){toast('Linsoft PDF sa nedá spustiť – neplatný podpis. Oprav ho z Obnovy.',SI('t-err',16));return;}toast(`Spúšťam ${a.name} ${a.ver}…`,tile(a.g,a.col,18));}
+
+function ctxFor(n,x,y){
+  const pr=n?prot(n):prot(S.cur);
+  if(!n){
+    if(S.cur.k==='bin')return menuAt(x,y,[{t:'Vysypať kôš',act:'empty',dis:!BIN.children.length}]);
+    if(S.cur.view==='pc')return menuAt(x,y,[{t:S.showSys?'Skryť systémové':'Zobraziť systémové',act:'togsys'}]);
+    return menuAt(x,y,[{t:'Nový priečinok',act:'newdir',dis:pr,lock:pr},{t:'Obnoviť',act:'refresh'},'-',...(pr?[{t:'Skontrolovať systém',act:'check'}]:[]),{t:'Vlastnosti',act:'propscur'}]);
+  }
+  S.sel=n.id;render();
+  if(n.parent===BIN)return menuAt(x,y,[{t:'Obnoviť',act:'restore'},{t:'Vlastnosti',act:'props'}]);
+  const it=[];
+  if(n.k==='app'){it.push({t:'<b>Spustiť</b>',act:'launch'},{t:'Otvoriť priečinok aplikácie',act:'open'},{t:'Pripnúť na panel',act:'pin'});if(n.newv)it.push({t:`Aktualizovať na ${n.newv}`,act:'updapp'});it.push('-',{t:'Odinštalovať v Store…',act:'uninst',cls:'vio'});}
+  else it.push({t:'<b>Otvoriť</b>',act:'open'});
+  it.push({t:'Kopírovať',act:'copy'},{t:'Kopírovať cestu',act:'copypath'},'-');
+  const fx=fixed(n);
+  it.push({t:'Vymazať',act:'del',dis:fx,lock:fx,title:fx?'Systémový priečinok je chránený':''},{t:'Premenovať',act:'ren',dis:fx,lock:fx,title:fx?'Systémový priečinok je chránený':''},'-',{t:'Vlastnosti',act:'props'});
+  menuAt(x,y,it);
+}
+
+function act(a,el){
+  const n=selNode();closeMenu();
+  switch(a){
+    case 'newdir':return newDir();case 'del':return del();case 'ren':return ren();case 'props':return props(n||S.cur);case 'propscur':return props(S.cur);
+    case 'restore':return restore();case 'empty':return empty();case 'check':return check();case 'rollback':return rollback();case 'reinstall':return reinstall();case 'seek':return seek();
+    case 'togsys':S.showSys=!S.showSys;return render();case 'refresh':return render();
+    case 'open':return open(n);case 'launch':return launchApp(n);case 'updapp':return updApp(n);
+    case 'pin':return toast(`${n.name} je pripnutý na paneli.`);
+    case 'uninst':return toast(`Odinštalovanie ide cez Linsoft Store. Store sa spýta, či zmazať aj tvoje údaje (${n.data}).`);
+    case 'copy':return toast(`„${esc(n.name)}“ je skopírovaný. Vložiť ho môžeš do svojich priečinkov.`);
+    case 'copypath':{const p=pathOf(n).slice(1).map(x=>x.name).join('\\').replace('Linsoft (C:)','C:');try{navigator.clipboard.writeText(p).catch(()=>{});}catch(e){}return toast('Cesta skopírovaná: '+esc(p));}
+  }
+  if(fixes[a])return fixes[a]();
+}
+
+/* ---------- udalosti ---------- */
+function bind(){
+  const desk=$('#desk');
+  desk.addEventListener('click',ev=>{
+    const t=ev.target;
+    if(!t.closest('.menu'))closeMenu();
+    const ab=t.closest('[data-act]');if(ab&&!ab.disabled){ev.stopPropagation();act(ab.dataset.act,ab);return;}
+    const g=t.closest('[data-go]');if(g){go(N[g.dataset.go]);return;}
+    const it=t.closest('[data-id]');
+    if(it&&$('#content').contains(it)){if(S.rename)return;S.sel=it.dataset.id;renderCmd();renderStatus();
+      $('#content').querySelectorAll('[data-id]').forEach(e=>e.classList.toggle('sel',e.dataset.id===S.sel));return;}
+    if(t.closest('#content')&&!t.closest('input')){if(S.rename){commitRename($('#ren').value);return;}S.sel=null;renderCmd();renderStatus();$('#content').querySelectorAll('.sel').forEach(e=>e.classList.remove('sel'));}
+  });
+  desk.addEventListener('dblclick',ev=>{const it=ev.target.closest('[data-id]');if(it&&$('#content').contains(it)){const n=N[it.dataset.id];if(n.k==='app')go(n);else open(n);}});
+  desk.addEventListener('contextmenu',ev=>{
+    if(!ev.target.closest('#content'))return;ev.preventDefault();
+    const it=ev.target.closest('[data-id]');ctxFor(it?N[it.dataset.id]:null,ev.clientX,ev.clientY);
+  });
+  $('#bBack').onclick=back;$('#bFwd').onclick=fwd;$('#bUp').onclick=up;
+  $('#search').addEventListener('input',e=>{S.filter=e.target.value;renderContent();});
+  desk.addEventListener('keydown',ev=>{
+    if(ev.target.id==='ren'){if(ev.key==='Enter')commitRename(ev.target.value);if(ev.key==='Escape'){S.rename=null;render();}return;}
+    if(ev.target.id==='search')return;
+    if(ev.key==='Escape'){closeMenu();closeDialog();return;}
+    if($('#layer .ovl'))return;
+    const n=selNode();
+    if(ev.key==='Delete'&&n){ev.preventDefault();del(n);}
+    else if(ev.key==='F2'&&n){ev.preventDefault();ren(n);}
+    else if(ev.key==='Enter'&&n){ev.preventDefault();n.k==='app'?launchApp(n):open(n);}
+    else if(ev.key==='Backspace'){ev.preventDefault();up();}
+  });
+  document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x===b));
+    desk.classList.remove('s1024','sphone');if(b.dataset.s!=='full')desk.classList.add(b.dataset.s);fit();});
+  ['sig','upd','full','drv','rec'].forEach(k=>$('#e-'+k).addEventListener('change',e=>{S.err[k]=e.target.checked;
+    if(k==='upd'&&e.target.checked)toast('Aktualizácia na 0.9.8 nenaštartovala. Systém sa sám vrátil na '+S.ver+'.',SI('t-err',16));
+    if(prot(S.cur)||S.cur.view==='pc')render();else toast('Chyba je zapnutá. Pozri Linsoft (C:) › Linsoft.',SI('t-warn',16));}));
+  $('#reset').onclick=()=>{start();toast('Simulácia začína odznova.');};
+  new ResizeObserver(fit).observe(desk);
+}
+function fit(){const w=$('#win').offsetWidth;const win=$('#win');win.classList.toggle('narrow',w<820);win.classList.toggle('tiny',w<560);}
+function start(){build();S=freshState();['sig','upd','full','drv','rec'].forEach(k=>$('#e-'+k).checked=false);closeDialog();closeMenu();S.hist=[];S.hp=-1;go(C);}
+bind();start();
+})();
+</script>
+
+</body>
+</html>
