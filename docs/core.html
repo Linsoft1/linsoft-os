@@ -74,6 +74,8 @@ a{color:#8FD3FF}a:hover{color:#C6ECFF}
     <nav aria-label="Hlavná ponuka" style="display: flex; flex-wrap: wrap; gap: 4px 22px; font-size: 15px; flex: 1 1 auto">
       <a href="#funkcie" style="color: #C9D7EA; text-decoration: none">Funkcie</a>
       <a href="#pohlad" style="color: #C9D7EA; text-decoration: none">Pohľad</a>
+      <a href="#disk" style="color: #C9D7EA; text-decoration: none">Disk</a>
+      <a href="#start" style="color: #C9D7EA; text-decoration: none">Štart</a>
       <a href="#aplikacie" style="color: #C9D7EA; text-decoration: none">Aplikácie</a>
       <a href="#linux" style="color: #C9D7EA; text-decoration: none">Linux pre Core</a>
       <a href="#hardver" style="color: #C9D7EA; text-decoration: none">Hardvér</a>
@@ -247,6 +249,107 @@ a{color:#8FD3FF}a:hover{color:#C6ECFF}
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 6px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A; font-size: 13px"><svg viewBox="0 0 64 64" width="52" height="52" aria-hidden="true"><use href="#w-sysfolder" width="64" height="64"></use></svg>Aplikácie</div>
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 6px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A; font-size: 13px"><svg viewBox="0 0 64 64" width="52" height="52" aria-hidden="true"><use href="#w-sysfolder" width="64" height="64"></use></svg>Aktualizácie</div>
       </div>
+    </div>
+  </section>
+
+  <!-- štruktúra disku -->
+  <section id="disk" style="padding: 70px 24px; background: #0A1628; border-top: 1px solid #16263F">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Štruktúra disku</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15; text-wrap: balance">Systém a tvoje dáta na oddelených oddieloch</h2>
+      <p style="margin: 14px 0 0; font-size: 16.5px; line-height: 1.65; color: #C9D7EA; max-width: 50em">Inštalátor rozdelí disk tabuľkou GPT, takže zvládne aj disky nad 2 TB a štart cez UEFI aj BIOS. Disk C: a systém majú súborový systém LinsoftFS so žurnálom, ktorý prežije aj výpadok prúdu.</p>
+      <div role="img" aria-label="Rozloženie disku: LA-BOOT, LA-STORE, LA-CORE, LA-DATA ako disk C:, LA-RECOVERY a LA-SWAP" style="display: flex; height: 64px; margin-top: 30px; border-radius: 14px; overflow: hidden; border: 1px solid #2A4266; font-size: 12.5px; font-weight: 700">
+        <div style="flex: 0 0 9%; background: #1F2A44; color: #8FD3FF; display: flex; align-items: center; justify-content: center">BOOT</div>
+        <div style="flex: 0 0 6%; background: #2E1F44; color: #C7B4FF; display: flex; align-items: center; justify-content: center; border-left: 1px solid #070F1C">STORE</div>
+        <div style="flex: 0 0 18%; background: #13301F; color: #7CE0A5; display: flex; align-items: center; justify-content: center; border-left: 1px solid #070F1C">CORE</div>
+        <div style="flex: 1 1 auto; background: #16365F; color: #EEF4FF; display: flex; align-items: center; justify-content: center; border-left: 1px solid #070F1C">C: – tvoje súbory</div>
+        <div style="flex: 0 0 9%; background: #3A1A1C; color: #FF9A9A; display: flex; align-items: center; justify-content: center; border-left: 1px solid #070F1C">RECOVERY</div>
+        <div style="flex: 0 0 8%; background: #1E2735; color: #A9BDD6; display: flex; align-items: center; justify-content: center; border-left: 1px solid #070F1C">SWAP</div>
+      </div>
+      <p style="margin: 8px 0 0; font-size: 12.5px; color: #6F84A3">Šírky sú len orientačné.</p>
+      <div style="margin-top: 18px; border: 1px solid #22385A; border-radius: 16px; overflow-x: auto">
+        <table style="width: 100%; min-width: 720px; border-collapse: collapse; font-size: 14.5px">
+          <thead><tr style="text-align: left; color: #8FA3BD; font-size: 13px"><th style="padding: 14px 18px; font-weight: 600">Oddiel</th><th style="padding: 14px 18px; font-weight: 600">Súborový systém</th><th style="padding: 14px 18px; font-weight: 600">Veľkosť</th><th style="padding: 14px 18px; font-weight: 600">Obsah</th></tr></thead>
+          <tbody style="color: #C9D7EA">
+            <tr style="border-top: 1px solid #16263F"><td style="padding: 14px 18px"><b style="color: #8FD3FF">LA-BOOT</b></td><td style="padding: 14px 18px">FAT32 (EFI)</td><td style="padding: 14px 18px">512 MiB</td><td style="padding: 14px 18px">zavádzač GRUB a jadro Linsoft Core</td></tr>
+            <tr style="border-top: 1px solid #16263F"><td style="padding: 14px 18px"><b style="color: #C7B4FF">LA-STORE</b></td><td style="padding: 14px 18px">úložisko Linsoft</td><td style="padding: 14px 18px">16 MiB</td><td style="padding: 14px 18px">nastavenia systému a body obnovy</td></tr>
+            <tr style="border-top: 1px solid #16263F"><td style="padding: 14px 18px"><b style="color: #7CE0A5">LA-CORE</b></td><td style="padding: 14px 18px">LinsoftFS (ext4 so žurnálom)</td><td style="padding: 14px 18px">32 GiB</td><td style="padding: 14px 18px">systémové súbory, aplikácie .lsa, firmvér</td></tr>
+            <tr style="border-top: 1px solid #16263F"><td style="padding: 14px 18px"><b style="color: #EEF4FF">LA-DATA = C:</b></td><td style="padding: 14px 18px">LinsoftFS, voliteľne šifrovaný (XTS-AES-256)</td><td style="padding: 14px 18px">zvyšok disku</td><td style="padding: 14px 18px">tvoje dokumenty, fotky, hudba; pri preinštalovaní ostane</td></tr>
+            <tr style="border-top: 1px solid #16263F"><td style="padding: 14px 18px"><b style="color: #FF9A9A">LA-RECOVERY</b></td><td style="padding: 14px 18px">FAT32</td><td style="padding: 14px 18px">2 GiB</td><td style="padding: 14px 18px">Linsoft Záchrana – oprava alebo preinštalovanie (F8 pri štarte)</td></tr>
+            <tr style="border-top: 1px solid #16263F"><td style="padding: 14px 18px"><b style="color: #A9BDD6">LA-SWAP</b></td><td style="padding: 14px 18px">odkladací oddiel</td><td style="padding: 14px 18px">2–8 GiB podľa RAM</td><td style="padding: 14px 18px">odkladacia pamäť</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- štart systému -->
+  <section id="start" style="padding: 80px 24px">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Štart systému</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15; text-wrap: balance">Od zapnutia po plochu</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 40px; margin-top: 30px; align-items: flex-start">
+        <ol style="flex: 1 1 460px; min-width: 0; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+          <li style="display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; padding-bottom: 22px">
+            <div style="width: 40px; height: 40px; border-radius: 20px; background: #1F2A44; color: #8FD3FF; font-weight: 700; display: flex; align-items: center; justify-content: center">1</div>
+            <div><b style="font-size: 16.5px">Firmvér UEFI alebo BIOS</b><p style="margin: 4px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">Pri zapnutom Secure Boot sa overí podpísaný zavádzač z oddielu LA-BOOT.</p></div>
+          </li>
+          <li style="display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; padding-bottom: 22px">
+            <div style="width: 40px; height: 40px; border-radius: 20px; background: #1F2A44; color: #8FD3FF; font-weight: 700; display: flex; align-items: center; justify-content: center">2</div>
+            <div><b style="font-size: 16.5px">Ponuka GRUB – 3 sekundy</b><p style="margin: 4px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">Bez zásahu sa spustí Linsoft OS Core. Na výber je aj predošlá verzia a Linsoft Záchrana (F8).</p></div>
+          </li>
+          <li style="display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; padding-bottom: 22px">
+            <div style="width: 40px; height: 40px; border-radius: 20px; background: #13301F; color: #7CE0A5; font-weight: 700; display: flex; align-items: center; justify-content: center">3</div>
+            <div><b style="font-size: 16.5px">Jadro Linsoft Core</b><p style="margin: 4px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">Zistí procesor, pamäť a zariadenia na PCI, nájde disky a načíta nastavenia z LA-STORE.</p></div>
+          </li>
+          <li style="display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; padding-bottom: 22px">
+            <div style="width: 40px; height: 40px; border-radius: 20px; background: #13301F; color: #7CE0A5; font-weight: 700; display: flex; align-items: center; justify-content: center">4</div>
+            <div><b style="font-size: 16.5px">Systém a disk C:</b><p style="margin: 4px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">Pripojí LA-CORE a disk C:, spustí ovládače, aplikácie .lsa a Linsoft Ochranu a overí podpisy aplikácií.</p></div>
+          </li>
+          <li style="display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px">
+            <div style="width: 40px; height: 40px; border-radius: 20px; background: #FFC23D; color: #1A2433; font-weight: 700; display: flex; align-items: center; justify-content: center">5</div>
+            <div><b style="font-size: 16.5px">Prostredie je pripravené</b><p style="margin: 4px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">Plocha a panel; na pozadí sa pripojí sieť a zapnú sa Linsoft Agenti. Po aktualizácii sa nová verzia najprv spustí na skúšku – keď sa dvakrát nepotvrdí, GRUB spustí predošlú.</p></div>
+          </li>
+        </ol>
+        <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+          <figure style="margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid #2A4266; background: #0F1A2B">
+            <div style="padding: 18px 20px; font-family: ui-monospace, Consolas, monospace; font-size: 14px; line-height: 1.9; color: #C9D7EA; background: #0A1322">
+              <div style="padding: 0 10px; border-radius: 6px; background: #1D3557; color: #EEF4FF">Linsoft OS Core</div>
+              <div style="padding: 0 10px">Predošlá verzia Linsoft OS Core</div>
+              <div style="padding: 0 10px">Linsoft Záchrana – oprava a preinštalovanie (F8)</div>
+              <div style="padding: 0 10px">Obnova Linsoft OS Core</div>
+            </div>
+            <figcaption style="padding: 12px 16px; font-size: 13.5px; color: #A9BDD6; border-top: 1px solid #22385A">Položky ponuky GRUB na nainštalovanom systéme (nákres)</figcaption>
+          </figure>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+            <figure style="margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid #2A4266; background: #0F1A2B">
+              <img src="img/core-start-spusta.png" alt="Úvodná obrazovka: logo Linsoft a text Spúšťa sa Linsoft OS Core" style="display: block; width: 100%; height: auto">
+              <figcaption style="padding: 10px 14px; font-size: 13.5px; color: #A9BDD6">Štart</figcaption>
+            </figure>
+            <figure style="margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid #2A4266; background: #0F1A2B">
+              <img src="img/core-vypinanie.png" alt="Obrazovka vypínania s logom a priebehom" style="display: block; width: 100%; height: auto">
+              <figcaption style="padding: 10px 14px; font-size: 13.5px; color: #A9BDD6">Vypínanie</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+      <details style="margin-top: 30px; padding: 18px 22px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 15.5px">Ukážka záznamu jadra pri štarte</summary>
+        <pre style="margin: 14px 0 0; padding: 16px; border-radius: 10px; background: #0A1322; color: #A9BDD6; font-size: 12.5px; line-height: 1.6; overflow-x: auto">Zavádzač: Linsoft Boot 1.0 (UEFI), framebuffer 1280x800 32 bpp
+CPU: 12th Gen Intel(R) Core(TM) i3-1215U
+PCI: nájdených 7 zariadení
+Disk 1: QEMU HARDDISK, SATA (AHCI), 8 GB, GPT, 7 oddielov
+Úložisko: nájdené na QEMU HARDDISK, oddiel 2
+ext: LA-CORE pripojený (systémové súbory .linsoft)
+ext: zväzok LA-DATA (LinsoftFS), blok 4096 B, zápis so žurnálom
+LSA: 4 nainštalovaných aplikácií .lsa
+Ochrana: pripravená (antivírus zap, firewall zap – Domáca sieť, filter DNS zap)
+Ovládače: 7 zariadení, 7 funguje, 0 bez ovládača
+Prostredie je pripravené (1280x800)
+Sieť: DHCP pridelil 10.0.2.15
+Agenti: pripravení (6 zapnutých)</pre>
+        <p style="margin: 10px 0 0; font-size: 13px; color: #6F84A3">Skrátený záznam z testu vo virtuálnom počítači QEMU.</p>
+      </details>
     </div>
   </section>
 
