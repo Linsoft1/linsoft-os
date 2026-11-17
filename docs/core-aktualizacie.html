@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linsoft OS Core – vydania a aktualizácie</title>
+<meta name="description" content="Ako sa Linsoft OS Core aktualizuje: podpísané balíky, skúšobné spustenie, návrat na predošlú verziu a inovácie na nový rad.">
+<meta name="theme-color" content="#070F1C">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Linsoft OS Core – vydania a aktualizácie">
+<meta property="og:description" content="Ako sa Linsoft OS Core aktualizuje: podpísané balíky, skúšobné spustenie, návrat na predošlú verziu a inovácie na nový rad.">
+<meta property="og:url" content="https://linsoft1.github.io/linsoft-os/core-aktualizacie.html">
+<meta property="og:image" content="https://linsoft1.github.io/linsoft-os/img/core-plocha.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070F1C}
+a{color:#8FD3FF}a:hover{color:#C6ECFF}
+</style>
+<style>html{scroll-behavior:smooth}img{max-width:100%}*{box-sizing:border-box}:focus-visible{outline:2px solid #FFC23D;outline-offset:2px}</style>
+</head>
+<body>
+<div style="min-height: 100vh; background: #070F1C; color: #EEF4FF; font-family: Inter, system-ui, sans-serif; overflow: hidden">
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="a-sheen" x1="0" y1="0" x2="0.7" y2="0.8"><stop offset="0" stop-color="#ffffff" stop-opacity="0.34"></stop><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"></stop></linearGradient>
+      <clipPath id="a-clip"><path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z"></path></clipPath>
+      <symbol id="a-logo" viewBox="50 46 168 168">
+        <path d="M57 54h43v102h85v43H57z" fill="#4AA8FF"></path>
+        <path d="M190 62c-8-8-19-12-33-12h-7c-24 0-39 13-39 33 0 16 10 27 29 33l28 9c9 3 14 8 14 16 0 9-7 14-19 14h-18c-12 0-21-5-28-14l-27 27c13 16 31 24 55 24h21c38 0 61-19 61-50 0-23-14-39-42-48l-27-8c-5-2-8-4-8-7 0-4 3-6 9-6h7c9 0 16 3 22 10z" fill="#F2F7FF"></path>
+      </symbol>
+      <symbol id="a-tile" viewBox="0 0 64 64">
+        <path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z" fill="currentColor"></path>
+        <path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z" fill="url(#a-sheen)"></path>
+        <g clip-path="url(#a-clip)"><path d="M0 47C18 43 40 37 64 25V64H0Z" fill="#000000" opacity="0.22"></path><path d="M0 47C18 43 40 37 64 25" fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="1.2"></path></g>
+      </symbol>
+      <symbol id="a-aktual" viewBox="0 0 64 64"><path d="M45.5 27A14 14 0 0 0 21.5 21" fill="none" stroke="#1A2433" stroke-width="4.2" stroke-linecap="round"></path><path d="M16.5 15l3 11.5 9.5-5.5z" fill="#1A2433"></path><path d="M18.5 35A14 14 0 0 0 42.5 41" fill="none" stroke="#ffffff" stroke-width="4.2" stroke-linecap="round"></path><path d="M47.5 47l-3-11.5-9.5 5.5z" fill="#ffffff"></path></symbol>
+      <symbol id="a-inov" viewBox="0 0 64 64"><path d="M32 46V20" stroke="#ffffff" stroke-width="5" stroke-linecap="round"></path><path d="M21 30l11-11 11 11" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 50h24" stroke="#FFC23D" stroke-width="4" stroke-linecap="round"></path></symbol>
+    </defs>
+  </svg>
+
+  <header style="max-width: 1240px; margin: 0 auto; padding: 22px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px">
+    <a href="core.html" style="display: flex; align-items: center; gap: 12px; color: #EEF4FF; text-decoration: none">
+      <svg viewBox="0 0 64 64" width="38" height="38" role="img" aria-label="Linsoft" style="color: #13233B"><use href="#a-tile" width="64" height="64"></use><use href="#a-logo" x="13" y="11" width="38" height="38"></use></svg>
+      <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 20px">Linsoft OS Core</span>
+    </a>
+    <nav aria-label="Hlavná ponuka" style="display: flex; flex-wrap: wrap; gap: 4px 22px; font-size: 15px; flex: 1 1 auto">
+      <a href="core.html#funkcie" style="color: #C9D7EA; text-decoration: none">Funkcie</a>
+      <a href="core.html#pohlad" style="color: #C9D7EA; text-decoration: none">Pohľad</a>
+      <a href="core-aktualizacie.html" style="color: #EEF4FF; text-decoration: none; font-weight: 600">Aktualizácie</a>
+      <a href="#priebeh" style="color: #C9D7EA; text-decoration: none">Priebeh</a>
+      <a href="#vydania" style="color: #C9D7EA; text-decoration: none">Vydania</a>
+      <a href="#otazky" style="color: #C9D7EA; text-decoration: none">Otázky</a>
+    </nav>
+  </header>
+
+  <!-- úvod -->
+  <section style="position: relative; padding: 40px 24px 70px">
+    <svg viewBox="0 0 1440 480" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 100%; height: 480px"><path d="M0 430C420 400 900 300 1440 90V480H0Z" fill="#10294A"></path><path d="M0 430C420 400 900 300 1440 90" fill="none" stroke="#FFC23D" stroke-opacity="0.6" stroke-width="2"></path></svg>
+    <div style="position: relative; max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Aktualizácie</div>
+      <h1 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: clamp(40px, 5vw, 60px); line-height: 1.05; max-width: 14em; text-wrap: balance">Nová verzia príde sama. A keď nesedí, vráti sa späť.</h1>
+      <p style="margin: 18px 0 0; font-size: 18px; line-height: 1.6; color: #C9D7EA; max-width: 36em">Systém sa aktualizuje cez Ovládací panel › Aktualizácie. Aplikácie sa aktualizujú v Linsoft Store. Každý balík je podpísaný a overí sa pred inštaláciou.</p>
+    </div>
+  </section>
+
+  <!-- aktualizácia vs inovácia -->
+  <section style="padding: 0 24px 60px">
+    <div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px">
+      <article style="padding: 30px; border-radius: 20px; background: #0F1C30; border: 1px solid #2A4266">
+        <div style="display: flex; align-items: center; gap: 14px">
+          <svg viewBox="0 0 64 64" width="52" height="52" aria-hidden="true" style="color: #E3A919"><use href="#a-tile" width="64" height="64"></use><use href="#a-aktual" width="64" height="64"></use></svg>
+          <div><h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px">Aktualizácia</h2><div style="font-size: 14px; color: #8FA3BD; margin-top: 2px">napríklad 0.9.6 → 0.9.7</div></div>
+        </div>
+        <ul style="margin: 20px 0 0; padding-left: 20px; font-size: 15.5px; line-height: 1.8; color: #C9D7EA">
+          <li>stiahne sa sama na pozadí – len zmenené časti, nie celý systém</li>
+          <li>nainštaluje sa na skúšku; keď nová verzia nenaštartuje, systém sa sám vráti na predošlú</li>
+          <li>predošlá verzia ostáva – návrat jedným tlačidlom v Ovládacom paneli</li>
+          <li>reštart si vyberieš: hneď, pri vypnutí alebo v noci o 3:00 s upozornením</li>
+        </ul>
+      </article>
+      <article style="padding: 30px; border-radius: 20px; background: linear-gradient(140deg, #1B2A4A, #0F1C30); border: 1px solid #4B3A7A">
+        <div style="display: flex; align-items: center; gap: 14px">
+          <svg viewBox="0 0 64 64" width="52" height="52" aria-hidden="true" style="color: #7A5AF0"><use href="#a-tile" width="64" height="64"></use><use href="#a-inov" width="64" height="64"></use></svg>
+          <div><h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px">Inovácia (upgrade)</h2><div style="font-size: 14px; color: #8FA3BD; margin-top: 2px">nový rad verzie, napríklad 0.9 → 1.0</div></div>
+        </div>
+        <ul style="margin: 20px 0 0; padding-left: 20px; font-size: 15.5px; line-height: 1.8; color: #C9D7EA">
+          <li>nikdy sa nenainštaluje sama – zobrazí sa ako samostatná ponuka</li>
+          <li>spustíš ju tlačidlom „Inovovať na 1.0“, keď sa ti to hodí</li>
+          <li>dovtedy dostávaš ďalej bežné aktualizácie svojho radu</li>
+          <li>v Histórii uvidíš oboje: „Inovácia na 1.0“ aj bežné aktualizácie</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- priebeh -->
+  <section id="priebeh" style="padding: 20px 24px 70px">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Priebeh</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15">Päť krokov od stiahnutia po potvrdenie</h2>
+      <ol style="list-style: none; margin: 32px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px">
+        <li style="position: relative; padding: 22px 20px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 17px; background: #23935A; color: #fff; font-weight: 700">1</div>
+          <h3 style="margin: 14px 0 0; font-size: 16.5px">Zoznam a podpis</h3>
+          <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #A9BDD6">Systém stiahne zoznam aktualizácií a overí podpis Linsoft (Ed25519). Zoznam má dátum platnosti.</p>
+        </li>
+        <li style="position: relative; padding: 22px 20px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 17px; background: #23935A; color: #fff; font-weight: 700">2</div>
+          <h3 style="margin: 14px 0 0; font-size: 16.5px">Sťahovanie zmien</h3>
+          <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #A9BDD6">Len zmenené časti systému, na pozadí. Prerušené sťahovanie pokračuje tam, kde skončilo.</p>
+        </li>
+        <li style="position: relative; padding: 22px 20px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 17px; background: #23935A; color: #fff; font-weight: 700">3</div>
+          <h3 style="margin: 14px 0 0; font-size: 16.5px">Kontrola balíka</h3>
+          <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #A9BDD6">Každý súbor sa overí kontrolným súčtom SHA-256. Podvrhnutý alebo poškodený balík sa nenainštaluje.</p>
+        </li>
+        <li style="position: relative; padding: 22px 20px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 17px; background: #2F6FE4; color: #fff; font-weight: 700">4</div>
+          <h3 style="margin: 14px 0 0; font-size: 16.5px">Príprava</h3>
+          <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #A9BDD6">Pri reštarte sa stará verzia odloží ako záloha. Tvoje súbory a nastavenia sa nemenia.</p>
+        </li>
+        <li style="position: relative; padding: 22px 20px; border-radius: 16px; background: #0F1C30; border: 1px solid #6B5416">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 17px; background: #FFC23D; color: #1A2433; font-weight: 700">5</div>
+          <h3 style="margin: 14px 0 0; font-size: 16.5px">Skúšobné spustenie</h3>
+          <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #A9BDD6">Nová verzia sa spustí na skúšku. Keď sa dvakrát nespustí, systém sa sám vráti na predošlú.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- skutočné snímky -->
+  <section id="snimky" style="padding: 70px 24px; background: #0A1628; border-top: 1px solid #16263F; border-bottom: 1px solid #16263F">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">V systéme</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15">Linsoft Aktualizácia v Ovládacom paneli</h2>
+      <p style="margin: 10px 0 0; font-size: 15px; color: #8FA3BD; max-width: 52em">Skutočné snímky z automatického testu aktualizácií. Čísla verzií na snímkach sú testovacie.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin-top: 28px">
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #2A4266; background: #0F1A2B">
+          <img src="img/core-akt-pripravena.png" alt="Linsoft Aktualizácia: verzia pripravená, postup v piatich krokoch a voľba Kedy inštalovať" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 14px 16px; font-size: 14px; line-height: 1.5; color: #A9BDD6"><b style="color: #EEF4FF">Aktualizácia je pripravená.</b> Postup krok za krokom a voľba, kedy sa nainštaluje: hneď (asi 40 s), v noci o 3:00 alebo pri vypnutí.</figcaption>
+        </figure>
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #2A4266; background: #0F1A2B">
+          <img src="img/core-akt-historia.png" alt="História aktualizácií s tlačidlom Vrátiť na predošlú verziu a časťou Bezpečnosť" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 14px 16px; font-size: 14px; line-height: 1.5; color: #A9BDD6"><b style="color: #EEF4FF">História a návrat.</b> Každá nainštalovaná verzia, záloha na návrat a prehľad, ako je aktualizácia chránená.</figcaption>
+        </figure>
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #2A4266; background: #0F1A2B">
+          <img src="img/core-akt-usb.png" alt="Aktualizácia načítaná z USB kľúča s overeným podpisom" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 14px 16px; font-size: 14px; line-height: 1.5; color: #A9BDD6"><b style="color: #EEF4FF">Bez internetu.</b> Balík .lsu z USB kľúča sa overí rovnako ako stiahnutý.</figcaption>
+        </figure>
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #2A4266; background: #0F1A2B">
+          <img src="img/core-akt-podvrh.png" alt="Aktualizácia odmietnutá, lebo kontrolný súčet súboru nesedí" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 14px 16px; font-size: 14px; line-height: 1.5; color: #A9BDD6"><b style="color: #EEF4FF">Podvrhnutý balík.</b> Kontrolný súčet nesedí, aktualizácia sa nenainštaluje a systém ostane bez zmeny.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- bezpečnosť a možnosti -->
+  <section style="padding: 70px 24px">
+    <div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px">
+      <div style="padding: 28px; border-radius: 20px; background: #0F1C30; border: 1px solid #22385A">
+        <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px">Bezpečnosť</h2>
+        <dl style="margin: 18px 0 0; display: grid; grid-template-columns: minmax(130px, auto) minmax(0, 1fr); gap: 12px 18px; font-size: 14.5px; line-height: 1.55">
+          <dt style="color: #8FA3BD">Podpis</dt><dd style="margin: 0; color: #C9D7EA">zoznam aj balíky podpisuje kľúč Linsoft (Ed25519)</dd>
+          <dt style="color: #8FA3BD">Kontrola</dt><dd style="margin: 0; color: #C9D7EA">každý súbor SHA-256 pred inštaláciou</dd>
+          <dt style="color: #8FA3BD">Platnosť</dt><dd style="margin: 0; color: #C9D7EA">zoznam aktualizácií platí obmedzený čas, starý podvrhnutý zoznam sa odmietne</dd>
+          <dt style="color: #8FA3BD">Návrat</dt><dd style="margin: 0; color: #C9D7EA">na verziu so známou bezpečnostnou chybou sa vrátiť nedá</dd>
+          <dt style="color: #8FA3BD">Výpadok prúdu</dt><dd style="margin: 0; color: #C9D7EA">počas inštalácie nepokazí systém – naštartuje stará alebo nová verzia</dd>
+          <dt style="color: #8FA3BD">Štart</dt><dd style="margin: 0; color: #C9D7EA">jadro a zavádzač sú podpísané pre Secure Boot</dd>
+        </dl>
+      </div>
+      <div style="padding: 28px; border-radius: 20px; background: #0F1C30; border: 1px solid #22385A">
+        <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px">Možnosti</h2>
+        <dl style="margin: 18px 0 0; display: grid; grid-template-columns: minmax(130px, auto) minmax(0, 1fr); gap: 12px 18px; font-size: 14.5px; line-height: 1.55">
+          <dt style="color: #8FA3BD">Kedy</dt><dd style="margin: 0; color: #C9D7EA">reštartovať hneď, v noci o 3:00 (s upozornením vopred) alebo „Aktualizovať a vypnúť“</dd>
+          <dt style="color: #8FA3BD">Odložiť</dt><dd style="margin: 0; color: #C9D7EA">o hodinu, kedykoľvek pred inštaláciou</dd>
+          <dt style="color: #8FA3BD">Kanál</dt><dd style="margin: 0; color: #C9D7EA">Stabilný alebo Beta s novinkami skôr</dd>
+          <dt style="color: #8FA3BD">Automaticky</dt><dd style="margin: 0; color: #C9D7EA">dá sa vypnúť; potom systém len oznámi novú verziu</dd>
+          <dt style="color: #8FA3BD">Bez siete</dt><dd style="margin: 0; color: #C9D7EA">balík .lsu z USB kľúča</dd>
+          <dt style="color: #8FA3BD">Aplikácie</dt><dd style="margin: 0; color: #C9D7EA">aktualizuje Linsoft Store z podpísaného katalógu</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ako v systéme -->
+  <section style="padding: 20px 24px 60px">
+    <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 40px; align-items: center">
+      <div style="flex: 1 1 380px; min-width: 0">
+        <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 32px; line-height: 1.15">Keď príde inovácia</h2>
+        <p style="margin: 14px 0 0; font-size: 16px; line-height: 1.65; color: #C9D7EA">Inovácia má v Ovládacom paneli vlastnú kartu, aby si ju nespustil omylom. Bežné aktualizácie tvojho radu chodia ďalej.</p>
+        <ul style="margin: 16px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.8; color: #A9BDD6">
+          <li>ani „Inštalovať hneď“ inováciu nespustí</li>
+          <li>sťahuje sa len po kliknutí na Inovovať</li>
+          <li>staršie systémy (0.9.0–0.9.2) prejdú najprv aktualizáciou a inováciu dostanú potom</li>
+        </ul>
+      </div>
+      <div style="flex: 1 1 560px; min-width: 0; border-radius: 18px; background: #0F1A2B; border: 1px solid #2A4266; box-shadow: 0 30px 70px rgba(0,0,0,0.45); overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; background: #13213A; border-bottom: 1px solid #22385A; font-size: 13.5px; font-weight: 600">
+          <svg viewBox="0 0 64 64" width="18" height="18" aria-hidden="true" style="color: #E3A919"><use href="#a-tile" width="64" height="64"></use><use href="#a-aktual" width="64" height="64"></use></svg>Ovládací panel – Aktualizácie
+        </div>
+        <div style="padding: 18px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; background: #13301F; border: 1px solid #2C6B4C">
+            <svg viewBox="0 0 20 20" width="26" height="26" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#23935A"></circle><path d="M5.8 10.2l2.8 2.8 5.6-6" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <div style="flex: 1; min-width: 0"><div style="font-weight: 700">Aktualizácia 0.9.7 je nainštalovaná</div><div style="font-size: 13px; color: #C9F2DA; margin-top: 2px">Nové ikony Úsvit</div></div>
+            <span style="display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #6B5416; color: #FFC23D; font-size: 13px; font-weight: 600">Vrátiť na 0.9.6…</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; background: #1E1838; border: 1px solid #4B3A7A">
+            <svg viewBox="0 0 64 64" width="34" height="34" aria-hidden="true" style="color: #7A5AF0"><use href="#a-tile" width="64" height="64"></use><use href="#a-inov" width="64" height="64"></use></svg>
+            <div style="flex: 1; min-width: 0"><div style="font-weight: 700">Inovácia na Linsoft OS Core 1.0 je k dispozícii</div><div style="font-size: 13px; color: #D9CCFF; margin-top: 2px">Nenainštaluje sa sama</div></div>
+            <span style="display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 9px; background: #7A5AF0; color: #ffffff; font-size: 13px; font-weight: 600">Inovovať na 1.0</span>
+          </div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding: 6px 4px; font-size: 13.5px; color: #A9BDD6">
+            <span>Kanál</span><b style="color: #EEF4FF">Stabilný</b>
+            <span>Inštalovať</span><b style="color: #EEF4FF">automaticky v noci o 3:00</b>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="max-width: 1240px; margin: 14px auto 0; font-size: 13px; color: #6F84A3">Ilustrácia. Inovácia na 1.0 zatiaľ nevyšla.</p>
+  </section>
+
+  <!-- vydania -->
+  <section id="vydania" style="padding: 60px 24px 80px; background: #0A1628; border-top: 1px solid #16263F">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Vydania</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px">Čo priniesla každá verzia</h2>
+      <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 16px">
+        <article style="display: grid; grid-template-columns: minmax(120px, 180px) minmax(0, 1fr); gap: 8px 28px; padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #6B5416">
+          <div><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700; color: #FFC23D">0.9.8</div><div style="font-size: 13px; color: #8FA3BD; margin-top: 4px">pripravuje sa</div></div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 15.5px; line-height: 1.75; color: #C9D7EA">
+            <li>Ikony Úsvit sú predvolené aj po aktualizácii – kto prešiel zo 0.9.6, mal doteraz uložené staré ikony Záložka.</li>
+            <li>Vlastný výber štýlu ikon sa ukladá samostatne a vydrží reštart aj ďalšie aktualizácie.</li>
+          </ul>
+        </article>
+        <article style="display: grid; grid-template-columns: minmax(120px, 180px) minmax(0, 1fr); gap: 8px 28px; padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <div><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700">0.9.7</div><div style="font-size: 13px; color: #8FA3BD; margin-top: 4px">17. 11. 2026 · aktualizácia</div></div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 15.5px; line-height: 1.75; color: #C9D7EA">
+            <li>Nové ikony Úsvit v celom systéme: 34 aplikácií, Ovládací panel, priečinky, disky a 25 typov súborov.</li>
+            <li>Systémové súbory majú vlastné ikony s logom Linsoft; malé ikony sú ručne zjednodušené.</li>
+            <li>Ikony v dialógoch a v stavovej oblasti panela; prepínač Úsvit / Záložka / Sklo vo Vzhľade.</li>
+          </ul>
+        </article>
+        <article style="display: grid; grid-template-columns: minmax(120px, 180px) minmax(0, 1fr); gap: 8px 28px; padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <div><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700">0.9.6</div><div style="font-size: 13px; color: #8FA3BD; margin-top: 4px">16. 11. 2026 · aktualizácia</div></div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 15.5px; line-height: 1.75; color: #C9D7EA">
+            <li>Linux pre Core – Debian 12 jedným klikom, linuxové programy aj apt priamo v Termináli.</li>
+            <li>Linsoft Agenti sa sami starajú o počítač; väčšie kroky len s tvojím súhlasom.</li>
+            <li>Nový panel, Alt+Tab s náhľadmi, pracovné plochy, história schránky, nové Súbory a ikony Záložka.</li>
+            <li>Linsoft Store s aplikáciami Chat, Pošta, PDF a Code; Linsoft Browser 2.0.37.</li>
+          </ul>
+        </article>
+        <article style="display: grid; grid-template-columns: minmax(120px, 180px) minmax(0, 1fr); gap: 8px 28px; padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <div><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700">0.9.4</div><div style="font-size: 13px; color: #8FA3BD; margin-top: 4px">aktualizácia</div></div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 15.5px; line-height: 1.75; color: #C9D7EA">
+            <li>Okno sa dá pripnúť navrch.</li>
+            <li>LAN s kartou Intel I219 funguje na plnej rýchlosti 1000 Mb/s.</li>
+            <li>Inštalátor aplikácií je predvolený pre balíky .lsa.</li>
+          </ul>
+        </article>
+        <article style="display: grid; grid-template-columns: minmax(120px, 180px) minmax(0, 1fr); gap: 8px 28px; padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <div><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700">0.9.3</div><div style="font-size: 13px; color: #8FA3BD; margin-top: 4px">aktualizácia</div></div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 15.5px; line-height: 1.75; color: #C9D7EA">
+            <li>Linsoft Ochrana – antivírus, firewall, ochrana siete a systému.</li>
+            <li>Aktualizácie rozlišujú bežnú aktualizáciu a inováciu – inovácia sa nikdy nenainštaluje sama.</li>
+            <li>Nové inštalácie na GPT a LinsoftFS so žurnálom, Záchrana cez F8.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- otázky -->
+  <section id="otazky" style="padding: 70px 24px">
+    <div style="max-width: 900px; margin: 0 auto">
+      <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 34px">Časté otázky</h2>
+      <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px">
+        <details open style="padding: 18px 22px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 16px">Stratím pri aktualizácii súbory?</summary>
+          <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Nie. Dokumenty sú na samostatnom oddiele disku C: a aktualizácia mení len systém v C:\Linsoft. Nastavenia aj údaje aplikácií ostanú.</p>
+        </details>
+        <details style="padding: 18px 22px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 16px">Ako dlho to trvá?</summary>
+          <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Sťahovanie beží na pozadí a môžeš pracovať. Samotná inštalácia prebehne pri reštarte.</p>
+        </details>
+        <details style="padding: 18px 22px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 16px">Čo keď počas aktualizácie vypadne prúd?</summary>
+          <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Systém sa nepokazí. Po zapnutí naštartuje buď predošlá, alebo nová verzia a aktualizácia sa dokončí alebo zopakuje.</p>
+        </details>
+        <details style="padding: 18px 22px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 16px">Ako sa vrátim na predošlú verziu?</summary>
+          <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Ovládací panel › Linsoft Aktualizácia › História › Vrátiť. Počítač sa reštartuje so zálohou. Ak nová verzia vôbec nenaštartuje, vráti sa sama.</p>
+        </details>
+        <details style="padding: 18px 22px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 16px">Dá sa aktualizovať bez internetu?</summary>
+          <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Áno. Nahraj balík .lsu na USB kľúč a pripoj ho – systém ho nájde, overí podpis a ponúkne inštaláciu.</p>
+        </details>
+        <details style="padding: 18px 22px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 16px">Aký je rozdiel medzi aktualizáciou a inováciou?</summary>
+          <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Aktualizácia mení posledné číslo verzie (0.9.6 → 0.9.7) a príde sama. Inovácia mení rad (0.9 → 1.0) a spustíš ju len ty.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <footer style="padding: 34px 24px 44px; border-top: 1px solid #16263F">
+    <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px; font-size: 14px; color: #8FA3BD">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true" style="color: #13233B"><use href="#a-tile" width="64" height="64"></use><use href="#a-logo" x="13" y="11" width="38" height="38"></use></svg>
+        <span>© 2026 Martin Pastorek · Linsoft OS Core · jadro Linsoft Core™</span>
+      </div>
+      <a href="core.html" style="text-decoration: none">Späť na úvod</a>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

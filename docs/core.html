@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linsoft OS Core – vlastný systém, vlastné jadro</title>
+<meta name="description" content="Linsoft OS Core: operačný systém na vlastnom jadre Linsoft Core napísanom od nuly. Vlastné okná, aplikácie, ovládače a aktualizácie s cestou späť.">
+<meta name="theme-color" content="#070F1C">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Linsoft OS Core – vlastný systém, vlastné jadro">
+<meta property="og:description" content="Linsoft OS Core: operačný systém na vlastnom jadre Linsoft Core napísanom od nuly. Vlastné okná, aplikácie, ovládače a aktualizácie s cestou späť.">
+<meta property="og:url" content="https://linsoft1.github.io/linsoft-os/core.html">
+<meta property="og:image" content="https://linsoft1.github.io/linsoft-os/img/core-plocha.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070F1C}
+a{color:#8FD3FF}a:hover{color:#C6ECFF}
+</style>
+<style>html{scroll-behavior:smooth}img{max-width:100%}*{box-sizing:border-box}:focus-visible{outline:2px solid #FFC23D;outline-offset:2px}</style>
+</head>
+<body>
+<div style="min-height: 100vh; background: #070F1C; color: #EEF4FF; font-family: Inter, system-ui, sans-serif; overflow: hidden">
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="w-sheen" x1="0" y1="0" x2="0.7" y2="0.8"><stop offset="0" stop-color="#ffffff" stop-opacity="0.34"></stop><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"></stop></linearGradient>
+      <clipPath id="w-clip"><path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z"></path></clipPath>
+      <symbol id="w-logo" viewBox="50 46 168 168">
+        <path d="M57 54h43v102h85v43H57z" fill="#4AA8FF"></path>
+        <path d="M190 62c-8-8-19-12-33-12h-7c-24 0-39 13-39 33 0 16 10 27 29 33l28 9c9 3 14 8 14 16 0 9-7 14-19 14h-18c-12 0-21-5-28-14l-27 27c13 16 31 24 55 24h21c38 0 61-19 61-50 0-23-14-39-42-48l-27-8c-5-2-8-4-8-7 0-4 3-6 9-6h7c9 0 16 3 22 10z" fill="#F2F7FF"></path>
+      </symbol>
+      <symbol id="w-tile" viewBox="0 0 64 64">
+        <path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z" fill="currentColor"></path>
+        <path d="M26 2H54A8 8 0 0 1 62 10V38A24 24 0 0 1 38 62H10A8 8 0 0 1 2 54V26A24 24 0 0 1 26 2Z" fill="url(#w-sheen)"></path>
+        <g clip-path="url(#w-clip)"><path d="M0 47C18 43 40 37 64 25V64H0Z" fill="#000000" opacity="0.22"></path><path d="M0 47C18 43 40 37 64 25" fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="1.2"></path></g>
+      </symbol>
+      <symbol id="w-folder" viewBox="0 0 64 64">
+        <path d="M6 15a7 7 0 0 1 7-7h11.5a4 4 0 0 1 2.9 1.2L32 14h19a7 7 0 0 1 7 7v21H6z" fill="currentColor"></path>
+        <path d="M6 15a7 7 0 0 1 7-7h11.5a4 4 0 0 1 2.9 1.2L32 14h19a7 7 0 0 1 7 7v21H6z" fill="#000000" opacity="0.32"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="currentColor"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="url(#w-sheen)"></path>
+        <path d="M6 31C21 29.5 39 26 58 19" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.2"></path>
+      </symbol>
+      <symbol id="w-sysfolder" viewBox="0 0 64 64">
+        <path d="M6 15a7 7 0 0 1 7-7h11.5a4 4 0 0 1 2.9 1.2L32 14h19a7 7 0 0 1 7 7v21H6z" fill="#3A5272"></path>
+        <path d="M6 31C21 29.5 39 26 58 19V45A12 12 0 0 1 46 57H12A6 6 0 0 1 6 51Z" fill="#1B2D49"></path>
+        <path d="M6 31C21 29.5 39 26 58 19" fill="none" stroke="#FFC23D" stroke-width="1.6"></path>
+        <use href="#w-logo" x="16" y="33" width="19" height="19"></use>
+      </symbol>
+      <symbol id="g-subory" viewBox="0 0 64 64"><path d="M14 20a4 4 0 0 1 4-4h8.5l4 4H46a4 4 0 0 1 4 4v6H14z" fill="#ffffff" fill-opacity="0.55"></path><path d="M14 30C24 29 38 27 50 24V42a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4z" fill="#ffffff"></path><path d="M21 39h9" stroke="#FFC23D" stroke-width="3.2" stroke-linecap="round"></path></symbol>
+      <symbol id="g-prehliadac" viewBox="0 0 64 64"><circle cx="32" cy="31" r="15.5" fill="#ffffff"></circle><g fill="none" stroke="#1F9BD7" stroke-width="2.4" stroke-linecap="round"><ellipse cx="32" cy="31" rx="6.5" ry="15.5"></ellipse><path d="M16.5 31h31M19 23h26M19 39h26"></path></g><ellipse cx="32" cy="31" rx="23" ry="7" transform="rotate(-24 32 31)" fill="none" stroke="#FFC23D" stroke-width="2.6"></ellipse></symbol>
+      <symbol id="g-terminal" viewBox="0 0 64 64"><rect x="13" y="15" width="38" height="31" rx="7" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.55" stroke-width="2"></rect><path d="M19 28l6 5-6 5" fill="none" stroke="#7CE0A5" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path><rect x="29" y="36.3" width="13" height="3.4" rx="1.7" fill="#ffffff"></rect></symbol>
+      <symbol id="g-media" viewBox="0 0 64 64"><circle cx="32" cy="31" r="17" fill="#ffffff" fill-opacity="0.35"></circle><circle cx="32" cy="31" r="12" fill="#ffffff"></circle><path d="M29 25.5l9 5.5-9 5.5z" fill="#E05A2E" stroke="#E05A2E" stroke-width="1.5" stroke-linejoin="round"></path></symbol>
+      <symbol id="g-chat" viewBox="0 0 64 64"><rect x="25" y="13" width="26" height="18" rx="7" fill="#ffffff" fill-opacity="0.5"></rect><path d="M13 27a7 7 0 0 1 7-7h17a7 7 0 0 1 7 7v8a7 7 0 0 1-7 7H27l-7 6v-6.3A7 7 0 0 1 13 35z" fill="#ffffff"></path><circle cx="22" cy="31" r="2.3" fill="#D9468F"></circle><circle cx="28.5" cy="31" r="2.3" fill="#D9468F"></circle><circle cx="35" cy="31" r="2.3" fill="#D9468F"></circle></symbol>
+      <symbol id="g-posta" viewBox="0 0 64 64"><rect x="19" y="12" width="26" height="18" rx="3" fill="#ffffff" fill-opacity="0.5"></rect><rect x="13" y="20" width="38" height="26" rx="6" fill="#ffffff"></rect><path d="M15.5 23.5l16.5 11.5 16.5-11.5" fill="none" stroke="#0F9D8A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path></symbol>
+      <symbol id="g-store" viewBox="0 0 64 64"><path d="M24 25v-2.5a8 8 0 0 1 16 0V25" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="3.4" stroke-linecap="round"></path><path d="M16 25h32l-2.6 18.5A4 4 0 0 1 41.4 47H22.6a4 4 0 0 1-4-3.5z" fill="#ffffff"></path><path d="M32 29.5l1.9 3.9 4.3.6-3.1 3 .7 4.3L32 39.3l-3.8 2 .7-4.3-3.1-3 4.3-.6z" fill="#FFC23D"></path></symbol>
+      <symbol id="g-code" viewBox="0 0 64 64"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="M23 21l-9 10.5 9 10.5" stroke="#ffffff"></path><path d="M41 21l9 10.5-9 10.5" stroke="#ffffff"></path><path d="M35.5 16l-7 31" stroke="#8FD3FF"></path></g></symbol>
+      <symbol id="g-ochrana" viewBox="0 0 64 64"><path d="M32 12l15.5 5.6v11.6c0 10.3-6.7 17.6-15.5 21.2-8.8-3.6-15.5-10.9-15.5-21.2V17.6z" fill="#ffffff"></path><path d="M25 31l5 5 9.5-10" fill="none" stroke="#23935A" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path></symbol>
+      <symbol id="g-pdf" viewBox="0 0 64 64"><rect x="24" y="11" width="25" height="31" rx="5" fill="#ffffff" fill-opacity="0.45"></rect><path d="M20 17h13l8 8v19a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V21a4 4 0 0 1 4-4z" fill="#ffffff"></path><path d="M22 32h12M22 38h8" stroke="#C8363C" stroke-width="2.8" stroke-linecap="round"></path></symbol>
+      <symbol id="g-agenti" viewBox="0 0 64 64"><path d="M32 21v-5" stroke="#ffffff" stroke-width="3" stroke-linecap="round"></path><circle cx="32" cy="13.5" r="3.6" fill="#8FF0E0"></circle><rect x="16" y="21" width="32" height="24" rx="9" fill="#ffffff"></rect><circle cx="26" cy="32" r="3.2" fill="#0E7C99"></circle><circle cx="38" cy="32" r="3.2" fill="#0E7C99"></circle><path d="M28 39h8" stroke="#0E7C99" stroke-width="2.6" stroke-linecap="round"></path></symbol>
+      <symbol id="g-aktual" viewBox="0 0 64 64"><path d="M45.5 27A14 14 0 0 0 21.5 21" fill="none" stroke="#1A2433" stroke-width="4.2" stroke-linecap="round"></path><path d="M16.5 15l3 11.5 9.5-5.5z" fill="#1A2433"></path><path d="M18.5 35A14 14 0 0 0 42.5 41" fill="none" stroke="#ffffff" stroke-width="4.2" stroke-linecap="round"></path><path d="M47.5 47l-3-11.5-9.5 5.5z" fill="#ffffff"></path></symbol>
+      <symbol id="g-linux" viewBox="0 0 64 64"><rect x="14" y="16" width="36" height="28" rx="6" fill="#ffffff" fill-opacity="0.18" stroke="#ffffff" stroke-opacity="0.6" stroke-width="2"></rect><path d="M21 27l5 4-5 4" fill="none" stroke="#FFC23D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path><path d="M30 37h11" stroke="#ffffff" stroke-width="3" stroke-linecap="round"></path></symbol>
+    </defs>
+  </svg>
+
+  <!-- hlavička -->
+  <header style="position: relative; z-index: 2; max-width: 1240px; margin: 0 auto; padding: 22px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px">
+    <a href="core.html" style="display: flex; align-items: center; gap: 12px; color: #EEF4FF; text-decoration: none">
+      <svg viewBox="0 0 64 64" width="38" height="38" role="img" aria-label="Linsoft" style="color: #13233B"><use href="#w-tile" width="64" height="64"></use><use href="#w-logo" x="13" y="11" width="38" height="38"></use></svg>
+      <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 20px">Linsoft OS Core</span>
+    </a>
+    <nav aria-label="Hlavná ponuka" style="display: flex; flex-wrap: wrap; gap: 4px 22px; font-size: 15px; flex: 1 1 auto">
+      <a href="#funkcie" style="color: #C9D7EA; text-decoration: none">Funkcie</a>
+      <a href="#pohlad" style="color: #C9D7EA; text-decoration: none">Pohľad</a>
+      <a href="#aplikacie" style="color: #C9D7EA; text-decoration: none">Aplikácie</a>
+      <a href="#linux" style="color: #C9D7EA; text-decoration: none">Linux pre Core</a>
+      <a href="#hardver" style="color: #C9D7EA; text-decoration: none">Hardvér</a>
+      <a href="#vyvojari" style="color: #C9D7EA; text-decoration: none">Vývojári</a>
+      <a href="#licencia" style="color: #C9D7EA; text-decoration: none">Licencia</a>
+      <a href="index.html" style="color: #C9D7EA; text-decoration: none">Linsoft OS 1.5</a>
+      <a href="core-aktualizacie.html" style="color: #C9D7EA; text-decoration: none">Aktualizácie</a>
+    </nav>
+  </header>
+
+  <!-- úvod -->
+  <section style="position: relative; padding: 40px 24px 0">
+    <svg viewBox="0 0 1440 760" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; left: 0; top: -90px; width: 100%; height: 860px">
+      <circle cx="1140" cy="250" r="230" fill="#FFC23D" opacity="0.08"></circle>
+      <circle cx="1140" cy="250" r="110" fill="#FFC23D" opacity="0.10"></circle>
+      <path d="M0 600C420 560 900 440 1440 190V760H0Z" fill="#10294A"></path>
+      <path d="M0 600C420 560 900 440 1440 190" fill="none" stroke="#FFC23D" stroke-opacity="0.7" stroke-width="2"></path>
+      <path d="M0 700C460 680 940 600 1440 400V760H0Z" fill="#13335C" opacity="0.8"></path>
+      <path d="M0 700C460 680 940 600 1440 400" fill="none" stroke="#4AA8FF" stroke-opacity="0.35" stroke-width="1.5"></path>
+    </svg>
+    <div style="position: relative; max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
+      <div style="flex: 1 1 460px; min-width: 0">
+        <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; background: rgba(255,194,61,0.12); border: 1px solid rgba(255,194,61,0.4); color: #FFC23D; font-size: 13px; font-weight: 600">Nové v 0.9.7 · ikony Úsvit</div>
+        <h1 style="margin: 22px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: clamp(44px, 6vw, 76px); line-height: 1.02; letter-spacing: -0.02em; text-wrap: balance">Vlastný systém.<br>Vlastné jadro.</h1>
+        <p style="margin: 22px 0 0; font-size: 19px; line-height: 1.6; color: #C9D7EA; max-width: 34em">Linsoft OS Core je operačný systém postavený od nuly na jadre Linsoft Core™. Má vlastné okná, vlastné aplikácie a vlastné ovládače – a keď treba, spustí aj programy z Linuxu.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px">
+          <a href="#pohlad" style="display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 14px; background: #FFC23D; color: #1A2433; font-weight: 700; font-size: 16px; text-decoration: none">
+            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="4" width="15" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"></rect><path d="M7 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+            Pozrieť systém
+          </a>
+          <a href="#funkcie" style="display: inline-flex; align-items: center; height: 52px; padding: 0 22px; border-radius: 14px; border: 1px solid #33507A; color: #EEF4FF; font-weight: 600; font-size: 16px; text-decoration: none">Čo všetko vie</a>
+        </div>
+        <p style="margin: 18px 0 0; font-size: 13.5px; color: #8FA3BD">Zadarmo · x86_64 · UEFI aj BIOS · Secure Boot · vo vývoji, posledná verzia 0.9.7</p>
+      </div>
+
+      <!-- obrazovka systému -->
+      <div style="flex: 1 1 560px; min-width: 0; position: relative">
+        <div style="border-radius: 18px; border: 1px solid #2A4266; background: linear-gradient(165deg, #10294A, #0A1628 60%, #070F1C); box-shadow: 0 40px 90px rgba(0,0,0,0.55); overflow: hidden; aspect-ratio: 16 / 10; max-width: 100%; position: relative">
+          <svg viewBox="0 0 640 400" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%"><path d="M0 330C190 312 400 260 640 150V400H0Z" fill="#13335C" opacity="0.7"></path><path d="M0 330C190 312 400 260 640 150" fill="none" stroke="#FFC23D" stroke-opacity="0.5" stroke-width="1.5"></path></svg>
+          <div style="position: absolute; left: 7%; top: 8%; width: 66%; height: 70%; border-radius: 12px; background: #0F1A2B; border: 1px solid #2A4266; box-shadow: 0 18px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden">
+            <div style="display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 10px; background: #13213A; border-bottom: 1px solid #22385A; font-size: 11.5px; font-weight: 600">
+              <svg viewBox="0 0 64 64" width="15" height="15" aria-hidden="true" style="color: #2F6FE4"><use href="#w-tile" width="64" height="64"></use><use href="#g-subory" width="64" height="64"></use></svg>Súbory – Linsoft (C:)
+            </div>
+            <div style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 12px; align-content: start">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border-radius: 8px; background: #1D3557; outline: 1px solid #6B5416; font-size: 10.5px"><svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true"><use href="#w-sysfolder" width="64" height="64"></use></svg>Linsoft</div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; font-size: 10.5px"><svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true" style="color: #3D8BFF"><use href="#w-folder" width="64" height="64"></use></svg>Dokumenty</div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; font-size: 10.5px"><svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true" style="color: #3D8BFF"><use href="#w-folder" width="64" height="64"></use></svg>Obrázky</div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; font-size: 10.5px"><svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true" style="color: #3D8BFF"><use href="#w-folder" width="64" height="64"></use></svg>Hudba</div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; font-size: 10.5px"><svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true" style="color: #3D8BFF"><use href="#w-folder" width="64" height="64"></use></svg>Stiahnuté</div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; font-size: 10.5px"><svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true" style="color: #3D8BFF"><use href="#w-folder" width="64" height="64"></use></svg>Videá</div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; font-size: 10.5px"><svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true" style="color: #5B6B82"><use href="#w-folder" width="64" height="64"></use></svg>Linux</div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; font-size: 10.5px"><svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true" style="color: #3D8BFF"><use href="#w-folder" width="64" height="64"></use></svg>Plocha</div>
+            </div>
+          </div>
+          <div style="position: absolute; right: 5%; top: 9%; width: 26%; padding: 10px 12px; border-radius: 12px; background: rgba(15,26,43,0.85); border: 1px solid #2A4266; font-size: 10.5px; color: #A9BDD6">
+            <div style="font-family: ui-monospace, Consolas, monospace; font-size: 22px; font-weight: 700; color: #EEF4FF">14:32</div>
+            <div>utorok, 17. novembra</div><div>Linsoft Core 0.9.7</div>
+          </div>
+          <div style="position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); display: flex; gap: 7px; padding: 7px 10px; border-radius: 16px; background: rgba(15,28,48,0.9); border: 1px solid #2A4266">
+            <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true" style="color: #13233B"><use href="#w-tile" width="64" height="64"></use><use href="#w-logo" x="13" y="11" width="38" height="38"></use></svg>
+            <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true" style="color: #2F6FE4"><use href="#w-tile" width="64" height="64"></use><use href="#g-subory" width="64" height="64"></use></svg>
+            <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true" style="color: #1F9BD7"><use href="#w-tile" width="64" height="64"></use><use href="#g-prehliadac" width="64" height="64"></use></svg>
+            <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true" style="color: #1A2840"><use href="#w-tile" width="64" height="64"></use><use href="#g-terminal" width="64" height="64"></use></svg>
+            <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true" style="color: #D9468F"><use href="#w-tile" width="64" height="64"></use><use href="#g-chat" width="64" height="64"></use></svg>
+            <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true" style="color: #7A5AF0"><use href="#w-tile" width="64" height="64"></use><use href="#g-store" width="64" height="64"></use></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- fakty -->
+  <section aria-label="V skratke" style="position: relative; padding: 110px 24px 0">
+    <div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); border: 1px solid #22385A; border-radius: 20px; background: rgba(15,28,48,0.85); overflow: hidden">
+      <div style="padding: 24px 26px; border-right: 1px solid #16263F">
+        <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700; color: #FFC23D">Od nuly</div>
+        <div style="margin-top: 6px; font-size: 14.5px; line-height: 1.5; color: #A9BDD6">jadro, okná, súbory aj aplikácie napísané v C – nie upravený Linux</div>
+      </div>
+      <div style="padding: 24px 26px; border-right: 1px solid #16263F">
+        <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700">5 výrobcov Wi‑Fi</div>
+        <div style="margin-top: 6px; font-size: 14.5px; line-height: 1.5; color: #A9BDD6">Intel, Realtek, Qualcomm Atheros, MediaTek a Broadcom</div>
+      </div>
+      <div style="padding: 24px 26px; border-right: 1px solid #16263F">
+        <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700">Každá aplikácia zvlášť</div>
+        <div style="margin-top: 6px; font-size: 14.5px; line-height: 1.5; color: #A9BDD6">aplikácie .lsa bežia oddelene – keď jedna spadne, ostatné idú ďalej</div>
+      </div>
+      <div style="padding: 24px 26px">
+        <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700">Debian 12</div>
+        <div style="margin-top: 6px; font-size: 14.5px; line-height: 1.5; color: #A9BDD6">linuxové programy v Termináli jedným príkazom</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- pilieri -->
+  <section id="funkcie" style="position: relative; padding: 90px 24px 40px">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Prečo Linsoft OS Core</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 40px; line-height: 1.1; max-width: 18em; text-wrap: balance">Všetko od zavádzača po ikony je naše</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-top: 36px">
+        <article style="padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <svg viewBox="0 0 64 64" width="48" height="48" aria-hidden="true" style="color: #13233B"><use href="#w-tile" width="64" height="64"></use><use href="#w-logo" x="13" y="11" width="38" height="38"></use></svg>
+          <h3 style="margin: 16px 0 0; font-size: 19px">Jadro Linsoft Core™</h3>
+          <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Napísané od nuly v C. Viac jadier procesora, vlastné súborové systémy LinsoftFS, ext4 aj exFAT, šifrovanie disku.</p>
+        </article>
+        <article style="padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <svg viewBox="0 0 64 64" width="48" height="48" aria-hidden="true" style="color: #E3A919"><use href="#w-tile" width="64" height="64"></use><use href="#g-aktual" width="64" height="64"></use></svg>
+          <h3 style="margin: 16px 0 0; font-size: 19px">Aktualizácie s cestou späť</h3>
+          <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Nová verzia sa nainštaluje na skúšku. Keď nenaštartuje, systém sa sám vráti na predošlú. Všetko je podpísané.</p>
+        </article>
+        <article style="padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <svg viewBox="0 0 64 64" width="48" height="48" aria-hidden="true" style="color: #23935A"><use href="#w-tile" width="64" height="64"></use><use href="#g-ochrana" width="64" height="64"></use></svg>
+          <h3 style="margin: 16px 0 0; font-size: 19px">Linsoft Ochrana</h3>
+          <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Antivírus, firewall a ochrana siete v jednej aplikácii. Systém štartuje cez Secure Boot.</p>
+        </article>
+        <article style="padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <svg viewBox="0 0 64 64" width="48" height="48" aria-hidden="true" style="color: #0E7C99"><use href="#w-tile" width="64" height="64"></use><use href="#g-agenti" width="64" height="64"></use></svg>
+          <h3 style="margin: 16px 0 0; font-size: 19px">Linsoft Agenti</h3>
+          <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6">Sami sa starajú o počítač: kontrola hardvéru, aktualizácie, zálohy a upratovanie. Väčšie kroky robia len s tvojím súhlasom.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- pohľad na systém -->
+  <section id="pohlad" style="padding: 60px 24px 40px">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Pohľad na systém</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15; text-wrap: balance">Takto vyzerá Linsoft OS Core naozaj</h2>
+      <p style="margin: 12px 0 0; font-size: 16px; line-height: 1.6; color: #A9BDD6; max-width: 46em">Skutočné snímky obrazovky zo systému, žiadne makety.</p>
+      <figure style="margin: 30px 0 0; border-radius: 18px; overflow: hidden; border: 1px solid #2A4266; box-shadow: 0 30px 80px rgba(0,0,0,0.5); background: #0A1628">
+        <img src="img/core-plocha.png" alt="Plocha Linsoft OS Core s logom, hodinami a panelom" style="display: block; width: 100%; height: auto">
+        <figcaption style="padding: 14px 18px; font-size: 14px; color: #A9BDD6; border-top: 1px solid #22385A">Plocha – logo, hodiny, panel s aplikáciami a stavová oblasť</figcaption>
+      </figure>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 18px">
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #22385A; background: #0A1628">
+          <img src="img/core-start.png" alt="Ponuka Štart s aplikáciami" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 12px 16px; font-size: 14px; color: #A9BDD6">Ponuka Štart</figcaption>
+        </figure>
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #22385A; background: #0A1628">
+          <img src="img/core-subory.png" alt="Súbory s ikonami Úsvit pre rôzne typy súborov" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 12px 16px; font-size: 14px; color: #A9BDD6">Súbory s ikonami Úsvit</figcaption>
+        </figure>
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #22385A; background: #0A1628">
+          <img src="img/core-store.png" alt="Linsoft Store s katalógom aplikácií" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 12px 16px; font-size: 14px; color: #A9BDD6">Linsoft Store</figcaption>
+        </figure>
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #22385A; background: #0A1628">
+          <img src="img/core-ovladaci-panel.png" alt="Ovládací panel s kategóriami nastavení" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 12px 16px; font-size: 14px; color: #A9BDD6">Ovládací panel</figcaption>
+        </figure>
+        <figure style="margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid #22385A; background: #0A1628">
+          <img src="img/core-terminal.png" alt="Terminál s vlastnými príkazmi" style="display: block; width: 100%; height: auto">
+          <figcaption style="padding: 12px 16px; font-size: 14px; color: #A9BDD6">Terminál</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- C:\Linsoft -->
+  <section style="padding: 60px 24px">
+    <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
+      <div style="flex: 1 1 420px; min-width: 0">
+        <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Disk C: · pripravujeme</div>
+        <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15; text-wrap: balance">Systém máš na očiach, ale nepokazíš ho</h2>
+        <p style="margin: 10px 0 0; font-size: 13.5px; color: #FFC23D">Pripravuje sa pre ďalšiu verziu.</p>
+        <p style="margin: 16px 0 0; font-size: 16.5px; line-height: 1.65; color: #C9D7EA">V C:\Linsoft vidíš jadro, aplikácie, aktualizácie aj ovládače. Prezerať a kopírovať ich môžeš, meniť ich smie len Linsoft Aktualizácia a Store. Tvoje dokumenty sú na samostatnom oddiele, takže plný disk ani chyba v súboroch nepokazí štart.</p>
+      </div>
+      <div style="flex: 1 1 520px; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 6px; border-radius: 14px; background: #0F1C30; border: 1px solid #6B5416; font-size: 13px"><svg viewBox="0 0 64 64" width="52" height="52" aria-hidden="true"><use href="#w-sysfolder" width="64" height="64"></use></svg>Linsoft</div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 6px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A; font-size: 13px"><svg viewBox="0 0 64 64" width="52" height="52" aria-hidden="true"><use href="#w-sysfolder" width="64" height="64"></use></svg>Jadro</div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 6px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A; font-size: 13px"><svg viewBox="0 0 64 64" width="52" height="52" aria-hidden="true"><use href="#w-sysfolder" width="64" height="64"></use></svg>Aplikácie</div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 6px; border-radius: 14px; background: #0F1C30; border: 1px solid #22385A; font-size: 13px"><svg viewBox="0 0 64 64" width="52" height="52" aria-hidden="true"><use href="#w-sysfolder" width="64" height="64"></use></svg>Aktualizácie</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- aplikácie -->
+  <section id="aplikacie" style="padding: 80px 24px; background: #0A1628; border-top: 1px solid #16263F; border-bottom: 1px solid #16263F">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Aplikácie</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15">Čo potrebuješ každý deň, je už v systéme</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 32px">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A; text-align: center"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="color: #1F9BD7"><use href="#w-tile" width="64" height="64"></use><use href="#g-prehliadac" width="64" height="64"></use></svg><b style="font-size: 15px">Linsoft Browser</b><span style="font-size: 13px; color: #8FA3BD">web s vlastným jadrom</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A; text-align: center"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="color: #2F6FE4"><use href="#w-tile" width="64" height="64"></use><use href="#g-subory" width="64" height="64"></use></svg><b style="font-size: 15px">Súbory</b><span style="font-size: 13px; color: #8FA3BD">štítky, porovnanie, ZIP</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A; text-align: center"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="color: #E05A2E"><use href="#w-tile" width="64" height="64"></use><use href="#g-media" width="64" height="64"></use></svg><b style="font-size: 15px">Linsoft Médiá</b><span style="font-size: 13px; color: #8FA3BD">video, hudba, rádio</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A; text-align: center"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="color: #D9468F"><use href="#w-tile" width="64" height="64"></use><use href="#g-chat" width="64" height="64"></use></svg><b style="font-size: 15px">Linsoft Chat</b><span style="font-size: 13px; color: #8FA3BD">správy v sieti</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A; text-align: center"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="color: #0F9D8A"><use href="#w-tile" width="64" height="64"></use><use href="#g-posta" width="64" height="64"></use></svg><b style="font-size: 15px">Linsoft Pošta</b><span style="font-size: 13px; color: #8FA3BD">Gmail, Outlook, IMAP</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A; text-align: center"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="color: #C8363C"><use href="#w-tile" width="64" height="64"></use><use href="#g-pdf" width="64" height="64"></use></svg><b style="font-size: 15px">Linsoft PDF</b><span style="font-size: 13px; color: #8FA3BD">čítanie a hľadanie</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A; text-align: center"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="color: #3446B8"><use href="#w-tile" width="64" height="64"></use><use href="#g-code" width="64" height="64"></use></svg><b style="font-size: 15px">Linsoft Code</b><span style="font-size: 13px; color: #8FA3BD">editor pre programátorov</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A; text-align: center"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" style="color: #7A5AF0"><use href="#w-tile" width="64" height="64"></use><use href="#g-store" width="64" height="64"></use></svg><b style="font-size: 15px">Linsoft Store</b><span style="font-size: 13px; color: #8FA3BD">podpísané aplikácie</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Linux -->
+  <section id="linux" style="padding: 90px 24px">
+    <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
+      <div style="flex: 1 1 520px; min-width: 0; border-radius: 16px; background: #0A1322; border: 1px solid #22385A; padding: 22px 24px; font-family: ui-monospace, Consolas, monospace; font-size: 14.5px; line-height: 1.75; color: #C9D7EA; overflow-x: auto">
+        <div style="color: #8FD3FF">Linsoft Core™ 0.9.7 · terminál</div>
+        <div><span style="color: #7CE0A5">linsoft@linsoft</span>:~$ linux nainstaluj</div>
+        <div style="color: #8FA3BD">Sťahujem Debian 12 z deb.debian.org · podpis overený</div>
+        <div><span style="color: #7CE0A5">linsoft@linsoft</span>:~$ linux bash</div>
+        <div><span style="color: #FFC23D">root@linux</span>:~# apt install python3 git</div>
+        <div style="color: #8FA3BD">Nastavuje sa python3 … hotovo</div>
+      </div>
+      <div style="flex: 1 1 420px; min-width: 0">
+        <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Linux pre Core</div>
+        <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15; text-wrap: balance">Programy z Linuxu priamo v Termináli</h2>
+        <p style="margin: 16px 0 0; font-size: 16.5px; line-height: 1.65; color: #C9D7EA">Jedným príkazom nainštaluješ Debian 12. Jadro Linsoft Core rozumie linuxovým programom, takže beží bash, apt, Python aj git – bez virtuálneho počítača.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- hardvér -->
+  <section id="hardver" style="padding: 80px 24px; background: #0A1628; border-top: 1px solid #16263F; border-bottom: 1px solid #16263F">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Hardvér</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15">Vlastné ovládače pre bežné počítače</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 30px">
+        <div style="padding: 20px 22px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A"><b style="font-size: 16px">Wi‑Fi</b><p style="margin: 6px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">Intel, Realtek, Qualcomm Atheros, MediaTek, Broadcom</p></div>
+        <div style="padding: 20px 22px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A"><b style="font-size: 16px">Sieť a Bluetooth</b><p style="margin: 6px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">LAN Intel a Realtek, USB sieťové adaptéry, Bluetooth Intel, Broadcom, MediaTek</p></div>
+        <div style="padding: 20px 22px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A"><b style="font-size: 16px">Disky a USB</b><p style="margin: 6px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">NVMe, SATA, USB 1–3, SD karty, telefóny cez MTP</p></div>
+        <div style="padding: 20px 22px; border-radius: 16px; background: #0F1C30; border: 1px solid #22385A"><b style="font-size: 16px">Zvuk a obraz</b><p style="margin: 6px 0 0; font-size: 14.5px; line-height: 1.6; color: #A9BDD6">Intel HDA, USB zvuk, webkamery UVC, jas displeja, tlačiarne</p></div>
+      </div>
+      <p style="margin: 20px 0 0; font-size: 14px; color: #8FA3BD">Firmvér zariadení sa sťahuje podľa potreby a overuje sa kontrolným súčtom.</p>
+    </div>
+  </section>
+
+  <!-- vývojári -->
+  <section id="vyvojari" style="padding: 90px 24px 20px">
+    <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
+      <div style="flex: 1 1 420px; min-width: 0">
+        <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Pre vývojárov</div>
+        <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15; text-wrap: balance">Napíš vlastnú aplikáciu</h2>
+        <p style="margin: 16px 0 0; font-size: 16.5px; line-height: 1.65; color: #C9D7EA">Linsoft SDK zostaví podpísaný balík .lsa. Aplikácia beží vo vlastnom priestore a k súborom sa dostane, len keď ich používateľ sám vyberie. Tvoja aplikácia patrí tebe – licenciu si zvolíš sám.</p>
+        <ul style="margin: 16px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.8; color: #A9BDD6">
+          <li>inštalácia dvojklikom alebo v Termináli</li>
+          <li>vlastný vývojársky kľúč – aplikácia sa ukáže ako „Neznámy vydavateľ“</li>
+          <li>aktualizácie musia byť podpísané tým istým kľúčom</li>
+        </ul>
+      </div>
+      <div style="flex: 1 1 520px; min-width: 0; border-radius: 16px; background: #0A1322; border: 1px solid #22385A; padding: 22px 24px; font-family: ui-monospace, Consolas, monospace; font-size: 14px; line-height: 1.8; color: #C9D7EA; overflow-x: auto">
+        <div style="color: #5D7290"># vlastný kľúč vydavateľa</div>
+        <div>openssl genpkey -algorithm ed25519 -out moj-kluc.key</div>
+        <div style="color: #5D7290; margin-top: 8px"># zostavenie podpísaného balíka</div>
+        <div>bash sdk/build-app.sh moja-aplikacia --lsa moja.lsa --key moj-kluc.key</div>
+        <div style="color: #5D7290; margin-top: 8px"># inštalácia v Linsoft OS Core</div>
+        <div><span style="color: #7CE0A5">linsoft@linsoft</span>:~$ lsa instaluj moja.lsa</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- verzie -->
+  <section id="verzie" style="padding: 90px 24px">
+    <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 48px">
+      <div style="flex: 1 1 340px; min-width: 0">
+        <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Verzie</div>
+        <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15">Rastie každý týždeň</h2>
+        <p style="margin: 16px 0 0; font-size: 16.5px; line-height: 1.65; color: #C9D7EA">Aktualizácie prídu samy cez Ovládací panel. Aplikácie sa aktualizujú v Linsoft Store.</p>
+        <a href="core-aktualizacie.html" style="display: inline-flex; align-items: center; margin-top: 18px; height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid #33507A; color: #EEF4FF; font-weight: 600; text-decoration: none">Aktualizácie a inovácie</a>
+      </div>
+      <ol style="flex: 2 1 560px; min-width: 0; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0">
+        <li style="display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 18px; padding: 18px 0; border-bottom: 1px solid #16263F"><b style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; color: #FFC23D">0.9.8</b><span style="font-size: 15.5px; line-height: 1.6; color: #C9D7EA">Ikony Úsvit predvolené aj po aktualizácii (pripravuje sa).</span></li>
+        <li style="display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 18px; padding: 18px 0; border-bottom: 1px solid #16263F"><b style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px">0.9.7</b><span style="font-size: 15.5px; line-height: 1.6; color: #C9D7EA">Nové ikony Úsvit v celom systéme, ikony v dialógoch a na paneli.</span></li>
+        <li style="display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 18px; padding: 18px 0; border-bottom: 1px solid #16263F"><b style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px">0.9.6</b><span style="font-size: 15.5px; line-height: 1.6; color: #C9D7EA">Linux pre Core, Linsoft Agenti, nový panel a Súbory, Linsoft Store s piatimi aplikáciami.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- licencia -->
+  <section id="licencia" style="padding: 50px 24px 80px">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 34px">Licencia Linsoft Core 1.0</h2>
+      <p style="margin: 12px 0 0; font-size: 16px; line-height: 1.6; color: #C9D7EA; max-width: 46em">Linsoft OS Core je zadarmo. Copyright © 2026 Martin Pastorek. Tu je stručne, čo licencia dovoľuje. Celý text bude súčasťou inštalačného média.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 26px">
+        <div style="padding: 24px; border-radius: 18px; background: #12301F; border: 1px solid #2C6B4C">
+          <h3 style="margin: 0; font-size: 18px; color: #7CE0A5">Smieš</h3>
+          <ul style="margin: 12px 0 0; padding-left: 20px; font-size: 15.5px; line-height: 1.8; color: #D6F5E2">
+            <li>používať systém zdarma, aj vo firme</li>
+            <li>robiť si zálohy a obrazy disku</li>
+            <li>šíriť nezmenené ISO zadarmo</li>
+            <li>písať a predávať vlastné aplikácie .lsa</li>
+          </ul>
+        </div>
+        <div style="padding: 24px; border-radius: 18px; background: #2A1418; border: 1px solid #6A2A30">
+          <h3 style="margin: 0; font-size: 18px; color: #FF9A9A">Nesmieš</h3>
+          <ul style="margin: 12px 0 0; padding-left: 20px; font-size: 15.5px; line-height: 1.8; color: #FFD9D9">
+            <li>šíriť upravené verzie systému</li>
+            <li>predávať alebo prenajímať systém</li>
+            <li>obchádzať podpisy a Secure Boot</li>
+            <li>vydávať sa za Linsoft</li>
+          </ul>
+        </div>
+      </div>
+      <p id="tretie" style="margin: 22px 0 0; font-size: 14.5px; line-height: 1.6; color: #8FA3BD; max-width: 52em">Softvér tretích strán: ovládače, knižnice, písma a firmvér od iných autorov majú vlastné licencie. Ich zoznam bude súčasťou inštalačného média.</p>
+    </div>
+  </section>
+
+  <!-- rodina Linsoft OS -->
+  <section id="rodina" style="padding: 20px 24px 90px">
+    <div style="max-width: 1240px; margin: 0 auto">
+      <div style="font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #FFC23D; font-weight: 700">Rodina Linsoft OS</div>
+      <h2 style="margin: 12px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; line-height: 1.15; text-wrap: balance">Tri vetvy jedného projektu</h2>
+      <p style="margin: 14px 0 0; font-size: 16.5px; line-height: 1.65; color: #C9D7EA; max-width: 46em">Linsoft OS Core je najnovšia vetva. Ak chceš systém na každý deň už dnes, siahni po Linsoft OS 1.5 na Debiane.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 30px">
+        <article style="display: flex; flex-direction: column; padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <div style="display: inline-flex; align-self: flex-start; padding: 4px 10px; border-radius: 12px; background: #13301F; color: #7CE0A5; font-size: 12.5px; font-weight: 700">Stabilná · na stiahnutie</div>
+          <h3 style="margin: 14px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 23px">Linsoft OS 1.5</h3>
+          <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6; flex: 1">Postavený na Debiane 13 s podpísaným jadrom Debianu, Openbox a Tint2. Funguje so zapnutým Secure Boot bez registrácie kľúča.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; font-size: 14.5px; font-weight: 600">
+            <a href="index.html" style="text-decoration: none">Stránka Linsoft OS 1.5 →</a>
+            <a href="wiki.html" style="text-decoration: none">Wiki</a>
+          </div>
+        </article>
+        <article style="display: flex; flex-direction: column; padding: 26px; border-radius: 18px; background: #0F1C30; border: 1px solid #22385A">
+          <div style="display: inline-flex; align-self: flex-start; padding: 4px 10px; border-radius: 12px; background: #1A2433; color: #A9BDD6; font-size: 12.5px; font-weight: 700">Pôvodná vetva · 1.0–1.4</div>
+          <h3 style="margin: 14px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 23px">Pôvodný Linsoft OS</h3>
+          <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6; flex: 1">Prvý samostatný systém: vlastný live systém a inštalátor, desktop Linsoft Native v C a Linsoft Kernel – jadro Linux zostavené pre Linsoft.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; font-size: 14.5px; font-weight: 600">
+            <a href="povodny-linsoft-os.html" style="text-decoration: none">Príbeh pôvodného OS →</a>
+          </div>
+        </article>
+        <article style="display: flex; flex-direction: column; padding: 26px; border-radius: 18px; background: linear-gradient(140deg, #1A2E4E, #0F1C30); border: 1px solid #6B5416">
+          <div style="display: inline-flex; align-self: flex-start; padding: 4px 10px; border-radius: 12px; background: rgba(255,194,61,0.14); color: #FFC23D; font-size: 12.5px; font-weight: 700">Vo vývoji · 0.9.7</div>
+          <h3 style="margin: 14px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 23px">Linsoft OS Core</h3>
+          <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: #A9BDD6; flex: 1">Nová vetva na jadre Linsoft Core™, napísanom od nuly – nie na Linuxe. Vlastné okná, aplikácie, ovládače a aktualizácie.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; font-size: 14.5px; font-weight: 600">
+            <a href="#funkcie" style="text-decoration: none">Ste tu</a>
+          </div>
+        </article>
+      </div>
+      <p style="margin: 18px 0 0; font-size: 14px; color: #8FA3BD">Vetvy nie sú navzájom kompatibilné – z Linsoft OS 1.5 sa na Core neaktualizuje, Core sa inštaluje nanovo.</p>
+    </div>
+  </section>
+
+  <!-- výzva -->
+  <section style="padding: 0 24px 90px">
+    <div style="max-width: 1240px; margin: 0 auto; position: relative; overflow: hidden; border-radius: 24px; background: linear-gradient(120deg, #16304F, #0F2038); border: 1px solid #2A4266; padding: 48px 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px 40px">
+      <svg viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; right: 0; bottom: 0; width: 60%; height: 100%"><path d="M0 190C200 170 400 110 600 20" fill="none" stroke="#FFC23D" stroke-opacity="0.6" stroke-width="2"></path></svg>
+      <div style="position: relative; flex: 1 1 420px; min-width: 0">
+        <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 34px; line-height: 1.15">Linsoft OS Core rastie každý deň</h2>
+        <p style="margin: 10px 0 0; font-size: 16.5px; line-height: 1.6; color: #C9D7EA">Pozri, čo priniesla každá verzia a ako fungujú aktualizácie s cestou späť.</p>
+      </div>
+      <a href="core-aktualizacie.html" style="position: relative; display: inline-flex; align-items: center; height: 52px; padding: 0 26px; border-radius: 14px; background: #FFC23D; color: #1A2433; font-weight: 700; font-size: 16px; text-decoration: none">Vydania a aktualizácie</a>
+    </div>
+  </section>
+
+  <!-- päta -->
+  <footer style="padding: 34px 24px 44px; border-top: 1px solid #16263F">
+    <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px; font-size: 14px; color: #8FA3BD">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true" style="color: #13233B"><use href="#w-tile" width="64" height="64"></use><use href="#w-logo" x="13" y="11" width="38" height="38"></use></svg>
+        <span>© 2026 Martin Pastorek · Linsoft OS Core · jadro Linsoft Core™</span>
+      </div>
+      <nav aria-label="Päta" style="display: flex; flex-wrap: wrap; gap: 8px 22px">
+        <a href="core.html#licencia" style="text-decoration: none">Licencia Linsoft Core 1.0</a>
+        <a href="core.html#licencia" style="text-decoration: none">Softvér tretích strán</a>
+        <a href="index.html" style="text-decoration: none">Linsoft OS 1.5</a>
+        <a href="komunita.html" style="text-decoration: none">Komunita</a>
+        <a href="o-spolocnosti.html" style="text-decoration: none">O spoločnosti</a>
+      </nav>
+    </div>
+  </footer>
+</div>
+</body>
+</html>
